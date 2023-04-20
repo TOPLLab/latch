@@ -1,0 +1,3 @@
+[submodule "WABT"]
+	path = WABT
+	url = git@github.com:TOPLLab/wabt.git
