@@ -7,40 +7,22 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run gen-examples",
     "test": "npm run debugtest && npm run primtest",
-    "debugtest": "WABT='WABT/build' node ./node_modules/mocha/bin/mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/test/suite/debugger.test.ts",
-    "spectest": "WABT='WABT/build' CORESUITE='core/' node ./node_modules/mocha/bin/mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/suite/spec.test.ts",
-    "primtest": "WABT='WABT/build' node ./node_modules/mocha/bin/mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/test/suite/primitives.test.ts",
+    "debugtest": "WABT='WABT/build' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/test/suite/debugger.test.ts",
+    "spectest": "WABT='WABT/build' CORESUITE='core/' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/suite/spec.test.ts",
+    "primtest": "WABT='WABT/build' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/test/suite/primitives.test.ts",
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
     "@types/chai": "^4.3.0",
-    "@types/glob": "^7.2.0",
     "@types/mocha": "^9.1.0",
     "@types/node": "14.x",
-    "@types/path-browserify": "^1.0.0",
-    "@types/uuid": "^9.0.0",
-    "@types/vscode": "^1.64.0",
-    "@types/ws": "^8.5.4",
-    "@typescript-eslint/eslint-plugin": "^5.12.1",
-    "@typescript-eslint/parser": "^5.12.1",
-    "@vscode/test-electron": "^2.1.2",
-    "electron-rebuild": "^3.2.7",
-    "eslint": "^8.9.0",
-    "glob": "^7.2.0",
-    "mocha": "^9.2.1",
-    "path-browserify": "^1.0.1",
-    "protobufjs": "^7.1.2",
-    "serialport": "^10.4.0",
-    "ts-node": "^10.5.0",
-    "typescript": "^4.5.5",
-    "vsce": "^1.97.0",
-    "vscode-debugadapter": "^1.51.0-pre.0",
-    "vscode-debugadapter-testsupport": "^1.51.0-pre.0"
-  },
-  "dependencies": {
     "chai": "^4.3.6",
     "ieee754": "^1.2.1",
+    "mocha": "^9.2.1",
     "mqtt": "^4.3.7",
-    "ts-retry-promise": "^0.7.0"
+    "serialport": "^10.4.0",
+    "ts-node": "^10.5.0",
+    "ts-retry-promise": "^0.7.0",
+    "typescript": "^4.5.5"
   }
 }
