@@ -1,0 +1,16 @@
+(assert_return (invoke "f32.sqrt" (f32.const 2.0)) (f32.const 0x1.6a09e6p+0))
+(assert_return (invoke "f32.xkcd_sqrt_2" (f32.const 3.0) (f32.const 5.0) (f32.const 0x1.921fb6p+1) (f32.const 7.0)) (f32.const 0x1.6a0a54p+0))
+(assert_return (invoke "f32.sqrt" (f32.const 3.0)) (f32.const 0x1.bb67aep+0))
+(assert_return (invoke "f32.xkcd_sqrt_3" (f32.const 2.0) (f32.const 0x1.5bf0a8p+1) (f32.const 0x1.921fb6p+1)) (f32.const 0x1.bb02d4p+0))
+(assert_return (invoke "f32.sqrt" (f32.const 5.0)) (f32.const 0x1.1e377ap+1))
+(assert_return (invoke "f32.xkcd_sqrt_5" (f32.const 2.0) (f32.const 0x1.5bf0a8p+1) (f32.const 3.0)) (f32.const 0x1.1e2d58p+1))
+(assert_return (invoke "f32.xkcd_better_sqrt_5" (f32.const 13.0) (f32.const 4.0) (f32.const 0x1.921fb6p+1) (f32.const 24.0)) (f32.const 0x1.1e377ap+1))
+
+(assert_return (invoke "f64.sqrt" (f64.const 2.0)) (f64.const 0x1.6a09e667f3bcdp+0))
+(assert_return (invoke "f64.xkcd_sqrt_2" (f64.const 3.0) (f64.const 5.0) (f64.const 0x1.921fb54442d18p+1) (f64.const 7.0)) (f64.const 0x1.6a0a5362b055fp+0))
+(assert_return (invoke "f64.sqrt" (f64.const 3.0)) (f64.const 0x1.bb67ae8584caap+0))
+(assert_return (invoke "f64.xkcd_sqrt_3" (f64.const 2.0) (f64.const 0x1.5bf0a8b145769p+1) (f64.const 0x1.921fb54442d18p+1)) (f64.const 0x1.bb02d4eca8f95p+0))
+(assert_return (invoke "f64.sqrt" (f64.const 5.0)) (f64.const 0x1.1e3779b97f4a8p+1))
+(assert_return (invoke "f64.xkcd_sqrt_5" (f64.const 2.0) (f64.const 0x1.5bf0a8b145769p+1) (f64.const 3.0)) (f64.const 0x1.1e2d58d8b3bcep+1))
+(assert_return (invoke "f64.xkcd_better_sqrt_5" (f64.const 13.0) (f64.const 4.0) (f64.const 0x1.921fb54442d18p+1) (f64.const 24.0)) (f64.const 0x1.1e3778509a5a3p+1))
+
