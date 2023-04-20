@@ -1,5 +1,4 @@
-import {EventItem} from '../Views/EventsProvider';
-import {Frame} from '../Parsers/Frame';
+import {Frame} from '../parsers/Frame';
 import {VariableInfo} from './VariableInfo';
 
 function hash(s: string) {
@@ -16,7 +15,6 @@ export class RuntimeState {
     public startAddress: number = 0;
     public callstack: Frame[] = [];
     public locals: VariableInfo[] = [];
-    public events: EventItem[] = [];
 
     constructor(source?: string) {
         this.id = hash(source ?? '');
@@ -52,7 +50,6 @@ export class RuntimeState {
         copy.startAddress = this.startAddress;
         copy.callstack = this.callstack.map(obj => Object.assign({}, obj));
         copy.locals = this.locals.map(obj => Object.assign({}, obj));
-        copy.events = this.events.map(obj => new EventItem(obj.topic, obj.payload, obj.collapsibleState));
         return copy;
     }
 }

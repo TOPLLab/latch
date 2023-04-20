@@ -38,3 +38,10 @@ typings/
 lib/*.js
 test/*.js
 *.map
+
+WABT
+core/
+
+dist/
+
+.idea
