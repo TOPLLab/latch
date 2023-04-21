@@ -7,11 +7,11 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
 import 'mocha';
-import {Behaviour, Description, Expectation, Expected, getValue, Step, TestScenario} from '../framework/Describer';
-import {Framework} from '../framework/Framework';
-import {DependenceScheduler} from '../framework/Scheduler';
-import {ARDUINO, EMULATOR, EmulatorBridge, HardwareBridge} from './warduino.bridge';
-import {Instruction} from '../framework/Actions';
+import {Behaviour, Description, Expectation, Expected, getValue, Step, TestScenario} from '../../src/framework/Describer';
+import {Framework} from '../../src/framework/Framework';
+import {DependenceScheduler} from '../../src/framework/Scheduler';
+import {ARDUINO, EMULATOR, EmulatorBridge, HardwareBridge} from './util/warduino.bridge';
+import {Instruction} from '../../src/framework/Actions';
 
 const EXAMPLES: string = 'src/test/suite/examples/';
 let INITIAL_PORT: number = 7900;

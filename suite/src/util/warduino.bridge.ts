@@ -3,13 +3,20 @@
  */
 import {Duplex, Readable} from 'stream';
 import {ChildProcess, spawn} from 'child_process';
-import {Emulator, Instance, ProcessBridge, SerialInstance, timeout} from '../framework/Describer';
+import {
+    ArduinoUploader,
+    CompilerFactory,
+    Emulator,
+    Instance,
+    Instruction,
+    ProcessBridge,
+    SerialInstance,
+    timeout,
+    WatCompiler
+} from 'latch';
 import {ReadlineParser} from 'serialport';
 import * as net from 'net';
 import * as fs from 'fs';
-import {CompilerFactory, WatCompiler} from '../bridges/Compiler';
-import {ArduinoUploader} from '../bridges/Uploader';
-import {Instruction} from '../framework/Actions';
 
 export const WABT: string = process.env.WABT ?? '';
 

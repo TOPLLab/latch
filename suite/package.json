@@ -1,0 +1,13 @@
+{
+  "name": "warduino-testsuite",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "WABT='WABT/build' CORESUITE='core/' npx latch ./src/spec.test.ts",
+    "debugtest": "WABT='WABT/build' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/debugger.test.ts",
+    "spectest": "WABT='WABT/build' CORESUITE='core/' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/spec.test.ts",
+    "primtest": "WABT='WABT/build' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/primitives.test.ts"
+  },
+  "dependencies": {
+    "latch": "file:./latch-0.0.1.tgz"
+  }
+}

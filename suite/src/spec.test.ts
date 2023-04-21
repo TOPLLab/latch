@@ -1,11 +1,8 @@
-import {Expectation, Expected, Step} from '../framework/Describer';
-import {Instruction} from '../framework/Actions';
-import {Framework} from '../framework/Framework';
-import {ARDUINO, EMULATOR, EmulatorBridge, HardwareBridge} from './warduino.bridge';
-import {parseArguments, parseAsserts, parseResult, Value} from './spec.util';
-import {readdirSync, writeFileSync} from 'fs';
-import {find} from '../framework/Parsers';
-import {HybridScheduler} from '../framework/Scheduler';
+import {Expectation, Expected, Framework, HybridScheduler, Instruction, Step} from 'latch';
+import {EMULATOR, EmulatorBridge} from './util/warduino.bridge';
+import {parseArguments, parseAsserts, parseResult, Value} from '../../src/wasm/spec';
+import {readdirSync} from 'fs';
+import {find} from '../../src/framework/Parsers';
 import {basename} from 'path';
 
 export const CORESUITE: string = process.env.CORESUITE ?? './';

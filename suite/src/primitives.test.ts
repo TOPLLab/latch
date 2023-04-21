@@ -1,9 +1,9 @@
-import {Expected, Instance, ProcessBridge, TestScenario} from '../framework/Describer';
-import {Action, Instruction} from '../framework/Actions';
-import {Type} from './spec.util';
-import {Framework} from '../framework/Framework';
-import {ARDUINO, EMULATOR, EmulatorBridge, HardwareBridge} from './warduino.bridge';
-import {DependenceScheduler} from '../framework/Scheduler';
+import {Expected, Instance, ProcessBridge, TestScenario} from '../../src/framework/Describer';
+import {Action, Instruction} from '../../src/framework/Actions';
+import {Type} from '../../src/wasm/spec';
+import {Framework} from '../../src/framework/Framework';
+import {ARDUINO, EMULATOR, EmulatorBridge, HardwareBridge} from './util/warduino.bridge';
+import {DependenceScheduler} from '../../src/framework/Scheduler';
 import * as mqtt from 'mqtt';
 
 const framework = Framework.getImplementation();

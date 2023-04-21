@@ -3,16 +3,24 @@
   "description": "A testing language for constraint environments",
   "version": "0.0.1",
   "type": "commonjs",
+  "exports": {
+    "types": "./dist/types/index.d.ts",
+    "require": "./dist/cjs/index.cjs"
+  },
+  "main": "dist/cjs/index.cjs",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "bin": {
+    "latch": "bin/latch"
+  },
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && npm run build:cjs",
     "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist/cjs && npx convert-extension cjs dist/cjs/ && rm -f dist/cjs/*.map",
-    "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run debugtest && npm run primtest",
-    "debugtest": "WABT='WABT/build' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/test/suite/debugger.test.ts",
-    "spectest": "WABT='WABT/build' CORESUITE='core/' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/suite/spec.test.ts",
-    "primtest": "WABT='WABT/build' npx mocha --exit --reporter src/framework/MochaReporter.ts --require ts-node/register --ui bdd ./src/test/suite/primitives.test.ts",
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {

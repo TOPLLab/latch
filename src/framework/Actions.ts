@@ -2,7 +2,7 @@ import {Instance, ProcessBridge} from './Describer';
 import {SourceMap} from '../state/SourceMap';
 import {FunctionInfo} from '../state/FunctionInfo';
 import * as ieee754 from 'ieee754';
-import {Type, typing, Value} from '../suite/spec.util';
+import {Type, typing, Value} from '../wasm/spec';
 
 function convertToLEB128(a: number): string { // TODO can only handle 32 bit
     a |= 0;
