@@ -83,7 +83,7 @@ export class Framework {
                         });
 
                         after('Shutdown debugger', async function () {
-                            await base.describer.bridge.disconnect(base.describer.instance);
+                            if (base.describer.instance) await base.describer.bridge.disconnect(base.describer.instance);
                         });
                     }
 

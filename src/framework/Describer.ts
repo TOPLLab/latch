@@ -2,13 +2,13 @@ import {ChildProcess} from 'child_process';
 import {Duplex} from 'stream';
 import {assert, expect} from 'chai';
 import 'mocha';
-import {after, beforeEach, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
+import {after, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
 import {SerialPort} from 'serialport';
 import {Framework} from './Framework';
 import {Action, encoderTable, Instruction, parserTable} from './Actions';
 import {CompileOutput, Compiler, CompilerFactory} from '../bridges/Compiler';
 import {SourceMap} from '../state/SourceMap';
-import {retry} from 'ts-retry-promise';
+import {retry} from '../util/retry';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
@@ -129,7 +129,7 @@ export abstract class ProcessBridge {
 
     abstract clearListeners(instance: Instance): void;
 
-    abstract disconnect(instance: Instance | void): Promise<void>;
+    abstract disconnect(instance: Instance): Promise<void>;
 }
 
 /** A series of tests to perform on a single instance of the vm */
@@ -262,8 +262,7 @@ export class Describer {
     public async createInstance(description: TestScenario): Promise<Instance> {
         return Promise.resolve(await retry(
             () => timeout<Instance>(`connecting with ${this.bridge.name}`, this.bridge.connectionTimeout,
-                this.bridge.connect(description.program, description.args ?? [])),
-            {retries: this.maximumConnectAttempts}));
+                this.bridge.connect(description.program, description.args ?? [])), this.maximumConnectAttempts));
     }
 
     private async reset(instance: Instance | void) {
