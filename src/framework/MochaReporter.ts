@@ -79,11 +79,11 @@ class MochaReporter extends reporters.Base {
             console.log(color('suite', '%s==================='), this.indent());
 
             const names: string[] = [];
-            Framework.getImplementation().platforms().forEach((platform: Platform) => names.push(platform.name + (platform.disabled ? ' (disabled)' : ` (${platform.scheduler.identifier})`)));
+            Framework.getImplementation().platforms().forEach((platform: Platform) => names.push(platform.name));
             names.forEach((name: string) => this.archiver.extend('platforms', name));
             console.log(color('suite', '%sPlatforms  %s'), this.indent(), names.join(', '));
 
-            console.log(color('suite', '%sVM commit  %s'), this.indent(), 'eee5468'); // TODO get actual vm commit
+            console.log(color('suite', '%sVM commit  %s'), this.indent(), '4ce14c2'); // TODO get actual vm commit
         });
 
         runner.on(Runner.constants.EVENT_SUITE_BEGIN, (suite: Suite) => {

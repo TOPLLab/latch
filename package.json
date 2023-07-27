@@ -21,7 +21,8 @@
     "build": "npm run clean && npm run build:cjs",
     "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist/cjs && npx convert-extension cjs dist/cjs/ && rm -f dist/cjs/*.map",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "test": "npx latch test/test.ts"
   },
   "dependencies": {
     "chai": "^4.3.6",

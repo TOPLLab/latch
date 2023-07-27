@@ -82,7 +82,7 @@ export class WatCompiler extends Compiler {
 
         // compile WAT to Wasm
         return new Promise<CompileOutput>((resolve, reject) => {
-            const command = `${this.wabt}/wat2wasm --debug-names -v -o ${this.tmpdir}/upload.wasm ${program}`;
+            const command = `${this.wabt}/wat2wasm --no-canonicalize-leb128s --disable-bulk-memory -v -o ${this.tmpdir}/upload.wasm ${program}`;
             let out: String = '';
             let err: String = '';
 

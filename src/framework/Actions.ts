@@ -26,6 +26,7 @@ export enum Instruction {
     halt = '02',
     pause = '03',
     step = '04',
+    stepOver = '05',
     addBreakpoint = '06',
     removeBreakpoint = '07',
     dump = '10',
