@@ -9,6 +9,7 @@ import {Action, encoderTable, Instruction, parserTable} from './Actions';
 import {CompileOutput, Compiler, CompilerFactory} from '../bridges/Compiler';
 import {SourceMap} from '../state/SourceMap';
 import {retry} from '../util/retry';
+import {Value} from '../wasm/spec';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
@@ -42,25 +43,39 @@ export interface Breakpoint {
 
 export interface Step {
     /** Name of the test */
-    title: string;
+    readonly title: string;
 
     /** Type of the instruction */
-    instruction: Instruction | Action;
+    readonly instruction: Instruction | Action;
 
     /* Optional payload of the instruction */
-    payload?: any;
+    readonly payload?: any;
 
     /** Whether the instruction is expected to return data */
-    expectResponse?: boolean;  // todo remove
+    readonly expectResponse?: boolean;  // todo remove
 
     /** Optional delay after sending instruction */
-    delay?: number;  // todo remove (can be done with an Action)
+    readonly delay?: number;  // todo remove (can be done with an Action)
 
     /** Parser to use on the result. */
-    parser?: (input: string) => Object;
+    readonly parser?: (input: string) => Object;
 
     /** Checks to run against the result. */
-    expected?: Expectation[];
+    readonly expected?: Expectation[];
+}
+
+export class Invoker implements Step {
+    readonly instruction: Instruction | Action = Instruction.invoke;
+    readonly title: string;
+    readonly payload?: any;
+    readonly expectResponse: boolean = true;
+    readonly expected?: Expectation[];
+
+    constructor(func: string, args: Value[], result: number) {
+        this.title = `assert: ${func} ${args.map(val => val.value).join(' ')} ${result}`;
+        this.payload = {name: func, args: args};
+        this.expected = [{'value': {kind: 'primitive', value: result} as Expected<number>}];
+    }
 }
 
 export interface Expectation {

@@ -71,7 +71,7 @@ export class Framework {
     public run(cores: number = 1) {   // todo remove cores
         this.suites.forEach((suite: Suite) => {
             this.bases.forEach((base: Platform) => {
-                describe('', () => {
+                describe(`Setting up ${base.name}.`, () => {
                     // todo add parallelism
                     const order: TestScenario[] = base.scheduler.schedule(suite);
 

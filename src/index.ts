@@ -2,6 +2,7 @@ import {Framework} from "./framework/Framework";
 
 export * from './bridges/Compiler';
 export * from './bridges/Uploader';
+export * from './bridges/WARDuino.bridge';
 export * from './framework/Actions';
 export * from './framework/Describer';
 export * from './framework/Framework';

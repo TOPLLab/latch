@@ -43,7 +43,7 @@ interface Result {
 }
 
 class MochaReporter extends reporters.Base {
-    private framework: Framework;
+    private readonly framework: Framework;
     private coreReporter: Reporter;
 
     private archiver: Archiver;
@@ -87,6 +87,7 @@ class MochaReporter extends reporters.Base {
         });
 
         runner.on(Runner.constants.EVENT_SUITE_BEGIN, (suite: Suite) => {
+            console.log();
             console.log(color('suite', '%s%s'), this.indent(), suite.title);
         });
 
@@ -235,25 +236,25 @@ class MochaReporter extends reporters.Base {
 
             this.indentationLevel -= 1;
 
-            console.log(color('suite', '%sExpectations:'), this.indent());
-
-            this.indentationLevel += 1;
-
-            // number of passed/failed expectations
-
-            this.indentationLevel -= 1;
-
-            console.log();
-
-            console.log(color('suite', '%sSuite Health:'), this.indent());
-
-            // increases/decreases in execution time
-
-            // increases/decreases in failures
-
-            // increases/decreases in flakiness
-
-            console.log();
+            // console.log(color('suite', '%sExpectations:'), this.indent());
+            //
+            // this.indentationLevel += 1;
+            //
+            // // number of passed/failed expectations
+            //
+            // this.indentationLevel -= 1;
+            //
+            // console.log();
+            //
+            // console.log(color('suite', '%sSuite Health:'), this.indent());
+            //
+            // // increases/decreases in execution time
+            //
+            // // increases/decreases in failures
+            //
+            // // increases/decreases in flakiness
+            //
+            // console.log();
 
             this.archiver.write();
         });

@@ -1,5 +1,4 @@
-import {EMULATOR, EmulatorBridge} from './warduino.bridge';
-import {Expected, Framework, Instruction, Step, Type, Value} from '../src';
+import {EMULATOR, EmulatorBridge, Framework, Invoker, Step, Type, Value} from '../src';
 
 const framework = Framework.getImplementation();
 
@@ -9,21 +8,11 @@ framework.suite('Test Latch performance in CI');
 
 const steps: Step[] = [];
 
-steps.push({
-    // ✔ ((invoke "8u_good1" (i32.const 0)) (i32.const 97))
-    title: '8u_good1 0 97',
-    instruction: Instruction.invoke,
-    payload: {name: '8u_good1', args: [{value: 0, type: Type.i32} as Value]},
-    expected: [{'value': {kind: 'primitive', value: 97} as Expected<number>}]
-});
+// ✔ ((invoke "8u_good1" (i32.const 0)) (i32.const 97))
+steps.push(new Invoker('8u_good1', [{value: 0, type: Type.i32}] as Value[], 97));
 
-steps.push({
-    // ✔ ((invoke "8u_good3" (i32.const 0)) (i32.const 98))
-    title: '8u_good3 0 97',
-    instruction: Instruction.invoke,
-    payload: {name: '8u_good3', args: [{value: 0, type: Type.i32} as Value]},
-    expected: [{'value': {kind: 'primitive', value: 98} as Expected<number>}]
-});
+// ✔ ((invoke "8u_good3" (i32.const 0)) (i32.const 98))
+steps.push(new Invoker('8u_good3', [{value: 0, type: Type.i32}] as Value[], 98));
 
 framework.test({
     title: `Test with address_0.wast`,
