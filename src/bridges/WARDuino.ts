@@ -6,8 +6,8 @@ import {ChildProcess, spawn} from 'child_process';
 import {ReadlineParser} from 'serialport';
 import * as net from 'net';
 import * as fs from 'fs';
-import {Emulator, Instance, ProcessBridge, SerialInstance, timeout} from '../framework/Describer';
-import {Instruction} from '../framework/Actions';
+import {Emulator, Instance, ProcessBridge, SerialInstance, timeout} from '../language/Describer';
+import {Instruction} from '../language/Actions';
 import {CompilerFactory, WatCompiler} from './Compiler';
 import {ArduinoUploader} from './Uploader';
 

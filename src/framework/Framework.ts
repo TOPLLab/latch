@@ -1,5 +1,5 @@
-import {Describer, ProcessBridge, TestScenario} from './Describer';
-import {HybridScheduler, Scheduler} from './Scheduler';
+import {Describer, ProcessBridge, TestScenario} from '../language/Describer';
+import {HybridScheduler, Scheduler} from '../language/Scheduler';
 import {after} from 'mocha';
 
 export interface Platform {

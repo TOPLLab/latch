@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {exec, ExecException} from 'child_process';
-import {parseExport} from '../framework/Parsers';
+import {parseExport} from '../parsers/Parsers';
 import {getFileExtension} from '../parsers/ParseUtils';
 
 export interface CompileOutput {

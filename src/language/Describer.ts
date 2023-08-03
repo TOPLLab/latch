@@ -4,7 +4,7 @@ import {assert, expect} from 'chai';
 import 'mocha';
 import {after, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
 import {SerialPort} from 'serialport';
-import {Framework} from './Framework';
+import {Framework} from '../framework/Framework';
 import {Action, encoderTable, Instruction, parserTable} from './Actions';
 import {CompileOutput, Compiler, CompilerFactory} from '../bridges/Compiler';
 import {SourceMap} from '../state/SourceMap';
