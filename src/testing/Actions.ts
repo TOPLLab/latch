@@ -1,8 +1,12 @@
-import {Instance, ProcessBridge} from './Describer';
-import {SourceMap} from '../state/SourceMap';
-import {FunctionInfo} from '../state/FunctionInfo';
+import {ProcessBridge} from './Describer';
 import * as ieee754 from 'ieee754';
-import {Type, typing, Value} from '../wasm/spec';
+import {Connection} from "../bridge/Connection";
+import {SourceMap} from "../sourcemap/SourceMap";
+import {WASM} from "../sourcemap/Wasm";
+import typing = WASM.typing;
+import Type = WASM.Type;
+import Closure = SourceMap.Closure;
+import Value = WASM.Value;
 
 function convertToLEB128(a: number): string { // TODO can only handle 32 bit
     a |= 0;
@@ -53,13 +57,13 @@ export enum Instruction {
 }
 
 export class Action {
-    private act: (bridge: ProcessBridge, instance: Instance) => Promise<string>;
+    private act: (bridge: ProcessBridge, instance: Connection) => Promise<string>;
 
-    constructor(act: (bridge: ProcessBridge, instance: Instance) => Promise<string>) {
+    constructor(act: (bridge: ProcessBridge, instance: Connection) => Promise<string>) {
         this.act = act;
     }
 
-    public perform(bridge: ProcessBridge, instance: Instance, parser: (text: string) => Object): Promise<Object> {
+    public perform(bridge: ProcessBridge, instance: Connection, parser: (text: string) => Object): Promise<Object> {
         return new Promise<Object>((resolve, reject) => {
             this.act(bridge, instance).then((data: string) => {
                 resolve(parser(data));
@@ -85,7 +89,8 @@ export const parserTable: Map<Instruction | Action, (input: string) => Object> =
     [Instruction.reset, resetParser],
 ]);
 
-export const encoderTable: Map<Instruction | Action, (map: SourceMap, input: any) => string | undefined> = new Map([
+export const encoderTable: Map<Instruction | Action, (map: SourceMap.Mapping,
+                                                      input: any) => string | undefined> = new Map([
     [Instruction.invoke, encode]
 ]);
 
@@ -123,10 +128,10 @@ function stateParser(text: string): Object {
     return message;
 }
 
-function encode(map: SourceMap, input: any): string | undefined {
+function encode(map: SourceMap.Mapping, input: any): string | undefined {
     const name: string = input.name;
     const args: Value[] = input.args;
-    const func = map.functionInfos.find((func: FunctionInfo) => func.name === name);
+    const func = map.functions.find((func: Closure) => func.name === name);
 
     if (func === undefined) {
         return;

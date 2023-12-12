@@ -6,10 +6,11 @@ import {after, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
 import {SerialPort} from 'serialport';
 import {Framework} from '../framework/Framework';
 import {Action, encoderTable, Instruction, parserTable} from './Actions';
-import {CompileOutput, Compiler, CompilerFactory} from '../bridges/Compiler';
-import {SourceMap} from '../state/SourceMap';
+import {CompileOutput, Compiler, CompilerFactory} from '../manage/Compiler';
+import {SourceMap} from '../sourcemap/SourceMap';
 import {retry} from '../util/retry';
 import {Value} from '../wasm/spec';
+import {Connection} from "../bridge/Connection";
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
@@ -102,16 +103,34 @@ export function getValue(object: any, field: string): any {
     return object;
 }
 
-export interface Instance {
-    interface: Duplex;
-}
+export abstract class PlatformBridge {
+    // Timeouts for async actions
+    public readonly instructionTimeout: number = 2000;
+    public readonly connectionTimeout: number = 2000;
 
-export interface SerialInstance extends Instance {
-    interface: SerialPort;
-}
+    // Name of platform
+    public abstract readonly name: string;
 
-export interface Emulator extends Instance {
-    process: ChildProcess;
+    // Optional monitor to receive all data from platform
+    protected abstract monitor?: (chunk: any) => void;
+
+    // All instances created by the platform
+    protected abstract connections: Connection[];
+
+    // Connect to platform, creates a new instance
+    abstract connect(program: string, args: string[]): Promise<Connection>;
+
+    checkConnections(): void {
+        this.connections.forEach((instance: Connection) => {
+            this.check(instance);
+        });
+    }
+
+    protected abstract check(instance: Connection): void;
+
+    getConnections(): Connection[] {
+        return this.connections;
+    }
 }
 
 export abstract class ProcessBridge {
@@ -120,31 +139,31 @@ export abstract class ProcessBridge {
 
     abstract readonly name: string;
 
-    protected abstract connections: Instance[];
+    protected abstract connections: Connection[];
 
-    abstract connect(program: string, args: string[]): Promise<Instance>;
+    abstract connect(program: string, args: string[]): Promise<Connection>;
 
     abstract sendInstruction(socket: Duplex, chunk: any, expectResponse: boolean, parser: (text: string) => Object): Promise<Object | void>;
 
     abstract setProgram(socket: Duplex, program: string): Promise<boolean>;
 
     checkConnections(): void {
-        this.connections.forEach((instance: Instance) => {
+        this.connections.forEach((instance: Connection) => {
             this.check(instance);
         });
     }
 
-    protected abstract check(instance: Instance): void;
+    protected abstract check(instance: Connection): void;
 
-    getConnections(): Instance[] {
+    getConnections(): Connection[] {
         return this.connections;
     }
 
-    abstract addListener(instance: Instance, listener: (data: string) => void): void;
+    abstract addListener(instance: Connection, listener: (data: string) => void): void;
 
-    abstract clearListeners(instance: Instance): void;
+    abstract clearListeners(instance: Connection): void;
 
-    abstract disconnect(instance: Instance): Promise<void>;
+    abstract disconnect(instance: Connection): Promise<void>;
 }
 
 /** A series of tests to perform on a single instance of the vm */
@@ -181,7 +200,7 @@ export class Describer {
 
     private readonly maximumConnectAttempts = 5;
 
-    public instance?: Instance;
+    public instance?: Connection;
 
     constructor(bridge: ProcessBridge) {
         this.bridge = bridge;
@@ -274,13 +293,13 @@ export class Describer {
         });
     }
 
-    public async createInstance(description: TestScenario): Promise<Instance> {
+    public async createInstance(description: TestScenario): Promise<Connection> {
         return Promise.resolve(await retry(
-            () => timeout<Instance>(`connecting with ${this.bridge.name}`, this.bridge.connectionTimeout,
+            () => timeout<Connection>(`connecting with ${this.bridge.name}`, this.bridge.connectionTimeout,
                 this.bridge.connect(description.program, description.args ?? [])), this.maximumConnectAttempts));
     }
 
-    private async reset(instance: Instance | void) {
+    private async reset(instance: Connection | void) {
         if (instance === undefined) {
             assert.fail('Cannot run test: no debugger connection.');
             return;
