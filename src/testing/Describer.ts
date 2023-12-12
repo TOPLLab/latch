@@ -1,86 +1,18 @@
-import {ChildProcess} from 'child_process';
-import {Duplex} from 'stream';
 import {assert, expect} from 'chai';
 import 'mocha';
 import {after, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
-import {SerialPort} from 'serialport';
 import {Framework} from '../framework/Framework';
-import {Action, encoderTable, Instruction, parserTable} from './Actions';
-import {CompileOutput, Compiler, CompilerFactory} from '../manage/Compiler';
+import {Action, encoderTable, parserTable} from './Actions';
 import {SourceMap} from '../sourcemap/SourceMap';
-import {retry} from '../util/retry';
-import {Value} from '../wasm/spec';
-import {Connection} from "../bridge/Connection";
+import {Message} from '../parse/Requests';
+import {Connection} from '../bridge/Connection';
+import {ConnectionFactory, PlatformType} from '../bridge/ConnectionFactory';
+import {Behaviour, Description, Expectation} from './Step';
+import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
+import {TestScenario} from './TestScenario';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
-}
-
-export enum Description {
-    /** required properties */
-    defined,
-    notDefined
-}
-
-export enum Behaviour {
-    /** compare with a previous state (always fails if no previous state): */
-    unchanged,
-    changed,
-    increased,
-    decreased
-}
-
-export type Expected<T> =
-/** discrimination union */
-    | { kind: 'primitive'; value: T }
-    | { kind: 'description'; value: Description }
-    | { kind: 'comparison'; value: (state: Object, value: T) => boolean; message?: string }
-    | { kind: 'behaviour'; value: Behaviour };
-
-export interface Breakpoint {
-    line: number;
-    column?: number;
-}
-
-export interface Step {
-    /** Name of the test */
-    readonly title: string;
-
-    /** Type of the instruction */
-    readonly instruction: Instruction | Action;
-
-    /* Optional payload of the instruction */
-    readonly payload?: any;
-
-    /** Whether the instruction is expected to return data */
-    readonly expectResponse?: boolean;  // todo remove
-
-    /** Optional delay after sending instruction */
-    readonly delay?: number;  // todo remove (can be done with an Action)
-
-    /** Parser to use on the result. */
-    readonly parser?: (input: string) => Object;
-
-    /** Checks to run against the result. */
-    readonly expected?: Expectation[];
-}
-
-export class Invoker implements Step {
-    readonly instruction: Instruction | Action = Instruction.invoke;
-    readonly title: string;
-    readonly payload?: any;
-    readonly expectResponse: boolean = true;
-    readonly expected?: Expectation[];
-
-    constructor(func: string, args: Value[], result: number) {
-        this.title = `assert: ${func} ${args.map(val => val.value).join(' ')} ${result}`;
-        this.payload = {name: func, args: args};
-        this.expected = [{'value': {kind: 'primitive', value: result} as Expected<number>}];
-    }
-}
-
-export interface Expectation {
-    [key: string]: Expected<any>;
 }
 
 /**
@@ -103,96 +35,19 @@ export function getValue(object: any, field: string): any {
     return object;
 }
 
-export abstract class PlatformBridge {
-    // Timeouts for async actions
-    public readonly instructionTimeout: number = 2000;
-    public readonly connectionTimeout: number = 2000;
-
-    // Name of platform
-    public abstract readonly name: string;
-
-    // Optional monitor to receive all data from platform
-    protected abstract monitor?: (chunk: any) => void;
-
-    // All instances created by the platform
-    protected abstract connections: Connection[];
-
-    // Connect to platform, creates a new instance
-    abstract connect(program: string, args: string[]): Promise<Connection>;
-
-    checkConnections(): void {
-        this.connections.forEach((instance: Connection) => {
-            this.check(instance);
-        });
-    }
-
-    protected abstract check(instance: Connection): void;
-
-    getConnections(): Connection[] {
-        return this.connections;
-    }
-}
-
-export abstract class ProcessBridge {
-    public readonly instructionTimeout: number = 2000;
-    public readonly connectionTimeout: number = 2000;
-
-    abstract readonly name: string;
-
-    protected abstract connections: Connection[];
-
-    abstract connect(program: string, args: string[]): Promise<Connection>;
-
-    abstract sendInstruction(socket: Duplex, chunk: any, expectResponse: boolean, parser: (text: string) => Object): Promise<Object | void>;
-
-    abstract setProgram(socket: Duplex, program: string): Promise<boolean>;
-
-    checkConnections(): void {
-        this.connections.forEach((instance: Connection) => {
-            this.check(instance);
-        });
-    }
-
-    protected abstract check(instance: Connection): void;
-
-    getConnections(): Connection[] {
-        return this.connections;
-    }
-
-    abstract addListener(instance: Connection, listener: (data: string) => void): void;
-
-    abstract clearListeners(instance: Connection): void;
-
-    abstract disconnect(instance: Connection): Promise<void>;
-}
-
-/** A series of tests to perform on a single instance of the vm */
-export interface TestScenario {
-    title: string;
-
-    /** File to load into the interpreter */
-    program: string;
-
-    /** Initial breakpoints */
-    initialBreakpoints?: Breakpoint[];
-
-    /** Arguments for the interpreter */
-    args?: string[];
-
-    steps?: Step[];
-
-    skip?: boolean;
-
-    dependencies?: TestScenario[];
-}
-
-export class Describer {
+export class Describer { // TODO unified with testbed interface
 
     /** The current state for each described test */
     private states: Map<string, string> = new Map<string, string>();
 
-    /** A communication bridge to talk to the vm */
-    public readonly bridge: ProcessBridge;
+    /** Factory to establish new connections to VMs */
+    public readonly connector: ConnectionFactory;
+
+    public readonly mapper: SourceMapFactory;
+
+    public readonly platform: PlatformType;
+
+    public readonly timeout: number;
 
     private framework: Framework;
 
@@ -202,8 +57,11 @@ export class Describer {
 
     public instance?: Connection;
 
-    constructor(bridge: ProcessBridge) {
-        this.bridge = bridge;
+    constructor(platform: PlatformType, timeout: number = 2000) {
+        this.platform = platform;
+        this.timeout = timeout;
+        this.connector = new ConnectionFactory();
+        this.mapper = new SourceMapFactory();
         this.framework = Framework.getImplementation();
     }
 
@@ -212,38 +70,31 @@ export class Describer {
         const call: SuiteFunction | PendingSuiteFunction = description.skip ? describe.skip : this.suiteFunction;
 
         call(this.formatTitle(description.title), function () {
-            this.timeout(describer.bridge.instructionTimeout * 1.1);  // must be larger than own timeout
+            this.timeout(describer.timeout * 1.1);  // must be larger than own timeout
 
-            let map: SourceMap = {lineInfoPairs: [], functionInfos: [], globalInfos: [], importInfos: []};
+            let map: SourceMap.Mapping = new SourceMap.Mapping();
 
             /** Each test requires some housekeeping before and after */
 
             before('Connect to debugger', async function () {
-                this.timeout(describer.bridge.connectionTimeout * 1.1);
+                this.timeout(describer.connector.connectionTimeout);
 
                 const failedDependencies: TestScenario[] = describer.failedDependencies(description);
                 if (failedDependencies.length > 0) {
                     throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
                 }
 
-                // todo check instance (bridge.check())
+                describer.instance = await describer.connector.connect(describer.platform, description.program, description.args ?? []);
+            });
 
-                const compiler: Compiler = new CompilerFactory(process.env.WABT ?? '').pickCompiler(description.program);
-
-                const output: CompileOutput = await timeout<CompileOutput>(`compiling ${description.program}`, describer.bridge.instructionTimeout, compiler.compile(description.program));
-                const uploaded: boolean = await describer.bridge.setProgram(describer.instance?.interface!, output.file);
-
-                if (!uploaded) {
-                    describer.instance = await describer.createInstance(description);
-                }
-
-                map = await timeout<SourceMap>(`fetching source map of ${description.program}`, describer.bridge.instructionTimeout,
-                    compiler.map(description.program));
+            before('Fetch source map', async function () {
+                this.timeout(describer.connector.connectionTimeout);
+                map = await describer.mapper.map(description.program);
             });
 
             afterEach('Clear listeners on interface', function () {
                 // after each step: remove the installed listeners
-                describer.instance?.interface.removeAllListeners('data');
+                // (describer.instance as Platform)?.deafen(); // TODO works without it? should not be necessary with new requests
             });
 
             after('Update state of test scenario', async function () {
@@ -293,20 +144,12 @@ export class Describer {
         });
     }
 
-    public async createInstance(description: TestScenario): Promise<Connection> {
-        return Promise.resolve(await retry(
-            () => timeout<Connection>(`connecting with ${this.bridge.name}`, this.bridge.connectionTimeout,
-                this.bridge.connect(description.program, description.args ?? [])), this.maximumConnectAttempts));
-    }
-
     private async reset(instance: Connection | void) {
         if (instance === undefined) {
             assert.fail('Cannot run test: no debugger connection.');
-            return;
+        } else {
+            await timeout<Object | void>('resetting vm', this.timeout, this.instance!.sendRequest(Message.reset));
         }
-
-        await timeout<Object | void>('resetting vm', this.bridge.instructionTimeout,
-            this.bridge.sendInstruction(instance.interface, Instruction.reset, true, parserTable.get(Instruction.reset) ?? (() => new Object())));
     }
 
     public skipall(): Describer {
@@ -315,7 +158,7 @@ export class Describer {
     };
 
     private formatTitle(title: string): string {
-        return `${this.bridge.name}: ${title}`;
+        return `${this.name}: ${title}`; // TODO unify with testbed and use testbed name?
     }
 
     private failedDependencies(description: TestScenario): TestScenario[] {

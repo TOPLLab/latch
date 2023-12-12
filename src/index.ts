@@ -11,3 +11,6 @@ export * from './testing/Scheduler';
 export * from './wasm/spec';
 
 export const latch = Framework.getImplementation();
+export {Step} from "./testing/Step";
+export {Invoker} from "./testing/Invoker";
+export {TestScenario} from "./testing/TestScenario";

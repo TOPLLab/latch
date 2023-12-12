@@ -1,5 +1,5 @@
 import {Request} from '../parse/Requests';
-import {EventEmitter} from "events";
+import {EventEmitter} from 'events';
 
 export enum ConnectionEvents {
     OnMessage = 'message',
@@ -7,10 +7,13 @@ export enum ConnectionEvents {
 }
 
 export declare interface Connection extends EventEmitter {
+    readonly name: string;
+
     sendRequest<R>(request: Request<R>): Promise<R>;
 
     kill(): Promise<void>;
 
     on(event: ConnectionEvents.OnMessage, listener: (message: string) => void): this;
+
     on(event: ConnectionEvents.OnPushEvent, listener: (data: string) => void): this;
 }

@@ -20,7 +20,7 @@ export interface Request<R> {
     parser: (input: string) => R  // the parser for the response to the debug message
 }
 
-export namespace Request {
+export namespace Message {
     import State = WARDuino.State;
     import Value = WASM.Value;
     import Type = WASM.Type;

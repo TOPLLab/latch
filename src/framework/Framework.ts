@@ -1,10 +1,14 @@
-import {Describer, ProcessBridge, TestScenario} from '../testing/Describer';
+import {Describer} from '../testing/Describer';
 import {HybridScheduler, Scheduler} from '../testing/Scheduler';
 import {after} from 'mocha';
+import {TestScenario} from '../testing/TestScenario';
+import {Connection} from '../bridge/Connection';
+import {retry} from '../util/retry';
+import {PlatformType} from '../bridge/ConnectionFactory';
 
-export interface Platform {
+interface TestBed {
     name: string;
-    bridge: ProcessBridge;
+
     describer: Describer;
 
     scheduler: Scheduler;
@@ -25,7 +29,7 @@ interface DependenceTree {
 export class Framework {
     private static implementation: Framework;
 
-    private bases: Platform[] = [];
+    private beds: TestBed[] = [];
     private suites: Suite[] = [];
 
     public runs: number = 1;
@@ -37,23 +41,22 @@ export class Framework {
         return this.suites[this.suites.length - 1];
     }
 
-    public platform(bridge: ProcessBridge, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
-        const describer = new Describer(bridge);
+    public testbed(name: string, platform: PlatformType, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
+        const describer = new Describer(platform);
         if (disabled) {
             describer.skipall();
         }
 
-        this.bases.push({
-            name: bridge.name,
-            bridge: bridge,
+        this.beds.push({
+            name: name,
             describer: describer,
             disabled: disabled,
             scheduler: scheduler
         });
     }
 
-    public platforms(): Platform[] {
-        return this.bases;
+    public platforms(): TestBed[] {
+        return this.beds;
     }
 
     public suite(title: string) {
@@ -70,25 +73,27 @@ export class Framework {
 
     public run(cores: number = 1) {   // todo remove cores
         this.suites.forEach((suite: Suite) => {
-            this.bases.forEach((base: Platform) => {
-                describe(`Setting up ${base.name}.`, () => {
+            this.beds.forEach((bed: TestBed) => {
+                describe(`Setting up ${bed.name}.`, () => {
                     // todo add parallelism
-                    const order: TestScenario[] = base.scheduler.schedule(suite);
+                    const order: TestScenario[] = bed.scheduler.schedule(suite);
 
-                    if (!base.disabled) {
-                        before('Connect to debugger', async function () {
-                            this.timeout(base.describer.bridge.connectionTimeout * 1.1);
-
-                            base.describer.instance = await base.describer.createInstance(order[0]);  // todo move createInstance to Framework?
-                        });
-
-                        after('Shutdown debugger', async function () {
-                            if (base.describer.instance) await base.describer.bridge.disconnect(base.describer.instance);
-                        });
-                    }
+                    // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
+                    //     before('Connect to debugger', async function () {
+                    //         this.timeout(bed.describer.connector.connectionTimeout * 1.1);
+                    //
+                    //         bed.describer.instance = await bed.describer.connector.connect();  // todo move createInstance to Framework?
+                    //     });
+                    //
+                    //     after('Shutdown debugger', async function () {
+                    //         if (bed.describer.instance) {
+                    //             await bed.connection.kill();
+                    //         }
+                    //     });
+                    // }
 
                     order.forEach((test: TestScenario) => {
-                        base.describer.describeTest(test, this.runs);
+                        bed.describer.describeTest(test, this.runs);
                     });
                 });
             });

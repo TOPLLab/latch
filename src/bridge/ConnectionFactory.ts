@@ -20,18 +20,21 @@ export interface Options {
 }
 
 export class ConnectionFactory {
+    public readonly connectionTimeout: number;
+
 
     private readonly compilerFactory: CompilerFactory;
     private readonly uploaderFactory: UploaderFactory;
 
-    constructor() {
+    constructor(timeout: number = 2000) {
+        this.connectionTimeout = timeout;
         this.compilerFactory = new CompilerFactory(WABT);
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
 
     public async connect(type: PlatformType, program: string, args: string[], options?: Options): Promise<Connection> {
-        let compilated: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program);
-        let medium: Medium = await this.uploaderFactory.pickUploader(type, args, options).upload(compilated);
+        let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program);
+        let medium: Medium = await this.uploaderFactory.pickUploader(type, args, options).upload(compiled);
 
         switch (type) {
             case PlatformType.arduino:

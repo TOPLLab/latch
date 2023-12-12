@@ -6,16 +6,12 @@ import {MessageQueue} from "../parse/MessageQueue";
 
 type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
 
-export abstract class Platform extends EventEmitter implements Connection  {
+export abstract class Platform extends EventEmitter implements Connection {
     protected channel: Duplex;
 
     protected requests: [Request<any>, PromiseResolver<any>][];
 
     protected messages: MessageQueue;
-
-    // Timeouts for async actions
-    public readonly instructionTimeout: number = 2000;
-    public readonly connectionTimeout: number = 2000;
 
     // Name of platform
     public abstract readonly name: string;
@@ -38,6 +34,11 @@ export abstract class Platform extends EventEmitter implements Connection  {
             this.messages.push(data.toString());
             this.process();
         });
+    }
+
+    // listen on duplex channel
+    public deafen(): void {
+        this.channel.removeAllListeners('data');
     }
 
     // process messages in queue

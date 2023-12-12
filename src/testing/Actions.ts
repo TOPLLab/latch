@@ -1,4 +1,3 @@
-import {ProcessBridge} from './Describer';
 import * as ieee754 from 'ieee754';
 import {Connection} from "../bridge/Connection";
 import {SourceMap} from "../sourcemap/SourceMap";
