@@ -1,10 +1,7 @@
 import {Describer} from '../testing/Describer';
 import {HybridScheduler, Scheduler} from '../testing/Scheduler';
-import {after} from 'mocha';
 import {TestScenario} from '../testing/TestScenario';
-import {Connection} from '../bridge/Connection';
-import {retry} from '../util/retry';
-import {PlatformType} from '../bridge/ConnectionFactory';
+import {PlatformType} from '../bridge/PlatformFactory';
 
 interface TestBed {
     name: string;

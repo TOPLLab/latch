@@ -2,12 +2,12 @@ import {assert, expect} from 'chai';
 import 'mocha';
 import {after, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
 import {Framework} from '../framework/Framework';
-import {Action, encoderTable, parserTable} from './Actions';
+import {Action} from './Actions';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message} from '../parse/Requests';
-import {Connection} from '../bridge/Connection';
-import {ConnectionFactory, PlatformType} from '../bridge/ConnectionFactory';
-import {Behaviour, Description, Expectation} from './Step';
+import {Testee} from '../bridge/Testee';
+import {PlatformFactory, PlatformType} from '../bridge/PlatformFactory';
+import {Behaviour, Description, Expectation, Kind} from './Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './TestScenario';
 
@@ -41,7 +41,7 @@ export class Describer { // TODO unified with testbed interface
     private states: Map<string, string> = new Map<string, string>();
 
     /** Factory to establish new connections to VMs */
-    public readonly connector: ConnectionFactory;
+    public readonly connector: PlatformFactory;
 
     public readonly mapper: SourceMapFactory;
 
@@ -55,12 +55,12 @@ export class Describer { // TODO unified with testbed interface
 
     private readonly maximumConnectAttempts = 5;
 
-    public instance?: Connection;
+    public testee?: Testee;
 
     constructor(platform: PlatformType, timeout: number = 2000) {
         this.platform = platform;
         this.timeout = timeout;
-        this.connector = new ConnectionFactory();
+        this.connector = new PlatformFactory();
         this.mapper = new SourceMapFactory();
         this.framework = Framework.getImplementation();
     }
@@ -84,7 +84,7 @@ export class Describer { // TODO unified with testbed interface
                     throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
                 }
 
-                describer.instance = await describer.connector.connect(describer.platform, description.program, description.args ?? []);
+                describer.testee = await describer.connector.connect(describer.platform, description.program, description.args ?? []);
             });
 
             before('Fetch source map', async function () {
@@ -107,7 +107,7 @@ export class Describer { // TODO unified with testbed interface
             for (let i = 0; i < runs; i++) {
                 if (0 < i) {
                     it('resetting before retry', async function () {
-                        await describer.reset(describer.instance);
+                        await describer.reset(describer.testee);
                     });
                 }
 
@@ -115,21 +115,19 @@ export class Describer { // TODO unified with testbed interface
                     /** Perform the step and check if expectations were met */
 
                     it(step.title, async function () {
-                        if (describer.instance === undefined) {
+                        if (describer.testee === undefined) {
                             assert.fail('Cannot run test: no debugger connection.');
                             return;
                         }
 
                         let actual: Object | void;
-                        if (step.instruction instanceof Action) {
-                            actual = await step.instruction.perform(describer.bridge, describer.instance, step.parser ?? (parserTable.get(step.instruction) ?? (() => Object())));
+                        if (step.instruction.kind === Kind.Action) {
+                            actual = await timeout<Object | void>(`performing action . ${step.title}`, describer.timeout,
+                                act(step.instruction.value));
                         } else {
-                            const payload: string = (encoderTable.get(step.instruction) ?? (() => Object()))(map, step.payload) ?? '';
-                            actual = await timeout<Object | void>(`sending instruction ${step.instruction}`, describer.bridge.instructionTimeout,
-                                describer.bridge.sendInstruction(describer.instance.interface, `${step.instruction}${payload}`, step.expectResponse ?? true, step.parser ?? (parserTable.get(step.instruction) ?? JSON.parse)));
+                            actual = await timeout<Object | void>(`sending instruction ${step.instruction}`, describer.timeout,
+                                describer.testee.sendRequest(map, step.instruction.value));
                         }
-
-                        await new Promise(f => setTimeout(f, step.delay ?? 0));
 
                         for (const expectation of step.expected ?? []) {
                             describer.expect(expectation, actual, previous);
@@ -144,11 +142,11 @@ export class Describer { // TODO unified with testbed interface
         });
     }
 
-    private async reset(instance: Connection | void) {
+    private async reset(instance: Testee | void) {
         if (instance === undefined) {
             assert.fail('Cannot run test: no debugger connection.');
         } else {
-            await timeout<Object | void>('resetting vm', this.timeout, this.instance!.sendRequest(Message.reset));
+            await timeout<Object | void>('resetting vm', this.timeout, this.testee!.sendRequest(new SourceMap.Mapping(), Message.reset));
         }
     }
 
@@ -158,7 +156,7 @@ export class Describer { // TODO unified with testbed interface
     };
 
     private formatTitle(title: string): string {
-        return `${this.name}: ${title}`; // TODO unify with testbed and use testbed name?
+        return `${this.testee?.name}: ${title}`; // TODO unify with testbed and use testbed name?
     }
 
     private failedDependencies(description: TestScenario): TestScenario[] {
@@ -224,4 +222,8 @@ export class Describer { // TODO unified with testbed interface
                 break;
         }
     }
+}
+
+function act<T>(action: Action<T>): Promise<T> {
+    return action();
 }

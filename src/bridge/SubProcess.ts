@@ -1,8 +1,8 @@
 import {ChildProcess} from 'child_process';
 import {Duplex} from 'stream';
-import {Medium} from './Medium';
+import {Connection} from './Connection';
 
-export class SubProcess implements Medium {
+export class SubProcess implements Connection {
     public channel: Duplex;
     public child: ChildProcess;
 

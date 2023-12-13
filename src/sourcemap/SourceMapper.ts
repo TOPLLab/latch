@@ -103,7 +103,7 @@ export class WatMapper implements SourceMapper {
 
         let sourcemap = JSON.parse(functionLines.join('').replace(/\t/g, ''));
         let functions: Closure[] = [];
-        sourcemap.Functions.forEach((func: any, index: number) => {
+        sourcemap.Functions?.forEach((func: any, index: number) => {
             let locals: Variable[] = [];
             func.locals.forEach((local: string, index: number) => {
                 locals.push({index: index, name: local, type: 'undefined', mutable: true, value: ''});

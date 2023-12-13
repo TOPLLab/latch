@@ -1,20 +1,20 @@
-import {Platform} from "./Platform";
-import {ChildProcess} from "child_process";
-import {SubProcess} from "./SubProcess";
+import {Platform} from './Platform';
+import {SubProcess} from './SubProcess';
 
 export class Emulator extends Platform {
     readonly name: string = 'Emulator';
 
-    private child: ChildProcess;
+    connection: SubProcess;
 
-    constructor(medium: SubProcess) {
-        super(medium.channel);
-        this.child = medium.child;
+    constructor(connection: SubProcess) {
+        super();
+        this.connection = connection;
+
+        this.listen();
     }
 
     kill(): Promise<void> {
-        this.child.kill();
+        this.connection.child.kill();
         return super.kill();
     }
-
 }

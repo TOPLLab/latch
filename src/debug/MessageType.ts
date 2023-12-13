@@ -1,4 +1,4 @@
-export enum Instruction {
+export enum MessageType {
     run = '01',
     halt = '02',
     pause = '03',

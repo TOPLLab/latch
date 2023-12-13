@@ -1,9 +1,9 @@
-import {getFileExtension} from "../util/util";
-import {CompileOutput, CompilerFactory} from "../manage/Compiler";
-import {AsScriptMapper, WatMapper} from "./SourceMapper";
-import {WABT} from "../bridge/Bridge";
-import path from "path";
-import {SourceMap} from "./SourceMap";
+import {getFileExtension} from '../util/util';
+import {CompileOutput, CompilerFactory} from '../manage/Compiler';
+import {AsScriptMapper, WatMapper} from './SourceMapper';
+import {WABT} from '../bridge/Bridge';
+import {SourceMap} from './SourceMap';
+import * as path from 'path';
 
 export class SourceMapFactory {
 

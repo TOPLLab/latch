@@ -1,4 +1,5 @@
-import {Action, Instruction} from "./Actions";
+import {Action} from './Actions';
+import {Request} from '../parse/Requests'
 
 export enum Description {
     /** required properties */
@@ -25,25 +26,20 @@ export interface Expectation {
     [key: string]: Expected<any>;
 }
 
+export enum Kind {
+    Request = 'request',
+    Action = 'action'
+}
+
+export type Instruction<T> =
+/** discrimination union */
+    | { kind: Kind.Request; value: Request<T> }
+    | { kind: Kind.Action; value: Action<T> };
+
 export interface Step {
-    /** Name of the test */
     readonly title: string;
 
-    /** Type of the instruction */
-    readonly instruction: Instruction | Action;
+    readonly instruction: Instruction<Object>;
 
-    /* Optional payload of the instruction */
-    readonly payload?: any;
-
-    /** Whether the instruction is expected to return data */
-    readonly expectResponse?: boolean;  // todo remove
-
-    /** Optional delay after sending instruction */
-    readonly delay?: number;  // todo remove (can be done with an Action)
-
-    /** Parser to use on the result. */
-    readonly parser?: (input: string) => Object;
-
-    /** Checks to run against the result. */
     readonly expected?: Expectation[];
 }

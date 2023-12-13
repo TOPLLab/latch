@@ -1,7 +1,7 @@
-import {Medium} from './Medium';
+import {Connection} from './Connection';
 import {SerialPort} from "serialport";
 
-export class Serial implements Medium {
+export class Serial implements Connection {
     public channel: SerialPort;
 
     constructor(channel: SerialPort) {

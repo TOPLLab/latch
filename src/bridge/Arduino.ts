@@ -1,10 +1,15 @@
-import {Serial} from "./Serial";
-import {Platform} from "./Platform";
+import {Serial} from './Serial';
+import {Platform} from './Platform';
 
 export class Arduino extends Platform {
     public readonly name: string = 'Hardware';
 
-    constructor(medium: Serial) {
-        super(medium.channel);
+    connection: Serial;
+
+    constructor(connection: Serial) {
+        super();
+        this.connection = connection;
+
+        this.listen();
     }
 }

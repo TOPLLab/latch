@@ -1,13 +1,14 @@
-import {Connection, ConnectionEvents} from "./Connection";
-import {EventEmitter} from "events";
-import {Duplex} from "stream";
-import {Request} from "../parse/Requests";
-import {MessageQueue} from "../parse/MessageQueue";
+import {Testee, TesteeEvents} from './Testee';
+import {EventEmitter} from 'events';
+import {Request} from '../parse/Requests';
+import {MessageQueue} from '../parse/MessageQueue';
+import {Connection} from './Connection';
+import {SourceMap} from '../sourcemap/SourceMap';
 
 type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
 
-export abstract class Platform extends EventEmitter implements Connection {
-    protected channel: Duplex;
+export abstract class Platform extends EventEmitter implements Testee {
+    abstract connection: Connection;
 
     protected requests: [Request<any>, PromiseResolver<any>][];
 
@@ -19,18 +20,15 @@ export abstract class Platform extends EventEmitter implements Connection {
     // Optional monitor to receive all data from platform
     // protected abstract monitor?: (chunk: any) => void; TODO
 
-    protected constructor(channel: Duplex) {
+    protected constructor() {
         super();
-        this.channel = channel;
         this.requests = [];
         this.messages = new MessageQueue('\n');
-
-        this.listen();
     }
 
     // listen on duplex channel
     protected listen(): void {
-        this.channel.on('data', (data: Buffer) => {
+        this.connection.channel.on('data', (data: Buffer) => {
             this.messages.push(data.toString());
             this.process();
         });
@@ -38,7 +36,7 @@ export abstract class Platform extends EventEmitter implements Connection {
 
     // listen on duplex channel
     public deafen(): void {
-        this.channel.removeAllListeners('data');
+        this.connection.channel.removeAllListeners('data');
     }
 
     // process messages in queue
@@ -51,7 +49,7 @@ export abstract class Platform extends EventEmitter implements Connection {
                 // parse and resolve
                 const [candidate, resolver] = this.requests[index];
                 resolver(candidate.parser(message));
-                this.emit(ConnectionEvents.OnMessage, message);
+                this.emit(TesteeEvents.OnMessage, message);
 
                 this.requests.splice(index, 1);  // delete resolved request
             }
@@ -77,15 +75,15 @@ export abstract class Platform extends EventEmitter implements Connection {
 
     // kill connection
     public kill(): Promise<void> {
-        this.channel.destroy();
-        return this.channel.destroyed ? Promise.resolve() : Promise.reject(`Cannot close ${this.channel}`);
+        this.connection.channel.destroy();
+        return this.connection.channel.destroyed ? Promise.resolve() : Promise.reject(`Cannot close ${this.connection.channel}`);
     }
 
     // send request over duplex channel
-    public sendRequest<R>(request: Request<R>): Promise<R> {
+    public sendRequest<R>(map: SourceMap.Mapping, request: Request<R>): Promise<R> {
         return new Promise((resolve, reject) => {
             this.requests.push([request, resolve]);
-            this.channel.write(`${request.instruction}${request.payload ?? ''}\n`, (err: any) => {
+            this.connection.channel.write(`${request.type}${request.payload?.(map) ?? ''}\n`, (err: any) => {
                 if (err !== undefined) {
                     reject(err);
                 }

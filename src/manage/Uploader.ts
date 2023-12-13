@@ -4,11 +4,11 @@ import {Readable} from 'stream';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import {Connection} from '../bridge/Connection';
+import {Testee} from '../bridge/Testee';
 import {EventEmitter} from 'events';
 import {SubProcess} from "../bridge/SubProcess";
-import {Medium} from "../bridge/Medium";
-import {Options, PlatformType} from "../bridge/ConnectionFactory";
+import {Connection} from "../bridge/Connection";
+import {Options, PlatformType} from "../bridge/PlatformFactory";
 import {Serial} from "../bridge/Serial";
 import {CompileOutput} from "./Compiler";
 
@@ -47,7 +47,7 @@ export class UploaderFactory {
 
 
 export abstract class Uploader extends EventEmitter {
-    abstract upload(compiled: CompileOutput): Promise<Medium>;
+    abstract upload(compiled: CompileOutput): Promise<Connection>;
 
     protected removeTmpDir(tmpdir: string): Promise<void> {
         return new Promise((resolve, reject) => {
