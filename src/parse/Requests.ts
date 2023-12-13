@@ -120,7 +120,7 @@ export namespace Message {
         }
     }
 
-    export function invoke(func: string, args: Value[]): Request<State | Exception> {
+    export function invoke(func: string, args: Value[]): Request<WASM.Value | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
             if (fidx) {

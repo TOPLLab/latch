@@ -167,7 +167,7 @@ export class Describer { // TODO unified with testbed interface
         for (const [field, entry] of Object.entries(expectation)) {
             const value = getValue(actual, field);
             if (value === undefined) {
-                assert.fail(`Failure: [actual] state does not contain '${field}'.`);
+                assert.fail(`Failure: ${JSON.stringify(actual)} state does not contain '${field}'.`);
                 return;
             }
 

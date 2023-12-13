@@ -7,7 +7,7 @@ import Value = WASM.Value;
 
 export class Invoker implements Step {
     readonly title: string;
-    readonly instruction: Instruction<WARDuino.State | Exception>;
+    readonly instruction: Instruction<WASM.Value | Exception>;
     readonly expected?: Expectation[];
 
     constructor(func: string, args: Value[], result: number) {

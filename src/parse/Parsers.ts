@@ -13,11 +13,11 @@ export function stateParser(text: string): State {
     return JSON.parse(text);
 }
 
-export function invokeParser(text: string): State | Exception {
+export function invokeParser(text: string): WASM.Value | Exception {
     if (exception(text)) {
         return {text: text};
     }
-    return stateParser(text);
+    return stateParser(text).stack![0];
 }
 
 function exception(text: string): boolean {
