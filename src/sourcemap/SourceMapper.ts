@@ -98,7 +98,7 @@ export class WatMapper implements SourceMapper {
         let functionLines: String[] = extractMajorSection('Sourcemap JSON:', input);
 
         if (functionLines.length === 0) {
-            throw Error('Could not parse \'sourcemap\' section of objdump');
+            throw Error('Could not messaging \'sourcemap\' section of objdump');
         }
 
         let sourcemap = JSON.parse(functionLines.join('').replace(/\t/g, ''));

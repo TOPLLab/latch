@@ -1,4 +1,4 @@
-import {Breakpoint} from "../debug/Breakpoint";
+import {Breakpoint} from "../../debug/Breakpoint";
 import {Step} from "./Step";
 
 /** A series of tests to perform on a single instance of the vm */

@@ -1,5 +1,5 @@
 import {Action} from './Actions';
-import {Request} from '../parse/Requests'
+import {Request} from '../../messaging/Message'
 
 export enum Description {
     /** required properties */

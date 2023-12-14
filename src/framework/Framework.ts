@@ -1,7 +1,7 @@
-import {Describer} from '../testing/Describer';
-import {HybridScheduler, Scheduler} from '../testing/Scheduler';
-import {TestScenario} from '../testing/TestScenario';
-import {PlatformType} from '../bridge/PlatformFactory';
+import {Describer} from './Describer';
+import {HybridScheduler, Scheduler} from './Scheduler';
+import {TestScenario} from './tests/TestScenario';
+import {PlatformType} from '../testee/PlatformFactory';
 
 interface TestBed {
     name: string;

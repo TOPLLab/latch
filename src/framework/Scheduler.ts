@@ -1,5 +1,5 @@
-import {Suite} from '../framework/Framework';
-import {TestScenario} from "./TestScenario";
+import {Suite} from './Framework';
+import {TestScenario} from "./tests/TestScenario";
 
 export abstract class Scheduler {
     public abstract readonly identifier: string;

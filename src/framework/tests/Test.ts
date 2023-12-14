@@ -1,5 +1,5 @@
-import {Framework} from '../framework/Framework';
-import {TestResult, testResult} from '../framework/TestResult';
+import {Framework} from '../Framework';
+import {TestResult, testResult} from '../TestResult';
 
 class Test {
     private readonly testResult: TestResult;

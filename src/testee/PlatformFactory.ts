@@ -1,13 +1,13 @@
 import {Testee} from './Testee';
-import {EMULATOR, WABT} from './Bridge';
+import {EMULATOR, WABT} from '../util/deps';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {Emulator} from './Emulator';
 import {UploaderFactory} from '../manage/Uploader';
 import {ARDUINO} from '../../example/src/util/warduino.bridge';
-import {Connection} from './Connection';
+import {Connection} from '../bridge/Connection';
 import {Arduino} from './Arduino';
-import {Serial} from './Serial';
-import {SubProcess} from './SubProcess';
+import {Serial} from '../bridge/Serial';
+import {SubProcess} from '../bridge/SubProcess';
 
 export enum PlatformType {
     arduino,

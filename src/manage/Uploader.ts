@@ -4,11 +4,11 @@ import {Readable} from 'stream';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import {Testee} from '../bridge/Testee';
+import {Testee} from '../testee/Testee';
 import {EventEmitter} from 'events';
 import {SubProcess} from "../bridge/SubProcess";
 import {Connection} from "../bridge/Connection";
-import {Options, PlatformType} from "../bridge/PlatformFactory";
+import {Options, PlatformType} from "../testee/PlatformFactory";
 import {Serial} from "../bridge/Serial";
 import {CompileOutput} from "./Compiler";
 

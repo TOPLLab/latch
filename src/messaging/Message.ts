@@ -1,10 +1,13 @@
-import {MessageType} from '../debug/MessageType';
 import {WARDuino} from '../debug/WARDuino';
 import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
 import ieee754 from 'ieee754';
 import {SourceMap} from '../sourcemap/SourceMap';
+import Interrupt = WARDuino.Interrupt;
+import State = WARDuino.State;
+import Value = WASM.Value;
+import Type = WASM.Type;
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -16,38 +19,35 @@ export interface Exception extends Ack {
 
 // A request represents a debug message and its parser
 export interface Request<R> {
-    type: MessageType,            // type of the debug message (pause, run, step, ...)
+    type: Interrupt,            // type of the debug message (pause, run, step, ...)
     payload?: (map: SourceMap.Mapping) => string,             // optional payload of the debug message
     parser: (input: string) => R  // the parser for the response to the debug message
 }
 
 export namespace Message {
-    import State = WARDuino.State;
-    import Value = WASM.Value;
-    import Type = WASM.Type;
     export const run: Request<Ack> = {
-        type: MessageType.run,
+        type: Interrupt.run,
         parser: (line: string) => {
             return ackParser(line, 'GO');
         }
     };
 
     export const halt: Request<Ack> = {
-        type: MessageType.halt,
+        type: Interrupt.halt,
         parser: (line: string) => {
             return ackParser(line, 'STOP');
         }
     };
 
     export const pause: Request<Ack> = {
-        type: MessageType.pause,
+        type: Interrupt.pause,
         parser: (line: string) => {
             return ackParser(line, 'PAUSE');
         }
     };
 
     export const step: Request<Ack> = {
-        type: MessageType.step,
+        type: Interrupt.step,
         parser: (line: string) => {
             return ackParser(line, 'STEP');
         }
@@ -55,7 +55,7 @@ export namespace Message {
 
     export function addBreakpoint(payload: Breakpoint): Request<Breakpoint> {
         return {
-            type: MessageType.addBreakpoint,
+            type: Interrupt.addBreakpoint,
             payload: () => payload.toString(),
             parser: breakpointParser
         };
@@ -63,7 +63,7 @@ export namespace Message {
 
     export function removeBreakpoint(payload: Breakpoint): Request<Breakpoint> {
         return {
-            type: MessageType.removeBreakpoint,
+            type: Interrupt.removeBreakpoint,
             payload: () => payload.toString(),
             parser: breakpointParser
         };
@@ -71,50 +71,50 @@ export namespace Message {
 
     export function inspect(payload: string): Request<State> {
         return {
-            type: MessageType.inspect,
+            type: Interrupt.inspect,
             payload: () => payload,
             parser: stateParser
         }
     }
 
     export const dump: Request<State> = {
-        type: MessageType.dump,
+        type: Interrupt.dump,
         parser: stateParser
     };
 
     export const dumpLocals: Request<State> = {
-        type: MessageType.dumpLocals,
+        type: Interrupt.dumpLocals,
         parser: stateParser
     };
 
     export const dumpAll: Request<State> = {
-        type: MessageType.dumpAll,
+        type: Interrupt.dumpAll,
         parser: stateParser
     };
 
     export const reset: Request<Ack> = {
-        type: MessageType.reset,
+        type: Interrupt.reset,
         parser: (line: string) => {
             return ackParser(line, 'RESET');
         }
     };
 
     export const updateFunction: Request<Ack> = {
-        type: MessageType.updateFunction,
+        type: Interrupt.updateFunction,
         parser: (line: string) => {
             return ackParser(line, 'CHANGE function');
         }
     }
 
     export const updateLocal: Request<Ack> = {
-        type: MessageType.updateLocal,
+        type: Interrupt.updateLocal,
         parser: (line: string) => {
             return ackParser(line, 'CHANGE local');
         }
     }
 
     export const updateModule: Request<Ack> = {
-        type: MessageType.updateModule,
+        type: Interrupt.updateModule,
         parser: (line: string) => {
             return ackParser(line, 'CHANGE Module');
         }
@@ -144,29 +144,29 @@ export namespace Message {
         }
 
         return {
-            type: MessageType.invoke,
+            type: Interrupt.invoke,
             payload: (map: SourceMap.Mapping) => `${WASM.leb128(fidx(map, func))}${convert(args)}`,
             parser: invokeParser
         }
     }
 
     export const snapshot: Request<State> = {
-        type: MessageType.snapshot,
+        type: Interrupt.snapshot,
         parser: stateParser
     }
 
     export const dumpAllEvents: Request<State> = {
-        type: MessageType.dumpAllEvents,
+        type: Interrupt.dumpAllEvents,
         parser: stateParser
     }
 
     export const dumpEvents: Request<State> = {
-        type: MessageType.dumpEvents,
+        type: Interrupt.dumpEvents,
         parser: stateParser
     }
 
     export const dumpCallbackmapping: Request<State> = {
-        type: MessageType.dumpCallbackmapping,
+        type: Interrupt.dumpCallbackmapping,
         parser: stateParser
     }
 }

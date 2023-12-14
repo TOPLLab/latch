@@ -2,17 +2,17 @@ import {Framework} from './framework/Framework';
 
 export * from './manage/Compiler';
 export * from './manage/Uploader';
-export * from './bridge/Bridge';
-export {PlatformType} from './bridge/PlatformFactory';
-export * from './testing/Actions';
-export * from './testing/Describer';
+export * from './util/deps';
+export {PlatformType} from './testee/PlatformFactory';
+export * from './framework/tests/Actions';
+export * from './framework/Describer';
 export * from './framework/Framework';
-export * from './parse/Parsers';
-export * from './parse/Requests';
-export * from './testing/Scheduler';
+export * from './messaging/Parsers';
+export * from './messaging/Message';
+export * from './framework/Scheduler';
 export * from './sourcemap/Wasm';
 
 export const latch = Framework.getImplementation();
-export {Step} from './testing/Step';
-export {Invoker} from './testing/Invoker';
-export {TestScenario} from './testing/TestScenario';
+export {Step} from './framework/tests/Step';
+export {Invoker} from './framework/tests/Invoker';
+export {TestScenario} from './framework/tests/TestScenario';

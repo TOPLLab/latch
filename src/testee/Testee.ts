@@ -1,6 +1,6 @@
-import {Request} from '../parse/Requests';
+import {Request} from '../messaging/Message';
 import {EventEmitter} from 'events';
-import {Connection} from './Connection';
+import {Connection} from '../bridge/Connection';
 import {SourceMap} from '../sourcemap/SourceMap';
 
 export enum TesteeEvents {

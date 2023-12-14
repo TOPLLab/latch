@@ -1,5 +1,5 @@
 import {Platform} from './Platform';
-import {SubProcess} from './SubProcess';
+import {SubProcess} from '../bridge/SubProcess';
 
 export class Emulator extends Platform {
     readonly name: string = 'Emulator';

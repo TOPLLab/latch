@@ -1,4 +1,4 @@
-import {Serial} from './Serial';
+import {Serial} from '../bridge/Serial';
 import {Platform} from './Platform';
 
 export class Arduino extends Platform {

@@ -1,8 +1,8 @@
 import {Testee, TesteeEvents} from './Testee';
 import {EventEmitter} from 'events';
-import {Request} from '../parse/Requests';
-import {MessageQueue} from '../parse/MessageQueue';
-import {Connection} from './Connection';
+import {Request} from '../messaging/Message';
+import {MessageQueue} from '../messaging/MessageQueue';
+import {Connection} from '../bridge/Connection';
 import {SourceMap} from '../sourcemap/SourceMap';
 
 type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
@@ -46,7 +46,7 @@ export abstract class Platform extends EventEmitter implements Testee {
             const index: number = this.search(message);  // search request
 
             if (0 <= index && index < this.requests.length) {
-                // parse and resolve
+                // messaging and resolve
                 const [candidate, resolver] = this.requests[index];
                 resolver(candidate.parser(message));
                 this.emit(TesteeEvents.OnMessage, message);
