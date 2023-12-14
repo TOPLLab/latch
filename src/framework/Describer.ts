@@ -6,10 +6,11 @@ import {Action} from './scenario/Actions';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message} from '../messaging/Message';
 import {Testee} from '../testee/Testee';
-import {PlatformFactory, PlatformType} from '../testee/PlatformFactory';
+import {PlatformFactory} from '../testee/PlatformFactory';
 import {Behaviour, Description, Expectation, Kind} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './scenario/TestScenario';
+import {PlatformSpecification, PlatformType} from '../testee/PlatformSpecification';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
@@ -45,7 +46,7 @@ export class Describer { // TODO unified with testbed interface
 
     public readonly mapper: SourceMapFactory;
 
-    public readonly platform: PlatformType;
+    public readonly specification: PlatformSpecification;
 
     public readonly timeout: number;
 
@@ -57,8 +58,8 @@ export class Describer { // TODO unified with testbed interface
 
     public testee?: Testee;
 
-    constructor(platform: PlatformType, timeout: number = 2000) {
-        this.platform = platform;
+    constructor(specification: PlatformSpecification, timeout: number = 2000) {
+        this.specification = specification;
         this.timeout = timeout;
         this.connector = new PlatformFactory();
         this.mapper = new SourceMapFactory();
@@ -84,7 +85,7 @@ export class Describer { // TODO unified with testbed interface
                     throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
                 }
 
-                describer.testee = await describer.connector.connect(describer.platform, description.program, description.args ?? []);
+                describer.testee = await describer.connector.connect(describer.specification, description.program, description.args ?? []);
             });
 
             before('Fetch source map', async function () {

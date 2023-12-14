@@ -1,8 +1,10 @@
-import {Framework, Invoker, PlatformType, Step, WASM} from '../src';
+import {Framework, Invoker, Step, WASM} from '../src';
+import {EmulatorSpecification} from '../src/testee/PlatformSpecification';
 
 const framework = Framework.getImplementation();
 
-framework.testbed('emulator', PlatformType.emulator);
+framework.testbed('emulator [:8500]', new EmulatorSpecification(8500));
+framework.testbed('emulator [:8520]', new EmulatorSpecification(8520));
 
 framework.suite('Test Latch performance in CI');
 

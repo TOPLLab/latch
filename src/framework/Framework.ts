@@ -1,7 +1,8 @@
 import {Describer} from './Describer';
 import {HybridScheduler, Scheduler} from './Scheduler';
 import {TestScenario} from './scenario/TestScenario';
-import {PlatformType} from '../testee/PlatformFactory';
+
+import {PlatformSpecification, PlatformType} from '../testee/PlatformSpecification';
 
 export interface TestBed {
     name: string;
@@ -38,8 +39,8 @@ export class Framework {
         return this.suites[this.suites.length - 1];
     }
 
-    public testbed(name: string, platform: PlatformType, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
-        const describer = new Describer(platform);
+    public testbed(name: string, specification: PlatformSpecification, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
+        const describer = new Describer(specification);
         if (disabled) {
             describer.skipall();
         }

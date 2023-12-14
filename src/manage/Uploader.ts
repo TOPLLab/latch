@@ -4,13 +4,12 @@ import {Readable} from 'stream';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as path from 'path';
-import {Testee} from '../testee/Testee';
 import {EventEmitter} from 'events';
-import {SubProcess} from "../bridge/SubProcess";
-import {Connection} from "../bridge/Connection";
-import {Options, PlatformType} from "../testee/PlatformFactory";
-import {Serial} from "../bridge/Serial";
-import {CompileOutput} from "./Compiler";
+import {SubProcess} from '../bridge/SubProcess';
+import {Connection} from '../bridge/Connection';
+import {Serial} from '../bridge/Serial';
+import {CompileOutput} from './Compiler';
+import {PlatformSpecification, PlatformType, SerialOptions, SubprocessOptions} from '../testee/PlatformSpecification';
 
 enum UploaderEvents {
     compiled = 'compiled',
@@ -34,12 +33,12 @@ export class UploaderFactory {
         this.arduino = arduino;
     }
 
-    public pickUploader(platform: PlatformType, args: string[] = [], options?: Options): Uploader {
-        switch (platform) {
+    public pickUploader(specification: PlatformSpecification, args: string[] = []): Uploader {
+        switch (specification.type) {
             case PlatformType.arduino:
-                return new ArduinoUploader(this.arduino, args, {path: options?.path ?? '/dev/ttyUSB0'});
+                return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
             case PlatformType.emulator:
-                return new EmulatorUploader(this.emulator, args, options?.port ?? 8500);
+                return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
         }
         throw new Error('Unsupported file type');
     }
@@ -62,12 +61,6 @@ export abstract class Uploader extends EventEmitter {
     }
 }
 
-interface SerialOptions {
-    path?: string,
-    fqbn?: string,
-    baudRate?: number
-}
-
 function isReadable(x: Readable | null): x is Readable {
     return x !== null;
 }
@@ -77,10 +70,10 @@ export class EmulatorUploader extends Uploader {
     private readonly args: string[];
     private readonly port: number;
 
-    constructor(interpreter: string, args: string[] = [], port: number) {
+    constructor(interpreter: string, args: string[] = [], options: SubprocessOptions) {
         super();
         this.interpreter = interpreter;
-        this.port = port;
+        this.port = options.port;
         this.args = args;
     }
 
@@ -158,10 +151,10 @@ export class ArduinoUploader extends Uploader {
     constructor(sdkpath: string, args: string[] = [], options: SerialOptions) {
         super();
         this.sdkpath = sdkpath;
-        this.fqbn = options.fqbn ?? 'esp32:esp32:esp32wrover';
+        this.fqbn = options.fqbn;
         this.options = {
-            path: options.path ?? '/dev/ttyUSB0',
-            baudRate: options.baudRate ?? 115200
+            path: options.path,
+            baudRate: options.baudRate
         };
     }
 
