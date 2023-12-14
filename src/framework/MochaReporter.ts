@@ -1,6 +1,6 @@
 import {MochaOptions, reporters, Runner, Suite, Test} from 'mocha';
 import {Reporter} from './Reporter';
-import {Framework, Platform} from './Framework';
+import {Framework, TestBed} from './Framework';
 import {Archiver} from './Archiver';
 import color = reporters.Base.color;
 import colors = reporters.Base.colors;
@@ -58,7 +58,7 @@ class MochaReporter extends reporters.Base {
     private skipped: number = 0;  // number of skipped suites
 
     private failed: number = 0;  // number of failed suites
-    public failures = Array<any>();  // array to keep failed tests of suite (temporarily)
+    public failures = Array<any>();  // array to keep failed scenario of suite (temporarily)
     private ignore: number = 0;
 
     private timeouts: number = 0;  // number of timed out actions
@@ -79,7 +79,7 @@ class MochaReporter extends reporters.Base {
             console.log(color('suite', '%s==================='), this.indent());
 
             const names: string[] = [];
-            Framework.getImplementation().platforms().forEach((platform: Platform) => names.push(platform.name));
+            Framework.getImplementation().platforms().forEach((platform: TestBed) => names.push(platform.name));
             names.forEach((name: string) => this.archiver.extend('platforms', name));
             console.log(color('suite', '%sPlatforms  %s'), this.indent(), names.join(', '));
 

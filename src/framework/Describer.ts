@@ -2,14 +2,14 @@ import {assert, expect} from 'chai';
 import 'mocha';
 import {after, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
 import {Framework} from './Framework';
-import {Action} from './tests/Actions';
+import {Action} from './scenario/Actions';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message} from '../messaging/Message';
 import {Testee} from '../testee/Testee';
 import {PlatformFactory, PlatformType} from '../testee/PlatformFactory';
-import {Behaviour, Description, Expectation, Kind} from './tests/Step';
+import {Behaviour, Description, Expectation, Kind} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
-import {TestScenario} from './tests/TestScenario';
+import {TestScenario} from './scenario/TestScenario';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
@@ -101,7 +101,7 @@ export class Describer { // TODO unified with testbed interface
                 describer.states.set(description.title, this.currentTest?.state ?? 'unknown');
             });
 
-            /** Each test is made of one or more tests */
+            /** Each test is made of one or more scenario */
 
             let previous: any = undefined;
             for (let i = 0; i < runs; i++) {

@@ -1,8 +1,6 @@
 import {Expectation, Expected, Instruction, Kind, Step} from './Step';
 import {WASM} from '../../sourcemap/Wasm';
 import {Exception, Message} from '../../messaging/Message';
-import {WARDuino} from '../../debug/WARDuino';
-import {SourceMap} from '../../sourcemap/SourceMap';
 import Value = WASM.Value;
 
 export class Invoker implements Step {

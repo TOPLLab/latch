@@ -1,4 +1,4 @@
-import {EMULATOR, Framework, Invoker, PlatformType, Step, WASM} from '../src';
+import {Framework, Invoker, PlatformType, Step, WASM} from '../src';
 
 const framework = Framework.getImplementation();
 

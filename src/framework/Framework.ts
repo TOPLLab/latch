@@ -1,9 +1,9 @@
 import {Describer} from './Describer';
 import {HybridScheduler, Scheduler} from './Scheduler';
-import {TestScenario} from './tests/TestScenario';
+import {TestScenario} from './scenario/TestScenario';
 import {PlatformType} from '../testee/PlatformFactory';
 
-interface TestBed {
+export interface TestBed {
     name: string;
 
     describer: Describer;

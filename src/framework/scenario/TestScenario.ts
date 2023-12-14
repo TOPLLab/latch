@@ -1,7 +1,7 @@
 import {Breakpoint} from "../../debug/Breakpoint";
 import {Step} from "./Step";
 
-/** A series of tests to perform on a single instance of the vm */
+/** A series of scenario to perform on a single instance of the vm */
 export interface TestScenario {
     title: string;
 
