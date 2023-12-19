@@ -10,18 +10,18 @@ import {SubProcess} from '../bridge/SubProcess';
 import {TestbedSpecification, PlatformType} from './TestbedSpecification';
 
 export class TestbedFactory {
-    public readonly connectionTimeout: number;
+    public readonly timeout: number;
 
     private readonly compilerFactory: CompilerFactory;
     private readonly uploaderFactory: UploaderFactory;
 
     constructor(timeout: number = 5000) {
-        this.connectionTimeout = timeout;
+        this.timeout = timeout;
         this.compilerFactory = new CompilerFactory(WABT);
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
 
-    public async connect(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
+    public async initialize(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
         let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program);
         let connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled);
 

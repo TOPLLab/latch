@@ -8,6 +8,7 @@ import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
 import Type = WASM.Type;
+import {readFileSync} from 'fs';
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -124,10 +125,22 @@ export namespace Message {
         }
     }
 
-    export const updateModule: Request<Ack> = {
-        type: Interrupt.updateModule,
-        parser: (line: string) => {
-            return ackParser(line, 'CHANGE Module');
+    export function updateModule(program: string): Request<Ack> {
+        function payload(wasm: Buffer): string {
+            const w = new Uint8Array(wasm);
+            const sizeHex: string = WASM.leb128(w.length);
+            const sizeBuffer = Buffer.allocUnsafe(4);
+            sizeBuffer.writeUint32BE(w.length);
+            const wasmHex = Buffer.from(w).toString('hex');
+            return sizeHex + wasmHex;
+        }
+
+        return {
+            type: Interrupt.updateModule,
+            payload: (map: SourceMap.Mapping) => payload(readFileSync(program)),
+            parser: (line: string) => {
+                return ackParser(line, 'CHANGE Module');
+            }
         }
     }
 

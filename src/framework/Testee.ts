@@ -12,6 +12,8 @@ import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './scenario/TestScenario';
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {Scheduler} from './Scheduler';
+import {CompileOutput, CompilerFactory} from '../manage/Compiler';
+import {WABT} from '../util/deps';
 
 function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
@@ -77,31 +79,39 @@ export class Testee { // TODO unified with testbed interface
         this.framework = Framework.getImplementation();
     }
 
+    public async initialize(program: string, args: string[]): Promise<Testee> {
+        return new Promise(async (resolve, reject) => {
+            this.testbed = await this.connector.initialize(this.specification, program, args ?? []);
+            resolve(this);
+        });
+    }
+
     public describe(description: TestScenario, runs: number = 1) {
-        const describer = this;
+        const testee = this;
         const call: SuiteFunction | PendingSuiteFunction = description.skip ? describe.skip : this.suiteFunction;
 
         call(this.formatTitle(description.title), function () {
-            this.timeout(describer.timeout * 1.1);  // must be larger than own timeout
+            this.timeout(testee.timeout * 1.1);  // must be larger than own timeout
 
             let map: SourceMap.Mapping = new SourceMap.Mapping();
 
             /** Each test requires some housekeeping before and after */
-
-            before('Connect to debugger', async function () {
-                this.timeout(describer.connector.connectionTimeout);
-
-                const failedDependencies: TestScenario[] = describer.failedDependencies(description);
+            before('Check for failing dependencies', async function () {
+                const failedDependencies: TestScenario[] = testee.failedDependencies(description);
                 if (failedDependencies.length > 0) {
                     throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
                 }
+            });
 
-                describer.testbed = await describer.connector.connect(describer.specification, description.program, description.args ?? []);
+            before('Compile and upload program', async function () {
+                this.timeout(testee.connector.timeout);
+                let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
+                await testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file));
             });
 
             before('Fetch source map', async function () {
-                this.timeout(describer.connector.connectionTimeout);
-                map = await describer.mapper.map(description.program);
+                this.timeout(testee.connector.timeout);
+                map = await testee.mapper.map(description.program);
             });
 
             afterEach('Clear listeners on interface', function () {
@@ -110,7 +120,7 @@ export class Testee { // TODO unified with testbed interface
             });
 
             after('Update state of test scenario', async function () {
-                describer.states.set(description.title, this.currentTest?.state ?? 'unknown');
+                testee.states.set(description.title, this.currentTest?.state ?? 'unknown');
             });
 
             /** Each test is made of one or more scenario */
@@ -119,7 +129,7 @@ export class Testee { // TODO unified with testbed interface
             for (let i = 0; i < runs; i++) {
                 if (0 < i) {
                     it('resetting before retry', async function () {
-                        await describer.reset(describer.testbed);
+                        await testee.reset(testee.testbed);
                     });
                 }
 
@@ -127,22 +137,22 @@ export class Testee { // TODO unified with testbed interface
                     /** Perform the step and check if expectations were met */
 
                     it(step.title, async function () {
-                        if (describer.testbed === undefined) {
+                        if (testee.testbed === undefined) {
                             assert.fail('Cannot run test: no debugger connection.');
                             return;
                         }
 
                         let actual: Object | void;
                         if (step.instruction.kind === Kind.Action) {
-                            actual = await timeout<Object | void>(`performing action . ${step.title}`, describer.timeout,
+                            actual = await timeout<Object | void>(`performing action . ${step.title}`, testee.timeout,
                                 act(step.instruction.value));
                         } else {
-                            actual = await timeout<Object | void>(`sending instruction ${step.instruction.value.type}`, describer.timeout,
-                                describer.testbed.sendRequest(map, step.instruction.value));
+                            actual = await timeout<Object | void>(`sending instruction ${step.instruction.value.type}`, testee.timeout,
+                                testee.testbed.sendRequest(map, step.instruction.value));
                         }
 
                         for (const expectation of step.expected ?? []) {
-                            describer.expect(expectation, actual, previous);
+                            testee.expect(expectation, actual, previous);
                         }
 
                         if (actual !== undefined) {

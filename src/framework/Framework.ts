@@ -62,11 +62,6 @@ export class Framework {
                     const order: TestScenario[] = testee.scheduler.schedule(suite);
 
                     // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
-                    //     before('Connect to debugger', async function () {
-                    //         this.timeout(bed.describer.connector.connectionTimeout * 1.1);
-                    //
-                    //         bed.describer.instance = await bed.describer.connector.connect();  // todo move createInstance to Framework?
-                    //     });
                     //
                     //     after('Shutdown debugger', async function () {
                     //         if (bed.describer.instance) {
@@ -75,7 +70,17 @@ export class Framework {
                     //     });
                     // }
 
+                    let initialized: boolean = false;
+
                     order.forEach((test: TestScenario) => {
+                        if (!initialized) {
+                            before('Initialize testbed', async function () {
+                                this.timeout(testee.connector.timeout);
+                                await testee.initialize(test.program, test.args ?? []);
+                            });
+                            initialized = true;
+                        }
+
                         testee.describe(test, this.runs);
                     });
                 });
