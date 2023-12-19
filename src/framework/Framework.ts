@@ -75,7 +75,7 @@ export class Framework {
                     order.forEach((test: TestScenario) => {
                         if (!initialized) {
                             before('Initialize testbed', async function () {
-                                this.timeout(testee.connector.timeout);
+                                this.timeout(testee.connector.timeout(testee.specification.type));
                                 await testee.initialize(test.program, test.args ?? []);
                             });
                             initialized = true;

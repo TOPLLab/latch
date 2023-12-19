@@ -43,6 +43,17 @@ export function breakpointParser(text: string): Breakpoint {
     throw new Error('Could not messaging BREAKPOINT address in ack.');
 }
 
+function breakpointHitParser(text: string): Breakpoint {
+    const ack: Ack = ackParser(text, 'AT ');
+
+    let breakpointInfo = ack.text.match(/AT (0x.*)!/);
+    if (breakpointInfo!.length > 1) {
+        return new Breakpoint(parseInt(breakpointInfo![1]), 0); // TODO address to line mapping
+    }
+
+    throw new Error('Could not messaging BREAKPOINT address in ack.');
+}
+
 function returnParser(text: string): Object {
     const object = JSON.parse(text);
     if (object.stack.length === 0) {

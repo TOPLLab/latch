@@ -33,12 +33,12 @@ export class EmulatorSpecification implements TestbedSpecification {
     }
 }
 
-export class SerialSpecification implements TestbedSpecification {
+export class ArduinoSpecification implements TestbedSpecification {
     public readonly type: PlatformType;
     public readonly options: SerialOptions;
 
     constructor(path?: string, fqbn?: string, baudRate?: number) {
-        this.type = PlatformType.emulator;
+        this.type = PlatformType.arduino;
         this.options = {
             path: path ?? '/dev/ttyUSB0',
             fqbn: fqbn ?? 'esp32:esp32:esp32wrover',

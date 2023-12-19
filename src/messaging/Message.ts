@@ -60,7 +60,7 @@ export namespace Message {
             try {
                 return ackParser(line, 'STEP');
             } catch (err) {
-                return ackParser(line, 'BP');
+                return ackParser(line, 'AT ');
             }
         }
     };
