@@ -1,18 +1,8 @@
-import {Describer} from './Describer';
+import {Testee} from './Testee';
 import {HybridScheduler, Scheduler} from './Scheduler';
 import {TestScenario} from './scenario/TestScenario';
 
-import {PlatformSpecification, PlatformType} from '../testee/PlatformSpecification';
-
-export interface TestBed {
-    name: string;
-
-    describer: Describer;
-
-    scheduler: Scheduler;
-
-    disabled: boolean;
-}
+import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 
 export interface Suite {
     title: string;
@@ -27,7 +17,7 @@ interface DependenceTree {
 export class Framework {
     private static implementation: Framework;
 
-    private beds: TestBed[] = [];
+    private testees: Testee[] = [];
     private suites: Suite[] = [];
 
     public runs: number = 1;
@@ -39,22 +29,17 @@ export class Framework {
         return this.suites[this.suites.length - 1];
     }
 
-    public testbed(name: string, specification: PlatformSpecification, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
-        const describer = new Describer(specification);
+    public testee(name: string, specification: TestbedSpecification, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
+        const testee = new Testee(name, specification, scheduler);
         if (disabled) {
-            describer.skipall();
+            testee.skipall();
         }
 
-        this.beds.push({
-            name: name,
-            describer: describer,
-            disabled: disabled,
-            scheduler: scheduler
-        });
+        this.testees.push(testee);
     }
 
-    public platforms(): TestBed[] {
-        return this.beds;
+    public platforms(): Testee[] {
+        return this.testees;
     }
 
     public suite(title: string) {
@@ -71,10 +56,10 @@ export class Framework {
 
     public run(cores: number = 1) {   // todo remove cores
         this.suites.forEach((suite: Suite) => {
-            this.beds.forEach((bed: TestBed) => {
-                describe(`Setting up ${bed.name}.`, () => {
+            this.testees.forEach((testee: Testee) => {
+                describe(`Testing on ${testee.name}.`, () => {
                     // todo add parallelism
-                    const order: TestScenario[] = bed.scheduler.schedule(suite);
+                    const order: TestScenario[] = testee.scheduler.schedule(suite);
 
                     // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
                     //     before('Connect to debugger', async function () {
@@ -91,7 +76,7 @@ export class Framework {
                     // }
 
                     order.forEach((test: TestScenario) => {
-                        bed.describer.describeTest(test, this.runs);
+                        testee.describe(test, this.runs);
                     });
                 });
             });

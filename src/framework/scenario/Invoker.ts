@@ -5,7 +5,7 @@ import Value = WASM.Value;
 
 export class Invoker implements Step {
     readonly title: string;
-    readonly instruction: Instruction<WASM.Value | Exception>;
+    readonly instruction: Instruction;
     readonly expected?: Expectation[];
 
     constructor(func: string, args: Value[], result: number) {

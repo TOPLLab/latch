@@ -5,14 +5,15 @@ import {Framework} from './Framework';
 import {Action} from './scenario/Actions';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message} from '../messaging/Message';
-import {Testee} from '../testee/Testee';
-import {PlatformFactory} from '../testee/PlatformFactory';
+import {Testbed} from '../testbeds/Testbed';
+import {TestbedFactory} from '../testbeds/TestbedFactory';
 import {Behaviour, Description, Expectation, Kind} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './scenario/TestScenario';
-import {PlatformSpecification, PlatformType} from '../testee/PlatformSpecification';
+import {TestbedSpecification} from '../testbeds/TestbedSpecification';
+import {Scheduler} from './Scheduler';
 
-export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
+function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
 }
 
@@ -36,17 +37,21 @@ export function getValue(object: any, field: string): any {
     return object;
 }
 
-export class Describer { // TODO unified with testbed interface
+function act<T>(action: Action<T>): Promise<T> {
+    return action();
+}
+
+export class Testee { // TODO unified with testbed interface
 
     /** The current state for each described test */
     private states: Map<string, string> = new Map<string, string>();
 
     /** Factory to establish new connections to VMs */
-    public readonly connector: PlatformFactory;
+    public readonly connector: TestbedFactory;
 
     public readonly mapper: SourceMapFactory;
 
-    public readonly specification: PlatformSpecification;
+    public readonly specification: TestbedSpecification;
 
     public readonly timeout: number;
 
@@ -56,17 +61,23 @@ export class Describer { // TODO unified with testbed interface
 
     private readonly maximumConnectAttempts = 5;
 
-    public testee?: Testee;
+    public readonly name: string;
 
-    constructor(specification: PlatformSpecification, timeout: number = 2000) {
+    public scheduler: Scheduler;
+
+    public testbed?: Testbed;
+
+    constructor(name: string, specification: TestbedSpecification, scheduler: Scheduler, timeout: number = 2000) {
+        this.name = name;
         this.specification = specification;
+        this.scheduler = scheduler;
         this.timeout = timeout;
-        this.connector = new PlatformFactory();
+        this.connector = new TestbedFactory();
         this.mapper = new SourceMapFactory();
         this.framework = Framework.getImplementation();
     }
 
-    public describeTest(description: TestScenario, runs: number = 1) {
+    public describe(description: TestScenario, runs: number = 1) {
         const describer = this;
         const call: SuiteFunction | PendingSuiteFunction = description.skip ? describe.skip : this.suiteFunction;
 
@@ -85,7 +96,7 @@ export class Describer { // TODO unified with testbed interface
                     throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
                 }
 
-                describer.testee = await describer.connector.connect(describer.specification, description.program, description.args ?? []);
+                describer.testbed = await describer.connector.connect(describer.specification, description.program, description.args ?? []);
             });
 
             before('Fetch source map', async function () {
@@ -108,7 +119,7 @@ export class Describer { // TODO unified with testbed interface
             for (let i = 0; i < runs; i++) {
                 if (0 < i) {
                     it('resetting before retry', async function () {
-                        await describer.reset(describer.testee);
+                        await describer.reset(describer.testbed);
                     });
                 }
 
@@ -116,7 +127,7 @@ export class Describer { // TODO unified with testbed interface
                     /** Perform the step and check if expectations were met */
 
                     it(step.title, async function () {
-                        if (describer.testee === undefined) {
+                        if (describer.testbed === undefined) {
                             assert.fail('Cannot run test: no debugger connection.');
                             return;
                         }
@@ -126,8 +137,8 @@ export class Describer { // TODO unified with testbed interface
                             actual = await timeout<Object | void>(`performing action . ${step.title}`, describer.timeout,
                                 act(step.instruction.value));
                         } else {
-                            actual = await timeout<Object | void>(`sending instruction ${step.instruction}`, describer.timeout,
-                                describer.testee.sendRequest(map, step.instruction.value));
+                            actual = await timeout<Object | void>(`sending instruction ${step.instruction.value.type}`, describer.timeout,
+                                describer.testbed.sendRequest(map, step.instruction.value));
                         }
 
                         for (const expectation of step.expected ?? []) {
@@ -143,21 +154,22 @@ export class Describer { // TODO unified with testbed interface
         });
     }
 
-    private async reset(instance: Testee | void) {
-        if (instance === undefined) {
-            assert.fail('Cannot run test: no debugger connection.');
-        } else {
-            await timeout<Object | void>('resetting vm', this.timeout, this.testee!.sendRequest(new SourceMap.Mapping(), Message.reset));
-        }
-    }
-
-    public skipall(): Describer {
+    public skipall(): Testee {
         this.suiteFunction = describe.skip;
         return this;
     };
 
+    private async reset(instance: Testbed | void) {
+        if (instance === undefined) {
+            assert.fail('Cannot run test: no debugger connection.');
+        } else {
+            await timeout<Object | void>('resetting vm', this.timeout, this.testbed!.sendRequest(new SourceMap.Mapping(), Message.reset));
+        }
+    }
+
+
     private formatTitle(title: string): string {
-        return `${this.testee?.name}: ${title}`; // TODO unify with testbed and use testbed name?
+        return `${this.name}: ${title}`; // TODO unify with testbed and use testbed name?
     }
 
     private failedDependencies(description: TestScenario): TestScenario[] {
@@ -223,8 +235,4 @@ export class Describer { // TODO unified with testbed interface
                 break;
         }
     }
-}
-
-function act<T>(action: Action<T>): Promise<T> {
-    return action();
 }

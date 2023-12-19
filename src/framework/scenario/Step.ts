@@ -31,15 +31,15 @@ export enum Kind {
     Action = 'action'
 }
 
-export type Instruction<T> =
+export type Instruction =
 /** discrimination union */
-    | { kind: Kind.Request; value: Request<T> }
-    | { kind: Kind.Action; value: Action<T> };
+    | { kind: Kind.Request; value: Request<any> }
+    | { kind: Kind.Action; value: Action<any> };
 
 export interface Step {
     readonly title: string;
 
-    readonly instruction: Instruction<Object>;
+    readonly instruction: Instruction;
 
     readonly expected?: Expectation[];
 }

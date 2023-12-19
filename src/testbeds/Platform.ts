@@ -1,4 +1,4 @@
-import {Testee, TesteeEvents} from './Testee';
+import {Testbed, TesteeEvents} from './Testbed';
 import {EventEmitter} from 'events';
 import {Request} from '../messaging/Message';
 import {MessageQueue} from '../messaging/MessageQueue';
@@ -7,7 +7,7 @@ import {SourceMap} from '../sourcemap/SourceMap';
 
 type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
 
-export abstract class Platform extends EventEmitter implements Testee {
+export abstract class Platform extends EventEmitter implements Testbed {
     abstract connection: Connection;
 
     protected requests: [Request<any>, PromiseResolver<any>][];

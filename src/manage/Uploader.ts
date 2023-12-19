@@ -9,7 +9,7 @@ import {SubProcess} from '../bridge/SubProcess';
 import {Connection} from '../bridge/Connection';
 import {Serial} from '../bridge/Serial';
 import {CompileOutput} from './Compiler';
-import {PlatformSpecification, PlatformType, SerialOptions, SubprocessOptions} from '../testee/PlatformSpecification';
+import {TestbedSpecification, PlatformType, SerialOptions, SubprocessOptions} from '../testbeds/TestbedSpecification';
 
 enum UploaderEvents {
     compiled = 'compiled',
@@ -33,7 +33,7 @@ export class UploaderFactory {
         this.arduino = arduino;
     }
 
-    public pickUploader(specification: PlatformSpecification, args: string[] = []): Uploader {
+    public pickUploader(specification: TestbedSpecification, args: string[] = []): Uploader {
         switch (specification.type) {
             case PlatformType.arduino:
                 return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);

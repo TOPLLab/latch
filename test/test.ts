@@ -1,10 +1,10 @@
-import {Framework, Invoker, Step, WASM} from '../src';
-import {EmulatorSpecification} from '../src/testee/PlatformSpecification';
+import {EmulatorSpecification, Framework, Invoker, Kind, Message, Step, WASM} from '../src';
+import dump = Message.dump;
 
 const framework = Framework.getImplementation();
 
-framework.testbed('emulator [:8500]', new EmulatorSpecification(8500));
-framework.testbed('emulator [:8520]', new EmulatorSpecification(8520));
+framework.testee('emulator [:8500]', new EmulatorSpecification(8500));
+framework.testee('emulator [:8520]', new EmulatorSpecification(8520));
 
 framework.suite('Test Latch performance in CI');
 
@@ -22,5 +22,14 @@ framework.test({
     dependencies: [],
     steps: steps
 });
+
+framework.test({
+    title: 'Test DUMP',
+    program: 'test/blink.wast',
+    steps: [{
+        title: 'Send DUMP command',
+        instruction: {kind: Kind.Request, value: dump}
+    }]
+})
 
 framework.run();

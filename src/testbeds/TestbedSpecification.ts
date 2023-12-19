@@ -18,12 +18,12 @@ export interface SubprocessOptions extends ConnectionOptions {
 }
 
 
-export interface PlatformSpecification {
+export interface TestbedSpecification {
     readonly type: PlatformType;
     readonly options: ConnectionOptions;
 }
 
-export class EmulatorSpecification implements PlatformSpecification {
+export class EmulatorSpecification implements TestbedSpecification {
     public readonly type: PlatformType;
     public readonly options: SubprocessOptions;
 
@@ -33,7 +33,7 @@ export class EmulatorSpecification implements PlatformSpecification {
     }
 }
 
-export class SerialSpecification implements PlatformSpecification {
+export class SerialSpecification implements TestbedSpecification {
     public readonly type: PlatformType;
     public readonly options: SerialOptions;
 

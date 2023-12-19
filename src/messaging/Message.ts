@@ -53,6 +53,17 @@ export namespace Message {
         }
     };
 
+    export const stepOver: Request<Ack> = {
+        type: Interrupt.stepOver,
+        parser: (line: string): Ack => {
+            try {
+                return ackParser(line, 'STEP');
+            } catch (err) {
+                return ackParser(line, 'BP');
+            }
+        }
+    };
+
     export function addBreakpoint(payload: Breakpoint): Request<Breakpoint> {
         return {
             type: Interrupt.addBreakpoint,
@@ -117,6 +128,16 @@ export namespace Message {
         type: Interrupt.updateModule,
         parser: (line: string) => {
             return ackParser(line, 'CHANGE Module');
+        }
+    }
+
+    export function pushEvent(topic: string, payload: string): Request<Ack> {
+        return {
+            type: Interrupt.pushEvent,
+            payload: (map: SourceMap.Mapping) => `{topic: '${topic}', payload: '${payload}'}`,
+            parser: (line: string) => {
+                return ackParser(line, 'Interrupt: 73');
+            }
         }
     }
 

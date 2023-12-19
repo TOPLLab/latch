@@ -1,4 +1,4 @@
-import {Testee} from './Testee';
+import {Testbed} from './Testbed';
 import {ARDUINO, EMULATOR, WABT} from '../util/deps';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {Emulator} from './Emulator';
@@ -7,9 +7,9 @@ import {Connection} from '../bridge/Connection';
 import {Arduino} from './Arduino';
 import {Serial} from '../bridge/Serial';
 import {SubProcess} from '../bridge/SubProcess';
-import {PlatformSpecification, PlatformType} from './PlatformSpecification';
+import {TestbedSpecification, PlatformType} from './TestbedSpecification';
 
-export class PlatformFactory {
+export class TestbedFactory {
     public readonly connectionTimeout: number;
 
     private readonly compilerFactory: CompilerFactory;
@@ -21,7 +21,7 @@ export class PlatformFactory {
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
 
-    public async connect(specification: PlatformSpecification, program: string, args: string[]): Promise<Testee> {
+    public async connect(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
         let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program);
         let connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled);
 
