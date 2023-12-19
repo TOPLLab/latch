@@ -1,10 +1,10 @@
-import {TestScenario} from './Describer';
 import {Suite} from './Framework';
+import {TestScenario} from "./scenario/TestScenario";
 
 export abstract class Scheduler {
     public abstract readonly identifier: string;
 
-    // sort the tests into an efficient schedule
+    // sort the scenario into an efficient schedule
     abstract schedule(suite: Suite): TestScenario[];
 }
 
@@ -33,7 +33,7 @@ class SimpleScheduler implements Scheduler {
  * The Hybrid Scheduler respects dependency trees while minimising the need to change programs.
  *
  * The schedule iterates breadth-first over each tree in succession,
- * at each depth the tests are sorted alphabetically according to their program.
+ * at each depth the scenario are sorted alphabetically according to their program.
  */
 export class HybridScheduler implements Scheduler {
     identifier = 'hybrid schedule';
@@ -56,14 +56,14 @@ export class DependenceScheduler implements Scheduler {
     public schedule(suite: Suite): TestScenario[] {
         const schedule: TestScenario[][] = levels(suite.tests);
         schedule.forEach(level => level.sort(sortOnProgram));
-        return schedule.flat(2);  // we flatten since we don't support parallelism yet (otherwise tests in the same level can be run in parallel)
+        return schedule.flat(2);  // we flatten since we don't support parallelism yet (otherwise scenario in the same level can be run in parallel)
     }
 }
 
 /* Util functions */
 
 function sortOnProgram(a: TestScenario, b: TestScenario) {
-    // aggregate tests with the same program
+    // aggregate scenario with the same program
     return a.program.localeCompare(b.program);
 }
 
@@ -75,10 +75,10 @@ function trees(input: TestScenario[]): TestScenario[][] {
     // output
     const forest: TestScenario[][] = [];
 
-    // tests that have already been seen
+    // scenario that have already been seen
     const seen = new Set<TestScenario>();
 
-    // loop over all tests of the input
+    // loop over all scenario of the input
     for (const test of input) {
         if (seen.has(test)) {
             // test already in forest, nothing to do

@@ -1,16 +1,8 @@
-import {Describer, ProcessBridge, TestScenario} from './Describer';
+import {Testee} from './Testee';
 import {HybridScheduler, Scheduler} from './Scheduler';
-import {after} from 'mocha';
+import {TestScenario} from './scenario/TestScenario';
 
-export interface Platform {
-    name: string;
-    bridge: ProcessBridge;
-    describer: Describer;
-
-    scheduler: Scheduler;
-
-    disabled: boolean;
-}
+import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 
 export interface Suite {
     title: string;
@@ -25,7 +17,7 @@ interface DependenceTree {
 export class Framework {
     private static implementation: Framework;
 
-    private bases: Platform[] = [];
+    private testees: Testee[] = [];
     private suites: Suite[] = [];
 
     public runs: number = 1;
@@ -37,23 +29,17 @@ export class Framework {
         return this.suites[this.suites.length - 1];
     }
 
-    public platform(bridge: ProcessBridge, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
-        const describer = new Describer(bridge);
+    public testee(name: string, specification: TestbedSpecification, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
+        const testee = new Testee(name, specification, scheduler);
         if (disabled) {
-            describer.skipall();
+            testee.skipall();
         }
 
-        this.bases.push({
-            name: bridge.name,
-            bridge: bridge,
-            describer: describer,
-            disabled: disabled,
-            scheduler: scheduler
-        });
+        this.testees.push(testee);
     }
 
-    public platforms(): Platform[] {
-        return this.bases;
+    public platforms(): Testee[] {
+        return this.testees;
     }
 
     public suite(title: string) {
@@ -70,25 +56,32 @@ export class Framework {
 
     public run(cores: number = 1) {   // todo remove cores
         this.suites.forEach((suite: Suite) => {
-            this.bases.forEach((base: Platform) => {
-                describe(`Setting up ${base.name}.`, () => {
+            this.testees.forEach((testee: Testee) => {
+                describe(`Testing on ${testee.name}.`, () => {
                     // todo add parallelism
-                    const order: TestScenario[] = base.scheduler.schedule(suite);
+                    const order: TestScenario[] = testee.scheduler.schedule(suite);
 
-                    if (!base.disabled) {
-                        before('Connect to debugger', async function () {
-                            this.timeout(base.describer.bridge.connectionTimeout * 1.1);
+                    // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
+                    //
+                    //     after('Shutdown debugger', async function () {
+                    //         if (bed.describer.instance) {
+                    //             await bed.connection.kill();
+                    //         }
+                    //     });
+                    // }
 
-                            base.describer.instance = await base.describer.createInstance(order[0]);  // todo move createInstance to Framework?
-                        });
-
-                        after('Shutdown debugger', async function () {
-                            if (base.describer.instance) await base.describer.bridge.disconnect(base.describer.instance);
-                        });
-                    }
+                    let initialized: boolean = false;
 
                     order.forEach((test: TestScenario) => {
-                        base.describer.describeTest(test, this.runs);
+                        if (!initialized) {
+                            before('Initialize testbed', async function () {
+                                this.timeout(testee.connector.timeout);
+                                await testee.initialize(test.program, test.args ?? []);
+                            });
+                            initialized = true;
+                        }
+
+                        testee.describe(test, this.runs);
                     });
                 });
             });

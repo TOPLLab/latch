@@ -1,13 +1,18 @@
-import {Framework} from "./framework/Framework";
+import {Framework} from './framework/Framework';
 
-export * from './bridges/Compiler';
-export * from './bridges/Uploader';
-export * from './bridges/WARDuino';
-export * from './framework/Actions';
-export * from './framework/Describer';
+export * from './manage/Compiler';
+export * from './manage/Uploader';
+export * from './util/deps';
+export * from './framework/scenario/Actions';
+export * from './framework/Testee';
 export * from './framework/Framework';
-export * from './framework/Parsers';
+export * from './messaging/Parsers';
+export * from './messaging/Message';
 export * from './framework/Scheduler';
-export * from './wasm/spec';
+export * from './sourcemap/Wasm';
+export * from './framework/scenario/TestScenario';
+export * from './framework/scenario/Step';
+export * from './framework/scenario/Invoker';
+export * from './testbeds/TestbedSpecification';
 
 export const latch = Framework.getImplementation();
