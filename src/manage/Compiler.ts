@@ -5,7 +5,7 @@ import {exec, ExecException} from 'child_process';
 import {SourceMap} from '../sourcemap/SourceMap';
 import * as readline from 'readline';
 import {EventEmitter} from 'events';
-import {getFileExtension} from '../util/util';
+import {find, getFileExtension} from '../util/util';
 import {AsScriptMapper} from '../sourcemap/SourceMapper';
 import SourceLine = SourceMap.SourceLine;
 
@@ -407,10 +407,3 @@ function getName(line: string): string {
     return find(/-> "([^"]+)"/, line);
 }
 
-export function find(regex: RegExp, input: string) {
-    const match = regex.exec(input);
-    if (match === null || match[1] === undefined) {
-        return '';
-    }
-    return match[1];
-}

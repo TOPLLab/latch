@@ -2,13 +2,12 @@ import {SourceMap} from './SourceMap';
 import {exec, ExecException} from 'child_process';
 import * as fs from 'fs';
 import {MappingItem, SourceMapConsumer} from 'source-map';
-import {CompileOutput} from '../manage/Compiler';
-import {getFileExtension} from '../util/util';
 import SourceLine = SourceMap.SourceLine;
 import Mapping = SourceMap.Mapping;
 import Closure = SourceMap.Closure;
 import Variable = SourceMap.Variable;
 import TargetInstruction = SourceMap.TargetInstruction;
+import {find} from '../util/util';
 
 export abstract class SourceMapper {
     abstract mapping(): Promise<Mapping>;
@@ -95,21 +94,28 @@ export class WatMapper implements SourceMapper {
     }
 
     private static getFunctionInfos(input: String): Closure[] {
-        let functionLines: String[] = extractMajorSection('Sourcemap JSON:', input);
+        let functionLines: String[] = extractMajorSection('Function', input);
 
         if (functionLines.length === 0) {
             throw Error('Could not messaging \'sourcemap\' section of objdump');
         }
-
-        let sourcemap = JSON.parse(functionLines.join('').replace(/\t/g, ''));
         let functions: Closure[] = [];
-        sourcemap.Functions?.forEach((func: any, index: number) => {
-            let locals: Variable[] = [];
-            func.locals.forEach((local: string, index: number) => {
+
+        functionLines.forEach((line: String) => {
+            const fidx: number = +find(/func\[([0-9]+)/, line.toString());
+            const name: string = find(/<(.*)>/, line.toString());
+
+            const locals: Variable[] = [];
+            const matches: string[] = input.match(new RegExp(`(func\[${fidx}\][^\n]*)`, 'g')) ?? [];
+            for (let text in matches) {
+                const index: number = +find(/func\[([0-9]+)/, line.toString());
+                const local: string = find(/<(.*)>/, line.toString());
                 locals.push({index: index, name: local, type: 'undefined', mutable: true, value: ''});
-            });
-            functions.push({index: index, name: func.name, arguments: [], locals: locals});
-        });
+            }
+
+            functions.push({index: fidx, name: name, arguments: [], locals: locals});
+        })
+
         return functions;
     }
 

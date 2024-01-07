@@ -157,7 +157,7 @@ export namespace Message {
     export function invoke(func: string, args: Value[]): Request<WASM.Value | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
-            if (fidx) {
+            if (fidx === undefined) {
                 throw Error(`Sourcemap: index of ${func} not found.`);
             }
             return fidx!;
