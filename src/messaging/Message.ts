@@ -2,13 +2,13 @@ import {WARDuino} from '../debug/WARDuino';
 import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
-import ieee754 from 'ieee754';
+import {write} from 'ieee754';
 import {SourceMap} from '../sourcemap/SourceMap';
+import {readFileSync} from 'fs';
 import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
 import Type = WASM.Type;
-import {readFileSync} from 'fs';
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -170,7 +170,7 @@ export namespace Message {
                     payload += WASM.leb128(arg.value);
                 } else {
                     const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    ieee754.write(buff, arg.value, 0, true, 23, buff.length);
+                    write(buff, arg.value, 0, true, 23, buff.length);
                     payload += buff.toString('hex');
                 }
             });
