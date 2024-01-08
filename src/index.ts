@@ -16,4 +16,3 @@ export * from './framework/scenario/Invoker';
 export * from './testbeds/TestbedSpecification';
 
 export const latch = Framework.getImplementation();
-export {find} from './util/util';

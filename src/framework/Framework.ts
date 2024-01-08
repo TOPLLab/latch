@@ -57,9 +57,15 @@ export class Framework {
     public run(cores: number = 1) {   // todo remove cores
         this.suites.forEach((suite: Suite) => {
             this.testees.forEach((testee: Testee) => {
+                const order: TestScenario[] = testee.scheduler.schedule(suite);
+                const first: TestScenario = order[0];
+                before('Initialize testbed', async function () {
+                    this.timeout(testee.connector.timeout(testee.specification.type));
+                    await testee.initialize(first.program, first.args ?? []);
+                });
+
                 describe(`Testing on ${testee.name}.`, () => {
                     // todo add parallelism
-                    const order: TestScenario[] = testee.scheduler.schedule(suite);
 
                     // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
                     //
@@ -70,17 +76,7 @@ export class Framework {
                     //     });
                     // }
 
-                    let initialized: boolean = false;
-
                     order.forEach((test: TestScenario) => {
-                        if (!initialized) {
-                            before('Initialize testbed', async function () {
-                                this.timeout(testee.connector.timeout(testee.specification.type));
-                                await testee.initialize(test.program, test.args ?? []);
-                            });
-                            initialized = true;
-                        }
-
                         testee.describe(test, this.runs);
                     });
                 });

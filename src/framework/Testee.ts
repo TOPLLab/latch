@@ -106,7 +106,11 @@ export class Testee { // TODO unified with testbed interface
             before('Compile and upload program', async function () {
                 this.timeout(testee.connector.timeout(testee.specification.type));
                 let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
-                await testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file));
+                try {
+                    await testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file));
+                } catch (e) {
+                    await testee.initialize(description.program, description.args ?? []);
+                }
             });
 
             before('Fetch source map', async function () {
