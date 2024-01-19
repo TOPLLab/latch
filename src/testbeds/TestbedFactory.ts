@@ -14,7 +14,7 @@ export class TestbedFactory {
     private readonly compilerFactory: CompilerFactory;
     private readonly uploaderFactory: UploaderFactory;
 
-    constructor(timeout: number = 5000) {
+    constructor(timeout: number) {
         this.defaultTimeout = timeout;
         this.compilerFactory = new CompilerFactory(WABT);
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);

@@ -7,6 +7,7 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 export interface Suite {
     title: string;
     tests: TestScenario[];
+    testees: Testee[];
 }
 
 interface DependenceTree {
@@ -14,11 +15,16 @@ interface DependenceTree {
     children: DependenceTree[];
 }
 
+export interface TesteeOptions {
+    disabled?: boolean;
+    timeout?: number;
+    connectionTimout?: number;
+}
+
 export class Framework {
     private static implementation: Framework;
 
-    private testees: Testee[] = [];
-    private suites: Suite[] = [];
+    private testSuites: Suite[] = [];
 
     public runs: number = 1;
 
@@ -26,24 +32,24 @@ export class Framework {
     }
 
     private currentSuite(): Suite {
-        return this.suites[this.suites.length - 1];
+        return this.testSuites[this.testSuites.length - 1];
     }
 
-    public testee(name: string, specification: TestbedSpecification, scheduler: Scheduler = new HybridScheduler(), disabled: boolean = false) {
-        const testee = new Testee(name, specification, scheduler);
-        if (disabled) {
+    public testee(name: string, specification: TestbedSpecification, scheduler: Scheduler = new HybridScheduler(), options: TesteeOptions = {}) {
+        const testee = new Testee(name, specification, scheduler, options.timeout ?? 2000, options.connectionTimout ?? 5000);
+        if (options.disabled) {
             testee.skipall();
         }
 
-        this.testees.push(testee);
+        this.currentSuite().testees.push(testee);
     }
 
-    public platforms(): Testee[] {
-        return this.testees;
+    public suites(): Suite[] {
+        return this.testSuites;
     }
 
     public suite(title: string) {
-        this.suites.push({title: title, tests: []});
+        this.testSuites.push({title: title, tests: [], testees: []});
     }
 
     public test(test: TestScenario) {
@@ -55,8 +61,8 @@ export class Framework {
     }
 
     public run(cores: number = 1) {   // todo remove cores
-        this.suites.forEach((suite: Suite) => {
-            this.testees.forEach((testee: Testee) => {
+        this.testSuites.forEach((suite: Suite) => {
+            suite.testees.forEach((testee: Testee) => {
                 const order: TestScenario[] = testee.scheduler.schedule(suite);
                 const first: TestScenario = order[0];
                 before('Initialize testbed', async function () {

@@ -69,12 +69,12 @@ export class Testee { // TODO unified with testbed interface
 
     public testbed?: Testbed;
 
-    constructor(name: string, specification: TestbedSpecification, scheduler: Scheduler, timeout: number = 2000) {
+    constructor(name: string, specification: TestbedSpecification, scheduler: Scheduler, timeout: number, connectionTimeout: number) {
         this.name = name;
         this.specification = specification;
         this.scheduler = scheduler;
         this.timeout = timeout;
-        this.connector = new TestbedFactory();
+        this.connector = new TestbedFactory(connectionTimeout);
         this.mapper = new SourceMapFactory();
         this.framework = Framework.getImplementation();
     }

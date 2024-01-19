@@ -1,6 +1,6 @@
 import {MochaOptions, reporters, Runner, Suite, Test} from 'mocha';
 import {Reporter} from './Reporter';
-import {Framework} from './Framework';
+import {Framework, Suite as LatchSuite} from './Framework';
 import {Archiver} from './Archiver';
 import {Testee} from './Testee';
 import color = reporters.Base.color;
@@ -80,7 +80,7 @@ class MochaReporter extends reporters.Base {
             console.log(color('suite', '%s==================='), this.indent());
 
             const names: string[] = [];
-            Framework.getImplementation().platforms().forEach((platform: Testee) => names.push(platform.name));
+            Framework.getImplementation().suites().forEach((suite: LatchSuite) => suite.testees.forEach((platform: Testee) => names.push(platform.name)));
             names.forEach((name: string) => this.archiver.extend('platforms', name));
             console.log(color('suite', '%sPlatforms  %s'), this.indent(), names.join(', '));
 
