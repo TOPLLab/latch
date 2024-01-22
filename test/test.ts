@@ -1,4 +1,4 @@
-import {ArduinoSpecification, EmulatorSpecification, Expected, Framework, Invoker, Kind, Message, Step, WASM} from '../src';
+import {ArduinoSpecification, EmulatorSpecification, Expected, Framework, Invoker, Kind, Message, Step, WASM} from '../src/index';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
 

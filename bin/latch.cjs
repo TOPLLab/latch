@@ -8,10 +8,9 @@
  * @module bin/latch
  * @private
  */
-
 const {spawn} = require('child_process');
 
-const args = ['--exit', '--color', '--reporter', `${require('path').dirname(__dirname)}/dist/cjs/framework/MochaReporter.cjs`, '--require', 'ts-node/register', '--ui', 'bdd', ].concat(process.argv.slice(2));
+const args = ['--exit', '--color', '--reporter', `${require('path').dirname(__dirname)}/dist/cjs/framework/MochaReporter.cjs`, '--loader=ts-node/esm', '--experimental-specifier-resolution=node', '--require', 'ts-node/register', '--ui', 'bdd' ].concat(process.argv.slice(2));
 const proc = spawn('mocha', args, {
     stdio: 'inherit'
 });

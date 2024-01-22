@@ -13,7 +13,7 @@ import {TestScenario} from './scenario/TestScenario';
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {Scheduler} from './Scheduler';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
-import {WABT} from '../util/deps';
+import {WABT} from '../util/env';
 
 function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);

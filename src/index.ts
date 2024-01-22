@@ -2,7 +2,7 @@ import {Framework} from './framework/Framework';
 
 export * from './manage/Compiler';
 export * from './manage/Uploader';
-export * from './util/deps';
+export * from './util/env';
 export * from './framework/scenario/Actions';
 export * from './framework/Testee';
 export * from './framework/Framework';
