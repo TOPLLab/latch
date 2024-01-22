@@ -86,6 +86,10 @@ export class Framework {
                         testee.describe(test, this.runs);
                     });
                 });
+
+                after('Shutdown testbed', async function () {
+                    await testee.shutdown();
+                });
             });
         });
     }

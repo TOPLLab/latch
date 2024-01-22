@@ -86,6 +86,10 @@ export class Testee { // TODO unified with testbed interface
         });
     }
 
+    public async shutdown(): Promise<void> {
+        return this.testbed?.kill();
+    }
+
     public describe(description: TestScenario, runs: number = 1) {
         const testee = this;
         const call: SuiteFunction | PendingSuiteFunction = description.skip ? describe.skip : this.suiteFunction;
