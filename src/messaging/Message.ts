@@ -9,6 +9,8 @@ import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
 import Type = WASM.Type;
+import {CompileOutput, CompilerFactory} from '../manage/Compiler';
+import {WABT} from '../util/env';
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -125,9 +127,14 @@ export namespace Message {
         }
     }
 
-    export function updateModule(program: string): Request<Ack> {
-        function payload(wasm: Buffer): string {
-            const w = new Uint8Array(wasm);
+    export async function uploadFile(program: string): Promise<Request<Ack>> {
+        let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program);
+        return updateModule(compiled.file);
+    }
+
+    export function updateModule(wasm: string): Request<Ack> {
+        function payload(binary: Buffer): string {
+            const w = new Uint8Array(binary);
             const sizeHex: string = WASM.leb128(w.length);
             const sizeBuffer = Buffer.allocUnsafe(4);
             sizeBuffer.writeUint32BE(w.length);
@@ -137,7 +144,7 @@ export namespace Message {
 
         return {
             type: Interrupt.updateModule,
-            payload: (map: SourceMap.Mapping) => payload(readFileSync(program)),
+            payload: (map: SourceMap.Mapping) => payload(readFileSync(wasm)),
             parser: (line: string) => {
                 return ackParser(line, 'CHANGE Module');
             }

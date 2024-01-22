@@ -2,7 +2,7 @@
   "name": "latch",
   "description": "A testing language for constraint environments",
   "version": "0.0.1",
-  "type": "commonjs",
+  "type": "module",
   "exports": {
     "types": "./dist/types/index.d.ts",
     "require": "./dist/cjs/index.cjs"
@@ -14,7 +14,7 @@
     "bin"
   ],
   "bin": {
-    "latch": "bin/latch"
+    "latch": "bin/latch.cjs"
   },
   "scripts": {
     "clean": "rm -rf dist",

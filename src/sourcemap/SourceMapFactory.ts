@@ -1,7 +1,7 @@
 import {getFileExtension} from '../util/util';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {AsScriptMapper, WatMapper} from './SourceMapper';
-import {WABT} from '../util/deps';
+import {WABT} from '../util/env';
 import {SourceMap} from './SourceMap';
 import * as path from 'path';
 

@@ -1,5 +1,5 @@
 import {Testbed} from './Testbed';
-import {ARDUINO, EMULATOR, WABT} from '../util/deps';
+import {ARDUINO, EMULATOR, WABT} from '../util/env';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {Emulator} from './Emulator';
 import {UploaderFactory} from '../manage/Uploader';

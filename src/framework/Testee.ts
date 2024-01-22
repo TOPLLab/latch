@@ -13,7 +13,7 @@ import {TestScenario} from './scenario/TestScenario';
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {Scheduler} from './Scheduler';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
-import {WABT} from '../util/deps';
+import {WABT} from '../util/env';
 
 function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
@@ -86,6 +86,10 @@ export class Testee { // TODO unified with testbed interface
         });
     }
 
+    public async shutdown(): Promise<void> {
+        return this.testbed?.kill();
+    }
+
     public describe(description: TestScenario, runs: number = 1) {
         const testee = this;
         const call: SuiteFunction | PendingSuiteFunction = description.skip ? describe.skip : this.suiteFunction;
@@ -107,7 +111,7 @@ export class Testee { // TODO unified with testbed interface
                 this.timeout(testee.connector.timeout(testee.specification.type));
                 let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
                 try {
-                    await testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file));
+                     await timeout<Object | void>(`uploading module`, testee.timeout, testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file)));
                 } catch (e) {
                     await testee.initialize(description.program, description.args ?? []);
                 }

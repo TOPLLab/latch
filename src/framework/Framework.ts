@@ -70,7 +70,7 @@ export class Framework {
                     await testee.initialize(first.program, first.args ?? []);
                 });
 
-                describe(`Testing on ${testee.name}.`, () => {
+                describe(`${testee.name}: ${suite.title}`, () => {
                     // todo add parallelism
 
                     // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
@@ -85,6 +85,10 @@ export class Framework {
                     order.forEach((test: TestScenario) => {
                         testee.describe(test, this.runs);
                     });
+                });
+
+                after('Shutdown testbed', async function () {
+                    await testee.shutdown();
                 });
             });
         });
