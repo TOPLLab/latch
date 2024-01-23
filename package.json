@@ -2,7 +2,7 @@
   "name": "latch",
   "description": "A testing language for constraint environments",
   "version": "0.0.1",
-  "type": "module",
+  "type": "commonjs",
   "exports": {
     "types": "./dist/types/index.d.ts",
     "require": "./dist/cjs/index.cjs"
