@@ -66,7 +66,7 @@ export class WatMapper implements SourceMapper {
         this.lineMapping = [];
         const lines = compileOutput.split('\n');
         for (let i = 0; i < lines.length; i++) {
-            if (lines[i].match(/@/)) {
+            if (lines[i].match(/^@ {/)) {
                 let mapping: SourceLine = WatMapper.extractLineInfo(lines[i]);
                 mapping.instructions = WatMapper.extractAddressInfo(lines[i + 1]);
                 this.lineMapping.push(mapping);
