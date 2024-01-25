@@ -21,8 +21,8 @@ export class TestbedFactory {
     }
 
     public async initialize(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
-        let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program);
-        let connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled);
+        let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e));
+        let connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
 
         switch (specification.type) {
             case PlatformType.arduino:
