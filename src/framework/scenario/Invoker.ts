@@ -8,9 +8,9 @@ export class Invoker implements Step {
     readonly instruction: Instruction;
     readonly expected?: Expectation[];
 
-    constructor(func: string, args: Value[], result: number) {
-        this.title = `ASSERT: ${func} ${args.map(val => val.value).join(' ')} ${result}`;
+    constructor(func: string, args: Value[], result: Value) {
+        this.title = `ASSERT: ${func} ${args.map(val => val.value).join(' ')} ${result.value}`;
         this.instruction = {kind: Kind.Request, value: Message.invoke(func, args)}
-        this.expected = [{'value': {kind: 'primitive', value: result} as Expected<number>}];
+        this.expected = [{'value': {kind: 'primitive', value: result.value} as Expected<number>}];
     }
 }

@@ -1,4 +1,4 @@
-import {Testbed, TesteeEvents} from './Testbed';
+import {Testbed, TestbedEvents} from './Testbed';
 import {EventEmitter} from 'events';
 import {Request} from '../messaging/Message';
 import {MessageQueue} from '../messaging/MessageQueue';
@@ -49,7 +49,7 @@ export abstract class Platform extends EventEmitter implements Testbed {
                 // messaging and resolve
                 const [candidate, resolver] = this.requests[index];
                 resolver(candidate.parser(message));
-                this.emit(TesteeEvents.OnMessage, message);
+                this.emit(TestbedEvents.OnMessage, message);
 
                 this.requests.splice(index, 1);  // delete resolved request
             }

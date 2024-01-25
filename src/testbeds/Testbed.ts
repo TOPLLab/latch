@@ -3,7 +3,7 @@ import {EventEmitter} from 'events';
 import {Connection} from '../bridge/Connection';
 import {SourceMap} from '../sourcemap/SourceMap';
 
-export enum TesteeEvents {
+export enum TestbedEvents {
     OnMessage = 'message',
     OnPushEvent = 'push'
 }
@@ -17,7 +17,7 @@ export declare interface Testbed extends EventEmitter {
 
     kill(): Promise<void>;
 
-    on(event: TesteeEvents.OnMessage, listener: (message: string) => void): this;
+    on(event: TestbedEvents.OnMessage, listener: (message: string) => void): this;
 
-    on(event: TesteeEvents.OnPushEvent, listener: (data: string) => void): this;
+    on(event: TestbedEvents.OnPushEvent, listener: (data: string) => void): this;
 }

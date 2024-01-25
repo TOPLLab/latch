@@ -43,7 +43,7 @@ export function breakpointParser(text: string): Breakpoint {
     throw new Error('Could not messaging BREAKPOINT address in ack.');
 }
 
-function breakpointHitParser(text: string): Breakpoint {
+export function breakpointHitParser(text: string): Breakpoint {
     const ack: Ack = ackParser(text, 'AT ');
 
     let breakpointInfo = ack.text.match(/AT (0x.*)!/);

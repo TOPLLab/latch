@@ -39,10 +39,6 @@ export function getValue(object: any, field: string): any {
     return object;
 }
 
-function act<T>(action: Action<T>): Promise<T> {
-    return action();
-}
-
 export class Testee { // TODO unified with testbed interface
 
     /** The current state for each described test */
@@ -153,7 +149,7 @@ export class Testee { // TODO unified with testbed interface
                         let actual: Object | void;
                         if (step.instruction.kind === Kind.Action) {
                             actual = await timeout<Object | void>(`performing action . ${step.title}`, testee.timeout,
-                                act(step.instruction.value));
+                                step.instruction.value.act(testee));
                         } else {
                             actual = await timeout<Object | void>(`sending instruction ${step.instruction.value.type}`, testee.timeout,
                                 testee.testbed.sendRequest(map, step.instruction.value));
