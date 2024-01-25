@@ -67,7 +67,7 @@ export class Framework {
                 const first: TestScenario = order[0];
                 before('Initialize testbed', async function () {
                     this.timeout(testee.connector.timeout(testee.specification.type));
-                    await testee.initialize(first.program, first.args ?? []);
+                    await testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e));
                 });
 
                 describe(`${testee.name}: ${suite.title}`, () => {

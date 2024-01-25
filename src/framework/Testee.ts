@@ -77,7 +77,10 @@ export class Testee { // TODO unified with testbed interface
 
     public async initialize(program: string, args: string[]): Promise<Testee> {
         return new Promise(async (resolve, reject) => {
-            this.testbed = await this.connector.initialize(this.specification, program, args ?? []);
+            const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args ?? []).catch((e) => {
+                reject(e)
+            });
+            if (testbed) this.testbed = testbed;
             resolve(this);
         });
     }
@@ -107,9 +110,9 @@ export class Testee { // TODO unified with testbed interface
                 this.timeout(testee.connector.timeout(testee.specification.type));
                 let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
                 try {
-                     await timeout<Object | void>(`uploading module`, testee.timeout, testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file)));
+                    await timeout<Object | void>(`uploading module`, testee.timeout, testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 } catch (e) {
-                    await testee.initialize(description.program, description.args ?? []);
+                    await testee.initialize(description.program, description.args ?? []).catch((e) => Promise.reject(e));
                 }
             });
 

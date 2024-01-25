@@ -27,7 +27,6 @@ framework.suite('Test Debugger interface');
 framework.testee('emulator [:8520]', new EmulatorSpecification(8520));
 // framework.testee('esp wrover', new ArduinoSpecification('/dev/ttyUSB0', 'esp32:esp32:esp32wrover'));
 
-
 framework.test({
     title: 'Test STEP OVER',
     program: 'test/call.wast',
