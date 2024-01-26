@@ -21,12 +21,19 @@ export interface TesteeOptions {
     connectionTimout?: number;
 }
 
+export enum OutputStyle {
+    plain,
+    github
+}
+
 export class Framework {
     private static implementation: Framework;
 
     private testSuites: Suite[] = [];
 
     public runs: number = 1;
+
+    private outputStyle: OutputStyle = OutputStyle.plain;
 
     private constructor() {
     }
@@ -50,6 +57,14 @@ export class Framework {
 
     public suite(title: string) {
         this.testSuites.push({title: title, tests: [], testees: []});
+    }
+
+    public style(style: OutputStyle): void {
+        this.outputStyle = style;
+    }
+
+    public styling(): OutputStyle {
+        return this.outputStyle;
     }
 
     public test(test: TestScenario) {
