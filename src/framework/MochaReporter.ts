@@ -1,6 +1,6 @@
 import {MochaOptions, reporters, Runner, Suite, Test} from 'mocha';
 import {Reporter} from './Reporter';
-import {Framework, Suite as LatchSuite} from './Framework';
+import {Framework, OutputStyle, Suite as LatchSuite} from './Framework';
 import {Archiver} from './Archiver';
 import {Testee} from './Testee';
 import color = reporters.Base.color;
@@ -64,7 +64,7 @@ class MochaReporter extends reporters.Base {
 
     private timeouts: number = 0;  // number of timed out actions
 
-    constructor(runner: Runner, options?: MochaOptions) {
+    constructor(runner: Runner, options?: MochaOptions, github: boolean = false) {
         super(runner, options);
 
         this.framework = Framework.getImplementation();
@@ -89,7 +89,9 @@ class MochaReporter extends reporters.Base {
 
         runner.on(Runner.constants.EVENT_SUITE_BEGIN, (suite: Suite) => {
             console.log();
-            console.log(color('suite', '%s%s'), this.indent(), suite.title);
+            if (suite.title.length > 0) {
+                console.log(color('suite', '%s%s'), this.group(), suite.title);
+            }
         });
 
         runner.on(Runner.constants.EVENT_SUITE_END, (suite: Suite) => {
@@ -113,7 +115,7 @@ class MochaReporter extends reporters.Base {
             this.failures = Array<any>();
 
             if (this.indentationLevel === 2) {
-                console.log();
+                console.log(this.endgroup());
             }
         });
 
@@ -263,6 +265,14 @@ class MochaReporter extends reporters.Base {
 
     private indent(override?: number): string {
         return ' '.repeat((override ?? this.indentationLevel) * this.indentationSize);
+    }
+
+    private group(): string {
+        return this.framework.styling() === OutputStyle.github ? '::group::' : this.indent();
+    }
+
+    private endgroup(): string {
+        return this.framework.styling() === OutputStyle.github ? '::endgroup::' : '';
     }
 
     private aggregate(result: Result) {
