@@ -1,33 +1,33 @@
-import {ArduinoSpecification, EmulatorSpecification, Expected, Framework, Invoker, Kind, Message, Step, WASM} from '../src/index';
+import {EmulatorSpecification, Expected, Framework, Invoker, Kind, Message, Step, WASM} from '../src/index';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
 
 const framework = Framework.getImplementation();
 
-framework.suite('Test Wasm spec'); // must be called first
+const spec = framework.suite('Test Wasm spec'); // must be called first
 
-framework.testee('emulator [:8500]', new EmulatorSpecification(8500));
+spec.testee('emulator [:8500]', new EmulatorSpecification(8500));
 
 const steps: Step[] = [];
 
 // ✔ ((invoke "8u_good1" (i32.const 0)) (i32.const 97))
-steps.push(new Invoker('8u_good1', [{value: 0, type: WASM.Type.i32}] as WASM.Value[], WASM.i32(97)));
+steps.push(new Invoker('8u_good1', [WASM.i32(0)], WASM.i32(97)));
 
 // ✔ ((invoke "8u_good3" (i32.const 0)) (i32.const 98))
-steps.push(new Invoker('8u_good3', [{value: 0, type: WASM.Type.i32}] as WASM.Value[], WASM.i32(98)));
+steps.push(new Invoker('8u_good3', [WASM.i32(0)], WASM.i32(98)));
 
-framework.test({
+spec.test({
     title: `Test with address_0.wast`,
     program: 'test/address.wast',
     dependencies: [],
     steps: steps
 });
 
-framework.suite('Test Debugger interface');
-framework.testee('emulator [:8520]', new EmulatorSpecification(8520));
+const debug = framework.suite('Test Debugger interface');
+debug.testee('emulator [:8520]', new EmulatorSpecification(8520));
 // framework.testee('esp wrover', new ArduinoSpecification('/dev/ttyUSB0', 'esp32:esp32:esp32wrover'));
 
-framework.test({
+debug.test({
     title: 'Test STEP OVER',
     program: 'test/call.wast',
     steps: [{
@@ -57,4 +57,4 @@ framework.test({
     }]
 });
 
-framework.run();
+framework.run([spec, debug]);
