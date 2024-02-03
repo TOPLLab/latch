@@ -5,9 +5,7 @@ import {TestScenario} from './scenario/TestScenario';
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 
 export interface Suite {
-    title: string;
-    tests: TestScenario[];
-    testees: Testee[];
+
 }
 
 interface DependenceTree {
@@ -26,20 +24,13 @@ export enum OutputStyle {
     github
 }
 
-export class Framework {
-    private static implementation: Framework;
+export class Suite {
+    public title: string;
+    public scenarios: TestScenario[] = [];
+    public testees: Testee[] = [];
 
-    private testSuites: Suite[] = [];
-
-    public runs: number = 1;
-
-    private outputStyle: OutputStyle = OutputStyle.plain;
-
-    private constructor() {
-    }
-
-    private currentSuite(): Suite {
-        return this.testSuites[this.testSuites.length - 1];
+    public constructor(title: string) {
+        this.title = title;
     }
 
     public testee(name: string, specification: TestbedSpecification, scheduler: Scheduler = new HybridScheduler(), options: TesteeOptions = {}) {
@@ -48,15 +39,36 @@ export class Framework {
             testee.skipall();
         }
 
-        this.currentSuite().testees.push(testee);
+        this.testees.push(testee);
+    }
+
+    public test(test: TestScenario) {
+        this.scenarios.push(test);
+    }
+
+    public tests(tests: TestScenario[]) {
+        tests.forEach(test => this.scenarios.push(test));
+    }
+}
+
+export class Framework {
+    private static implementation: Framework;
+
+    public runs: number = 1;
+
+    private outputStyle: OutputStyle = OutputStyle.plain;
+
+    private scheduled: Suite[] = [];
+
+    private constructor() {
+    }
+
+    public suite(title: string): Suite {
+        return new Suite(title);
     }
 
     public suites(): Suite[] {
-        return this.testSuites;
-    }
-
-    public suite(title: string) {
-        this.testSuites.push({title: title, tests: [], testees: []});
+        return this.scheduled;
     }
 
     public style(style: OutputStyle): void {
@@ -67,16 +79,9 @@ export class Framework {
         return this.outputStyle;
     }
 
-    public test(test: TestScenario) {
-        this.currentSuite().tests.push(test);
-    }
-
-    public tests(tests: TestScenario[]) {
-        tests.forEach(test => this.currentSuite().tests.push(test));
-    }
-
-    public run(cores: number = 1) {   // todo remove cores
-        this.testSuites.forEach((suite: Suite) => {
+    public run(suites: Suite[], cores: number = 1) {   // todo remove cores
+        this.scheduled.concat(suites);
+        suites.forEach((suite: Suite) => {
             suite.testees.forEach((testee: Testee) => {
                 const order: TestScenario[] = testee.scheduler.schedule(suite);
                 const first: TestScenario = order[0];
@@ -110,9 +115,9 @@ export class Framework {
     }
 
     // Analyse flakiness
-    public analyse(runs: number = 3, cores: number = 1) {
+    public analyse(suite: Suite[], runs: number = 3, cores: number = 1) {
         this.runs = runs;
-        this.run(cores);
+        this.run(suite, cores);
     }
 
     public static getImplementation() {

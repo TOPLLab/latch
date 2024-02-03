@@ -10,7 +10,15 @@ export class Invoker implements Step {
 
     constructor(func: string, args: Value[], result: Value) {
         this.title = `ASSERT: ${func} ${args.map(val => val.value).join(' ')} ${result.value}`;
-        this.instruction = {kind: Kind.Request, value: Message.invoke(func, args)}
-        this.expected = [{'value': {kind: 'primitive', value: result.value} as Expected<number>}];
+        this.instruction = invoke(func, args);
+        this.expected = returns(result);
     }
+}
+
+export function invoke(func: string, args: Value[]): Instruction {
+    return {kind: Kind.Request, value: Message.invoke(func, args)};
+}
+
+export function returns(n: Value): Expectation[] {
+    return [{'value': {kind: 'primitive', value: n.value} as Expected<number>}]
 }

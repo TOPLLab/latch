@@ -12,7 +12,7 @@ class NoScheduler implements Scheduler {
     identifier = 'no schedule';
 
     public schedule(suite: Suite): TestScenario[] {
-        return suite.tests;
+        return suite.scenarios;
     }
 }
 
@@ -21,7 +21,7 @@ class SimpleScheduler implements Scheduler {
 
     public schedule(suite: Suite): TestScenario[] {
         // get trees
-        const forest = trees(suite.tests);
+        const forest = trees(suite.scenarios);
         // sort trees by program
         forest.forEach(tree => tree.sort((a: TestScenario, b: TestScenario) => a.program.localeCompare(b.program)));
         // flatten forest
@@ -40,7 +40,7 @@ export class HybridScheduler implements Scheduler {
 
     public schedule(suite: Suite): TestScenario[] {
         let scheme: TestScenario[] = [];
-        const forest: TestScenario[][] = trees(suite.tests);
+        const forest: TestScenario[][] = trees(suite.scenarios);
         for (const tree of forest) {
             const split = levels(tree);
             split.forEach(level => level.sort(sortOnProgram));
@@ -54,7 +54,7 @@ export class DependenceScheduler implements Scheduler {
     identifier = 'dependence-prioritizing schedule';
 
     public schedule(suite: Suite): TestScenario[] {
-        const schedule: TestScenario[][] = levels(suite.tests);
+        const schedule: TestScenario[][] = levels(suite.scenarios);
         schedule.forEach(level => level.sort(sortOnProgram));
         return schedule.flat(2);  // we flatten since we don't support parallelism yet (otherwise scenario in the same level can be run in parallel)
     }

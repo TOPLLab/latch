@@ -4,29 +4,39 @@ import {TestbedEvents} from '../../testbeds/Testbed';
 import {Breakpoint} from '../../debug/Breakpoint';
 import {breakpointHitParser} from '../../messaging/Parsers';
 
-export interface Action<T> {
-    act: (testee: Testee) => Promise<T>;
+export interface Dictionary {
+    [index: string]: any;
 }
 
-export interface PureAction<T> extends Action<T> {
-    act: () => Promise<T>;
+export type Assertable<T> = T extends Object ? Dictionary : void;
+
+export function assertable(obj: Object): Dictionary {
+    return obj as any;
 }
 
-export function wait(time: number): PureAction<boolean> {
-    return {act: () => setTimeout(time).then(() => true)}
+export interface Action<T extends Object | void> {
+    act: (testee: Testee) => Promise<Assertable<T>>;
+}
+
+export interface PureAction<T extends Object | void> extends Action<T> {
+    act: () => Promise<Assertable<T>>;
+}
+
+export function wait(time: number): PureAction<void> {
+    return {act: () => setTimeout(time)}
 }
 
 export function awaitBreakpoint(): Action<Breakpoint> {
     return {
         act: (testee: Testee) => {
-            return new Promise<Breakpoint>((resolve) => {
+            return new Promise<Assertable<Breakpoint>>((resolve) => {
                 function breakpointListener(message: string) {
                     // check breakpoint hit message
                     try {
                         const breakpoint = breakpointHitParser(message);
                         // on success: remove listener + resolve
                         testee.testbed?.removeListener(TestbedEvents.OnMessage, breakpointListener);
-                        resolve(breakpoint);
+                        resolve(assertable(breakpoint));
                     } catch (e) {
 
                     }

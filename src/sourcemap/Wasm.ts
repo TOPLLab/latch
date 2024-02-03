@@ -23,6 +23,10 @@ export namespace WASM {
         return {value: n, type: Type.i32};
     }
 
+    export function f32(n: number): WASM.Value {
+        return {value: n, type: Type.f32};
+    }
+
     export interface Frame {
         type: number;
         fidx: string;
