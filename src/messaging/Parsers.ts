@@ -22,7 +22,7 @@ export function invokeParser(text: string): WASM.Value | Exception {
 }
 
 function exception(text: string): boolean {
-    return text.trim()[0] !== '{' && !text.trim().includes('Interrupt');
+    return text.length > 1 && text.toLowerCase().includes('exception') && text.trim()[0] !== '{';
 }
 
 export function ackParser(text: string, ack: string): Ack {
