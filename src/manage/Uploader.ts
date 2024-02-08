@@ -174,7 +174,7 @@ export class ArduinoUploader extends Uploader {
     private stage(program: string): Promise<void> {
         const that = this;
         return new Promise<void>((resolve, reject) => {
-            const command = `xxd -i ${program} | sed -e 's/[^ ]*_wasm/upload_wasm/g' > ${this.sdkpath}/upload.h`;
+            const command = `xxd -i ${program} | sed -e 's/[^ ]*_wasm/upload_wasm/g' > ${this.sdkpath}/bin/upload.h`;
 
             let createHeaders = exec(command);
 
