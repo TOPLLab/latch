@@ -10,12 +10,12 @@ import {SubProcess} from '../bridge/SubProcess';
 import {TestbedSpecification, PlatformType} from './TestbedSpecification';
 
 export class TestbedFactory {
-    private readonly defaultTimeout: number;
+    public readonly timeout: number;
     private readonly compilerFactory: CompilerFactory;
     private readonly uploaderFactory: UploaderFactory;
 
     constructor(timeout: number) {
-        this.defaultTimeout = timeout;
+        this.timeout = timeout;
         this.compilerFactory = new CompilerFactory(WABT);
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
@@ -31,16 +31,6 @@ export class TestbedFactory {
                 return new Emulator(connection as SubProcess);
             default:
                 return Promise.reject('Platform not implemented.');
-        }
-    }
-
-    public timeout(platform: PlatformType): number {
-        switch (platform) {
-            case PlatformType.arduino:
-                return 0;  // No time out for arduino upload
-            case PlatformType.emulator:
-            default:
-                return this.defaultTimeout;
         }
     }
 }

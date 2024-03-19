@@ -14,5 +14,6 @@ export * from './framework/scenario/TestScenario';
 export * from './framework/scenario/Step';
 export * from './framework/scenario/Invoker';
 export * from './testbeds/TestbedSpecification';
+export * from './debug/Breakpoint';
 
 export const latch = Framework.getImplementation();
