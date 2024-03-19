@@ -84,7 +84,7 @@ export abstract class Platform extends EventEmitter implements Testbed {
         return new Promise((resolve, reject) => {
             this.requests.push([request, resolve]);
             this.connection.channel.write(`${request.type}${request.payload?.(map) ?? ''}\n`, (err: any) => {
-                if (err !== undefined) {
+                if (err !== null) {
                     reject(err);
                 }
             });
