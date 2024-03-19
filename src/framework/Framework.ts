@@ -20,6 +20,7 @@ export interface TesteeOptions {
 }
 
 export enum OutputStyle {
+    silent, // TODO
     plain,
     github
 }
@@ -86,7 +87,7 @@ export class Framework {
                 const order: TestScenario[] = testee.scheduler.schedule(suite);
                 const first: TestScenario = order[0];
                 before('Initialize testbed', async function () {
-                    this.timeout(testee.connector.timeout(testee.specification.type));
+                    this.timeout(testee.connector.timeout);
                     await testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e));
                 });
 

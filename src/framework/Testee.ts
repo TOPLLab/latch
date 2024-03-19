@@ -16,6 +16,9 @@ import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 
 function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
+    if (time === 0) {
+        return promise;
+    }
     return Promise.race([promise, new Promise<T>((resolve, reject) => setTimeout(() => reject(`timeout when ${label}`), time))]);
 }
 
@@ -80,7 +83,9 @@ export class Testee { // TODO unified with testbed interface
             const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args ?? []).catch((e) => {
                 reject(e)
             });
-            if (testbed) this.testbed = testbed;
+            if (testbed) {
+                this.testbed = testbed;
+            }
             resolve(this);
         });
     }
@@ -107,17 +112,17 @@ export class Testee { // TODO unified with testbed interface
             });
 
             before('Compile and upload program', async function () {
-                this.timeout(testee.connector.timeout(testee.specification.type));
+                this.timeout(testee.connector.timeout);
                 let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
                 try {
                     await timeout<Object | void>(`uploading module`, testee.timeout, testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 } catch (e) {
-                    await testee.initialize(description.program, description.args ?? []).catch((e) => Promise.reject(e));
+                    await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
                 }
             });
 
             before('Fetch source map', async function () {
-                this.timeout(testee.connector.timeout(testee.specification.type));
+                this.timeout(testee.connector.timeout);
                 map = await testee.mapper.map(description.program);
             });
 

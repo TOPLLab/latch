@@ -8,10 +8,11 @@ export interface Dictionary {
     [index: string]: any;
 }
 
-export type Assertable<T> = T extends Object ? Dictionary : void;
+//export type Assertable<T> = T extends Object ? {[index: string]: any} : void;
+export type Assertable<T extends Object | void> = {[index: string]: any};
 
-export function assertable(obj: Object): Dictionary {
-    return obj as any;
+export function assertable(obj: Object): Assertable<Object> {
+    return obj as Dictionary;
 }
 
 export interface Action<T extends Object | void> {
@@ -48,3 +49,7 @@ export function awaitBreakpoint(): Action<Breakpoint> {
         }
     };
 }
+
+//                testee.testbed?.on(TestbedEvents.OnBreakpointHit, (breakpoint: Breakpoint) => {
+//                     resolve(assertable(breakpoint));
+//                 })

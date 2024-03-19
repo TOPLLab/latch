@@ -19,6 +19,10 @@ function seconds(ms: number): string {
     return `${(ms / 1000).toFixed(0)}s`;
 }
 
+function milliseconds(ms: number): string {
+    return `${ms.toFixed(0)}ms`;
+}
+
 function formatThrownError(message: string): string {
     const substring = message.match(/the string "(.*)" was/);
     return substring !== null ? substring[1] : message;
@@ -75,83 +79,85 @@ class MochaReporter extends reporters.Base {
 
         this.results = [];
 
-        runner.on(Runner.constants.EVENT_RUN_BEGIN, () => {
-            console.log(color('suite', '%sGeneral Information'), this.indent());
-            console.log(color('suite', '%s==================='), this.indent());
+        if (this.framework.styling() !== OutputStyle.silent) {
+            runner.on(Runner.constants.EVENT_RUN_BEGIN, () => {
+                console.log(color('suite', '%sGeneral Information'), this.indent());
+                console.log(color('suite', '%s==================='), this.indent());
 
-            const names: string[] = [];
-            Framework.getImplementation().suites().forEach((suite: LatchSuite) => suite.testees.forEach((platform: Testee) => names.push(platform.name)));
-            names.forEach((name: string) => this.archiver.extend('platforms', name));
-            console.log(color('suite', '%sPlatforms  %s'), this.indent(), names.join(', '));
+                const names: string[] = [];
+                Framework.getImplementation().suites().forEach((suite: LatchSuite) => suite.testees.forEach((platform: Testee) => names.push(platform.name)));
+                names.forEach((name: string) => this.archiver.extend('platforms', name));
+                console.log(color('suite', '%sPlatforms  %s'), this.indent(), names.join(', '));
 
-            console.log(color('suite', '%sVM commit  %s'), this.indent(), '4ce14c2'); // TODO get actual vm commit
-        });
+                console.log(color('suite', '%sVM commit  %s'), this.indent(), '4ce14c2'); // TODO get actual vm commit
+            });
 
-        runner.on(Runner.constants.EVENT_SUITE_BEGIN, (suite: Suite) => {
-            console.log();
-            if (suite.title.length > 0) {
-                console.log(color('suite', '%s%s'), this.group(), suite.title);
-            }
-        });
+            runner.on(Runner.constants.EVENT_SUITE_BEGIN, (suite: Suite) => {
+                console.log();
+                if (suite.title.length > 0) {
+                    console.log(this.group() + color('suite', '%s'), suite.title);
+                }
+            });
 
-        runner.on(Runner.constants.EVENT_SUITE_END, (suite: Suite) => {
-            this.report();
-            this.results = [];
-            this.currentStep = 0;
+            runner.on(Runner.constants.EVENT_SUITE_END, (suite: Suite) => {
+                this.report();
+                this.results = [];
+                this.currentStep = 0;
 
-            if (suite.isPending()) {
-                let format = this.indent(this.indentationLevel + 1) + '\u25D7 Skipping test';
-                this.skipped++;
-                console.log(format);
-            } else if (this.failures.length > 0) {
-                this.failed++;
-                this.archiver.extend('failures', suite.title);
-            } else if (suite.title.length > 0) {
-                this.passed++;
-                this.archiver.extend('passes', suite.title);
-            }
+                if (suite.isPending()) {
+                    let format = this.indent(this.indentationLevel + 1) + '\u25D7 Skipping test';
+                    this.skipped++;
+                    console.log(format);
+                } else if (this.failures.length > 0) {
+                    this.failed++;
+                    this.archiver.extend('failures', suite.title);
+                } else if (suite.title.length > 0) {
+                    this.passed++;
+                    this.archiver.extend('passes', suite.title);
+                }
 
-            this.reportFailure(this.failures);
-            this.failures = Array<any>();
+                this.reportFailure(this.failures);
+                this.failures = Array<any>();
 
-            if (this.indentationLevel === 2) {
-                console.log(this.endgroup());
-            }
-        });
+                if (this.indentationLevel === 2) {
+                    console.log(this.endgroup());
+                }
+            });
 
-        runner.on(Runner.constants.EVENT_TEST_PASS, (test) => {
-            if (this.framework.runs > 1) {
-                this.aggregate({test, passed: true});
-            } else {
-                this.indentationLevel += 1;
-                this.reportResult({test, passed: true});
-                this.indentationLevel -= 1;
-            }
-        });
+            runner.on(Runner.constants.EVENT_TEST_PASS, (test) => {
+                if (this.framework.runs > 1) {
+                    this.aggregate({test, passed: true});
+                } else {
+                    this.indentationLevel += 1;
+                    this.reportResult({test, passed: true});
+                    this.indentationLevel -= 1;
+                }
+            });
 
-        runner.on(Runner.constants.EVENT_TEST_FAIL, (test: Test, error: any) => {
-            if (this.framework.runs > 1) {
-                this.aggregate({test, passed: false, error});
-            } else {
-                this.indentationLevel += 1;
-                this.reportResult({test, passed: false, error});
-                this.indentationLevel -= 1;
-            }
+            runner.on(Runner.constants.EVENT_TEST_FAIL, (test: Test, error: any) => {
+                if (this.framework.runs > 1) {
+                    this.aggregate({test, passed: false, error});
+                } else {
+                    this.indentationLevel += 1;
+                    this.reportResult({test, passed: false, error});
+                    this.indentationLevel -= 1;
+                }
 
-            if (error.message?.toString().includes('failed dependent')) {
-                this.skipped++;
-                this.passed--;
-                return;
-            }
+                if (error.message?.toString().includes('failed dependent')) {
+                    this.skipped++;
+                    this.passed--;
+                    return;
+                }
 
-            if (error.message?.toString().includes('unable to flash')) {
-                this.skipped++;
-                this.failed--;
-                return;
-            }
+                if (error.message?.toString().includes('unable to flash')) {
+                    this.skipped++;
+                    this.failed--;
+                    return;
+                }
 
-            this.failures.push(error);
-        });
+                this.failures.push(error);
+            });
+        }
 
         runner.once(Runner.constants.EVENT_RUN_END, () => {
             const stats = runner.stats;
@@ -175,7 +181,7 @@ class MochaReporter extends reporters.Base {
                 color('light', ' (%s)');
 
             this.archiver.set('passed scenarios', this.passed);
-            console.log(fmt, this.passed, seconds(stats?.duration ?? 0));
+            console.log(fmt, this.passed, milliseconds(stats?.duration ?? 0));
 
             fmt = color('pending', this.indent()) + color('pending', '%d skipped');
 
