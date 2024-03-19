@@ -1,9 +1,9 @@
 export function getFileExtension(file: string): string {
-    let splitted = file.split('.');
-    if (splitted.length === 2) {
-        return splitted.pop()!;
+    let result = /(?:\.([^.]+))?$/.exec(file)
+    if (result === null || result.length < 1) {
+        throw Error('Could not determine file type');
     }
-    throw Error('Could not determine file type');
+    return result[1];
 }
 
 export function find(regex: RegExp, input: string) {
