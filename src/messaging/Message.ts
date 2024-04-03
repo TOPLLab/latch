@@ -131,6 +131,11 @@ export namespace Message {
         let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program);
         return updateModule(compiled.file);
     }
+    
+    export const proxify: Request<void> = {
+        type: Interrupt.proxify,
+        parser: () =>  {}
+    }
 
     export function updateModule(wasm: string): Request<Ack> {
         function payload(binary: Buffer): string {

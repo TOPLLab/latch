@@ -5,12 +5,12 @@ import {Framework} from './Framework';
 import {Action} from './scenario/Actions';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message} from '../messaging/Message';
-import {Testbed} from '../testbeds/Testbed';
-import {TestbedFactory} from '../testbeds/TestbedFactory';
-import {Behaviour, Description, Expectation, Kind} from './scenario/Step';
+import {Testee} from '../testbeds/Testee';
+import {TesteeFactory} from '../testbeds/TesteeFactory';
+import {Behaviour, Description, Expectation, Kind, Step} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './scenario/TestScenario';
-import {TestbedSpecification} from '../testbeds/TestbedSpecification';
+import {TesteeSpecification} from '../testbeds/TesteeSpecification';
 import {Scheduler} from './Scheduler';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
@@ -42,17 +42,38 @@ export function getValue(object: any, field: string): any {
     return object;
 }
 
-export class Testee { // TODO unified with testbed interface
+export interface TestBed {
+    readonly name: string;
+
+    testee?: Testee;
+
+    tests(): TestScenario[];
+
+    readonly connector: TesteeFactory;
+
+    scheduler: Scheduler;
+
+    initialize(program: string, args: string[]): Promise<TestBed>;
+
+    describe(description: TestScenario, runs: number): void;
+
+    shutdown(): Promise<void>;
+
+}
+
+abstract class WARDuinoTestBed implements TestBed { // TODO unified with testee interface?
+
+    abstract tests(): TestScenario[];
 
     /** The current state for each described test */
     private states: Map<string, string> = new Map<string, string>();
 
     /** Factory to establish new connections to VMs */
-    public readonly connector: TestbedFactory;
+    public readonly connector: TesteeFactory;
 
     public readonly mapper: SourceMapFactory;
 
-    public readonly specification: TestbedSpecification;
+    public readonly specification: TesteeSpecification;
 
     public readonly timeout: number;
 
@@ -66,32 +87,32 @@ export class Testee { // TODO unified with testbed interface
 
     public scheduler: Scheduler;
 
-    public testbed?: Testbed;
+    public testee?: Testee;
 
-    constructor(name: string, specification: TestbedSpecification, scheduler: Scheduler, timeout: number, connectionTimeout: number) {
+    constructor(name: string, specification: TesteeSpecification, scheduler: Scheduler, timeout: number, connectionTimeout: number) {
         this.name = name;
         this.specification = specification;
         this.scheduler = scheduler;
         this.timeout = timeout;
-        this.connector = new TestbedFactory(connectionTimeout);
+        this.connector = new TesteeFactory(connectionTimeout);
         this.mapper = new SourceMapFactory();
         this.framework = Framework.getImplementation();
     }
 
-    public async initialize(program: string, args: string[]): Promise<Testee> {
+    public async initialize(program: string, args: string[]): Promise<TestBed> {
         return new Promise(async (resolve, reject) => {
-            const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args ?? []).catch((e) => {
+            const testee: Testee | void = await this.connector.initialize(this.specification, program, args ?? []).catch((e) => {
                 reject(e)
             });
-            if (testbed) {
-                this.testbed = testbed;
+            if (testee) {
+                this.testee = testee;
             }
             resolve(this);
         });
     }
 
     public async shutdown(): Promise<void> {
-        return this.testbed?.kill();
+        return this.testee?.kill();
     }
 
     public describe(description: TestScenario, runs: number = 1) {
@@ -115,7 +136,7 @@ export class Testee { // TODO unified with testbed interface
                 this.timeout(testee.connector.timeout);
                 let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
                 try {
-                    await timeout<Object | void>(`uploading module`, testee.timeout, testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
+                    await timeout<Object | void>(`uploading module`, testee.timeout, testee.testee!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 } catch (e) {
                     await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
                 }
@@ -141,7 +162,7 @@ export class Testee { // TODO unified with testbed interface
             for (let i = 0; i < runs; i++) {
                 if (0 < i) {
                     it('resetting before retry', async function () {
-                        await testee.reset(testee.testbed);
+                        await testee.reset(testee.testee);
                     });
                 }
 
@@ -149,7 +170,7 @@ export class Testee { // TODO unified with testbed interface
                     /** Perform the step and check if expectations were met */
 
                     it(step.title, async function () {
-                        if (testee.testbed === undefined) {
+                        if (testee.testee === undefined) {
                             assert.fail('Cannot run test: no debugger connection.');
                             return;
                         }
@@ -160,7 +181,7 @@ export class Testee { // TODO unified with testbed interface
                                 step.instruction.value.act(testee));
                         } else {
                             actual = await timeout<Object | void>(`sending instruction ${step.instruction.value.type}`, testee.timeout,
-                                testee.testbed.sendRequest(map, step.instruction.value));
+                                testee.testee.sendRequest(map, step.instruction.value));
                         }
 
                         for (const expectation of step.expected ?? []) {
@@ -176,16 +197,16 @@ export class Testee { // TODO unified with testbed interface
         });
     }
 
-    public skipall(): Testee {
+    public skipall(): TestBed {
         this.suiteFunction = describe.skip;
         return this;
     };
 
-    private async reset(instance: Testbed | void) {
+    private async reset(instance: Testee | void) {
         if (instance === undefined) {
             assert.fail('Cannot run test: no debugger connection.');
         } else {
-            await timeout<Object | void>('resetting vm', this.timeout, this.testbed!.sendRequest(new SourceMap.Mapping(), Message.reset));
+            await timeout<Object | void>('resetting vm', this.timeout, this.testee!.sendRequest(new SourceMap.Mapping(), Message.reset));
         }
     }
 
@@ -255,6 +276,42 @@ export class Testee { // TODO unified with testbed interface
             case Behaviour.decreased:
                 expect(actual).to.be.lessThan(previous);
                 break;
+        }
+    }
+}
+
+export class SingleDeviceTestBed extends WARDuinoTestBed {
+    private scenarios: TestScenario[] = [];
+
+    public tests(): TestScenario[] {
+        return this.scenarios;
+    }
+
+    public test(test: TestScenario) {
+        this.scenarios.push(test);
+    }
+}
+
+interface TesteeStep extends Step {
+    testee: Testee;  // TODO I can probably make this an optional field in Step
+}
+
+interface OutOfPlaceScenario extends TestScenario {
+    steps?: TesteeStep[];
+}
+
+class OutOfPlaceTestBed extends WARDuinoTestBed {
+    private scenarios: TestScenario[] = [];
+
+    private proxy?: Testee;
+
+    public tests(): TestScenario[] {
+        return this.scenarios;
+    }
+
+    public test(test: (testee: Testee, proxy: Testee) => TestScenario) {
+        if (this.testee && this.proxy) {
+            this.scenarios.push(test(this.testee, this.proxy));
         }
     }
 }

@@ -9,7 +9,14 @@ import {SubProcess} from '../bridge/SubProcess';
 import {Connection} from '../bridge/Connection';
 import {Serial} from '../bridge/Serial';
 import {CompileOutput} from './Compiler';
-import {TestbedSpecification, PlatformType, SerialOptions, SubprocessOptions} from '../testbeds/TestbedSpecification';
+import {
+    OutofPlaceSpecification,
+    PlatformType,
+    SerialOptions,
+    SubprocessOptions,
+    TesteeSpecification
+} from '../testbeds/TesteeSpecification';
+import {Testee} from '../testbeds/Testee';
 
 enum UploaderEvents {
     compiled = 'compiled',
@@ -33,12 +40,14 @@ export class UploaderFactory {
         this.arduino = arduino;
     }
 
-    public pickUploader(specification: TestbedSpecification, args: string[] = []): Uploader {
+    public pickUploader(specification: TesteeSpecification, args: string[] = []): Uploader {
         switch (specification.type) {
             case PlatformType.arduino:
                 return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
             case PlatformType.emulator:
                 return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
+            case PlatformType.oop:
+                return this.pickUploader((specification as OutofPlaceSpecification).proxy, args);
         }
         throw new Error('Unsupported file type');
     }
@@ -66,9 +75,9 @@ function isReadable(x: Readable | null): x is Readable {
 }
 
 export class EmulatorUploader extends Uploader {
-    private readonly interpreter: string;
-    private readonly args: string[];
-    private readonly port: number;
+    protected readonly interpreter: string;
+    protected readonly args: string[];
+    protected readonly port: number;
 
     constructor(interpreter: string, args: string[] = [], options: SubprocessOptions) {
         super();
@@ -81,7 +90,7 @@ export class EmulatorUploader extends Uploader {
         return this.connectSocket(compiled.file, listener);
     }
 
-    private startWARDuino(program: string): ChildProcess {
+    protected startWARDuino(program: string): ChildProcess {
         const _args: string[] = [program, '--paused', '--socket', (this.port).toString()].concat(this.args);
         return spawn(this.interpreter, _args);
     }
@@ -120,7 +129,7 @@ export class EmulatorUploader extends Uploader {
                             if (listener !== undefined) {
                                 client.on('data', listener);
                             }
-                            resolve(new SubProcess(client, process));
+                            resolve(new SubProcess(that.port.toString(), client, process));
                         });
                     } else {
                         error = data.toString();
@@ -140,6 +149,20 @@ export class EmulatorUploader extends Uploader {
                 reject();
             }
         });
+    }
+}
+
+export class OopUploader extends EmulatorUploader {
+    private proxy: Testee;
+
+    constructor(interpreter: string, args: string[] = [], options: SubprocessOptions, proxy: Testee) {
+        super(interpreter, args, options);
+        this.proxy = proxy;
+    }
+
+    protected startWARDuino(program: string): ChildProcess {
+        const _args: string[] = [program, '--paused', '--socket', (this.port).toString(), '--proxy', this.proxy.connection.address].concat(this.args);
+        return spawn(this.interpreter, _args);
     }
 }
 
@@ -236,7 +259,7 @@ export class ArduinoUploader extends Uploader {
                 if (data.toString().includes('LOADED')) {
                     channel.removeAllListeners('data');
                     that.emit(UploaderEvents.connected);
-                    resolve(new Serial(channel));
+                    resolve(new Serial(that.options.path, channel));
                 }
             });
         });

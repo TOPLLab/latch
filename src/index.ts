@@ -4,7 +4,7 @@ export * from './manage/Compiler';
 export * from './manage/Uploader';
 export * from './util/env';
 export * from './framework/scenario/Actions';
-export * from './framework/Testee';
+export * from './framework/Testbed';
 export * from './framework/Framework';
 export * from './messaging/Parsers';
 export * from './messaging/Message';
@@ -13,7 +13,7 @@ export * from './sourcemap/Wasm';
 export * from './framework/scenario/TestScenario';
 export * from './framework/scenario/Step';
 export * from './framework/scenario/Invoker';
-export * from './testbeds/TestbedSpecification';
+export * from './testbeds/TesteeSpecification';
 export * from './debug/Breakpoint';
 
 export const latch = Framework.getImplementation();

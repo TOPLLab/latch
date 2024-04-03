@@ -1,8 +1,8 @@
-import {Testee} from './Testee';
+import {SingleDeviceTestBed, TestBed} from './Testbed';
 import {HybridScheduler, Scheduler} from './Scheduler';
 import {TestScenario} from './scenario/TestScenario';
 
-import {TestbedSpecification} from '../testbeds/TestbedSpecification';
+import {TesteeSpecification} from '../testbeds/TesteeSpecification';
 
 export interface Suite {
 
@@ -28,14 +28,14 @@ export enum OutputStyle {
 export class Suite {
     public title: string;
     public scenarios: TestScenario[] = [];
-    public testees: Testee[] = [];
+    public testees: TestBed[] = [];
 
     public constructor(title: string) {
         this.title = title;
     }
 
-    public testee(name: string, specification: TestbedSpecification, scheduler: Scheduler = new HybridScheduler(), options: TesteeOptions = {}) {
-        const testee = new Testee(name, specification, scheduler, options.timeout ?? 2000, options.connectionTimout ?? 5000);
+    public testee(name: string, specification: TesteeSpecification, scheduler: Scheduler = new HybridScheduler(), options: TesteeOptions = {}): void {
+        const testee = new SingleDeviceTestBed(name, specification, scheduler, options.timeout ?? 2000, options.connectionTimout ?? 5000);
         if (options.disabled) {
             testee.skipall();
         }
@@ -83,7 +83,7 @@ export class Framework {
     public run(suites: Suite[], cores: number = 1) {   // todo remove cores
         this.scheduled.concat(suites);
         suites.forEach((suite: Suite) => {
-            suite.testees.forEach((testee: Testee) => {
+            suite.testees.forEach((testee: TestBed) => {
                 const order: TestScenario[] = testee.scheduler.schedule(suite);
                 const first: TestScenario = order[0];
                 before('Initialize testbed', async function () {

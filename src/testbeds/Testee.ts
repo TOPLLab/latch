@@ -10,7 +10,7 @@ export enum TestbedEvents {
     OnPushEvent = 'push'
 }
 
-export declare interface Testbed extends EventEmitter {
+export declare interface Testee extends EventEmitter {
     readonly name: string;
 
     connection: Connection;

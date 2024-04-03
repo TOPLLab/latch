@@ -1,6 +1,6 @@
 import {setTimeout} from 'timers/promises';
-import {Testee} from '../Testee';
-import {TestbedEvents} from '../../testbeds/Testbed';
+import {TestBed} from '../Testbed';
+import {TestbedEvents} from '../../testbeds/Testee';
 import {Breakpoint} from '../../debug/Breakpoint';
 import {breakpointHitParser} from '../../messaging/Parsers';
 
@@ -15,8 +15,12 @@ export function assertable(obj: Object): Assertable<Object> {
     return obj as Dictionary;
 }
 
+export function none(): Assertable<void> {
+    return {};
+}
+
 export interface Action<T extends Object | void> {
-    act: (testee: Testee) => Promise<Assertable<T>>;
+    act: (testee: TestBed) => Promise<Assertable<T>>;
 }
 
 export interface PureAction<T extends Object | void> extends Action<T> {
@@ -29,14 +33,14 @@ export function wait(time: number): PureAction<void> {
 
 export function awaitBreakpoint(): Action<Breakpoint> {
     return {
-        act: (testee: Testee) => {
+        act: (testbed: TestBed) => {
             return new Promise<Assertable<Breakpoint>>((resolve) => {
                 function breakpointListener(message: string) {
                     // check breakpoint hit message
                     try {
                         const breakpoint = breakpointHitParser(message);
                         // on success: remove listener + resolve
-                        testee.testbed?.removeListener(TestbedEvents.OnMessage, breakpointListener);
+                        testbed.testee?.removeListener(TestbedEvents.OnMessage, breakpointListener);
                         resolve(assertable(breakpoint));
                     } catch (e) {
 
@@ -44,7 +48,7 @@ export function awaitBreakpoint(): Action<Breakpoint> {
                 }
 
                 // await breakpoint hit
-                testee.testbed?.on(TestbedEvents.OnMessage, breakpointListener)
+                testbed.testee?.on(TestbedEvents.OnMessage, breakpointListener)
             });
         }
     };
