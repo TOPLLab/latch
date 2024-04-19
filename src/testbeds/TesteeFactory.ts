@@ -7,8 +7,7 @@ import {Connection} from '../bridge/Connection';
 import {Arduino} from './Arduino';
 import {Serial} from '../bridge/Serial';
 import {SubProcess} from '../bridge/SubProcess';
-import {OutofPlaceSpecification, PlatformType, TesteeSpecification} from './TesteeSpecification';
-import {Oop} from './Oop';
+import {PlatformType, TesteeSpecification} from './TesteeSpecification';
 
 export class TesteeFactory {
     public readonly timeout: number;
@@ -21,21 +20,32 @@ export class TesteeFactory {
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
 
-    public async initialize(specification: TesteeSpecification, program: string, args: string[]): Promise<Testee> {
-        let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e));
+    public build(specification: TesteeSpecification) {
+        switch (specification.type) {
+            case PlatformType.arduino:
+                return new Arduino(specification);
+            case PlatformType.emulator:
+            default: // TODO add unsupported error
+                return new Emulator(specification);
+        }
+    }
+
+    // TODO move initialize to testees
+    public async initialize(specification: TesteeSpecification, program: string, args: string[]): Promise<Connection> {
+        let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e)); // fixme don't do this twice in oop
         let connection: Connection;
 
         switch (specification.type) {
             case PlatformType.arduino:
-                connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e)) as Serial;
-                return new Arduino(connection as Serial);
+                return await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e)) as Serial;
+                // return new Arduino(connection as Serial);
             case PlatformType.emulator:
-                connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
-                return new Emulator(connection as SubProcess);
-            case PlatformType.oop:
-                let spec: OutofPlaceSpecification = specification as OutofPlaceSpecification;
-                connection = await this.uploaderFactory.pickUploader({type: PlatformType.emulator, options: spec.options}, args).upload(compiled).catch((e) => Promise.reject(e));
-                return new Oop(connection as SubProcess, await this.initialize(spec.proxy, program, args));
+                return await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
+                // return new Emulator(connection as SubProcess);
+            // case PlatformType.oop:
+            //     let spec: OutofPlaceSpecification = specification as OutofPlaceSpecification;
+            //     connection = await this.uploaderFactory.pickUploader({type: PlatformType.emulator, options: spec.options}, args).upload(compiled).catch((e) => Promise.reject(e));
+            //     return new Oop(connection as SubProcess, await this.initialize(spec.proxy, program, args));
             default:
                 return Promise.reject('Platform not implemented.');
         }

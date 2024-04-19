@@ -1,11 +1,14 @@
-import {SingleDeviceTestBed, TestBed} from './Testbed';
+import {OutOfPlaceTestBed, SingleDeviceTestBed, TestBed} from './Testbed';
 import {HybridScheduler, Scheduler} from './Scheduler';
 import {TestScenario} from './scenario/TestScenario';
 
 import {TesteeSpecification} from '../testbeds/TesteeSpecification';
+import {Testee} from '../testbeds/Testee';
 
 export interface Suite {
-
+    title: string;
+    scenarios(): TestScenario[];
+    testees: TestBed[];
 }
 
 interface DependenceTree {
@@ -25,9 +28,10 @@ export enum OutputStyle {
     github
 }
 
-export class Suite {
+
+export class IndividualSuite implements Suite {
     public title: string;
-    public scenarios: TestScenario[] = [];
+    public testScenarios: TestScenario[] = [];
     public testees: TestBed[] = [];
 
     public constructor(title: string) {
@@ -44,11 +48,46 @@ export class Suite {
     }
 
     public test(test: TestScenario) {
-        this.scenarios.push(test);
+        this.testScenarios.push(test);
     }
 
     public tests(tests: TestScenario[]) {
-        tests.forEach(test => this.scenarios.push(test));
+        tests.forEach(test => this.testScenarios.push(test));
+    }
+
+    public scenarios(): TestScenario[] {
+        return this.testScenarios;
+    }
+}
+
+export class OopSuite implements Suite {
+    public title: string;
+    public testScenarios: ((testee: Testee, proxy: Testee) => TestScenario)[] = [];
+    public testees: OutOfPlaceTestBed[] = [];
+
+    public constructor(title: string) {
+        this.title = title;
+    }
+
+    public testbed(name: string, testee: TesteeSpecification, proxy: TesteeSpecification, scheduler: Scheduler = new HybridScheduler(), options: TesteeOptions = {}): void {
+        const testbed: OutOfPlaceTestBed = new OutOfPlaceTestBed(name, testee, proxy, scheduler, options.timeout ?? 2000, options.connectionTimout ?? 5000);
+        if (options.disabled) {
+            testbed.skipall();
+        }
+
+        this.testees.push(testbed);
+    }
+
+    public test(test: (testee: Testee, proxy: Testee) => TestScenario) {
+        this.testScenarios.push(test);
+    }
+
+    public scenarios(): TestScenario[] {
+        return this.testees.flatMap((bed) => this.testScenarios.flatMap((sc) => sc(bed.testee, bed.proxy)))  // todo testees aren't initialized yet
+    }
+
+    public tests(tests: ((testee: Testee, proxy: Testee) => TestScenario)[]) {
+        tests.forEach(test => this.testScenarios.push(test));
     }
 }
 
@@ -64,8 +103,16 @@ export class Framework {
     private constructor() {
     }
 
-    public suite(title: string): Suite {
-        return new Suite(title);
+    public single = {
+        suite(title: string): IndividualSuite {
+            return new IndividualSuite(title);
+        }
+    }
+
+    public oop = {
+        suite(title: string): OopSuite {
+            return new OopSuite(title);
+        }
     }
 
     public suites(): Suite[] {
@@ -87,7 +134,7 @@ export class Framework {
                 const order: TestScenario[] = testee.scheduler.schedule(suite);
                 const first: TestScenario = order[0];
                 before('Initialize testbed', async function () {
-                    this.timeout(testee.connector.timeout);
+                    this.timeout(testee.timeout);
                     await testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e));
                 });
 

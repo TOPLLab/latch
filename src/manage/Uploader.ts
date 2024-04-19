@@ -10,7 +10,6 @@ import {Connection} from '../bridge/Connection';
 import {Serial} from '../bridge/Serial';
 import {CompileOutput} from './Compiler';
 import {
-    OutofPlaceSpecification,
     PlatformType,
     SerialOptions,
     SubprocessOptions,
@@ -46,8 +45,6 @@ export class UploaderFactory {
                 return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
             case PlatformType.emulator:
                 return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
-            case PlatformType.oop:
-                return this.pickUploader((specification as OutofPlaceSpecification).proxy, args);
         }
         throw new Error('Unsupported file type');
     }
@@ -161,8 +158,11 @@ export class OopUploader extends EmulatorUploader {
     }
 
     protected startWARDuino(program: string): ChildProcess {
-        const _args: string[] = [program, '--paused', '--socket', (this.port).toString(), '--proxy', this.proxy.connection.address].concat(this.args);
-        return spawn(this.interpreter, _args);
+        if (this.proxy.connection) {
+            const _args: string[] = [program, '--paused', '--socket', (this.port).toString(), '--proxy', this.proxy.connection.address].concat(this.args);
+            return spawn(this.interpreter, _args);
+        }
+        throw new Error('Starting supervisor: no proxy connection exists');
     }
 }
 

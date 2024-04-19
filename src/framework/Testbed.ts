@@ -45,11 +45,11 @@ export function getValue(object: any, field: string): any {
 export interface TestBed {
     readonly name: string;
 
-    testee?: Testee;
+    readonly timeout: number;
+
+    testee: Testee;
 
     tests(): TestScenario[];
-
-    readonly connector: TesteeFactory;
 
     scheduler: Scheduler;
 
@@ -69,7 +69,7 @@ abstract class WARDuinoTestBed implements TestBed { // TODO unified with testee 
     private states: Map<string, string> = new Map<string, string>();
 
     /** Factory to establish new connections to VMs */
-    public readonly connector: TesteeFactory;
+    public readonly connectionTimeout: number;
 
     public readonly mapper: SourceMapFactory;
 
@@ -87,26 +87,24 @@ abstract class WARDuinoTestBed implements TestBed { // TODO unified with testee 
 
     public scheduler: Scheduler;
 
-    public testee?: Testee;
+    public testee: Testee;
 
     constructor(name: string, specification: TesteeSpecification, scheduler: Scheduler, timeout: number, connectionTimeout: number) {
         this.name = name;
         this.specification = specification;
         this.scheduler = scheduler;
         this.timeout = timeout;
-        this.connector = new TesteeFactory(connectionTimeout);
+        this.connectionTimeout = connectionTimeout;
         this.mapper = new SourceMapFactory();
         this.framework = Framework.getImplementation();
+        this.testee = new TesteeFactory(0).build(specification);
     }
 
     public async initialize(program: string, args: string[]): Promise<TestBed> {
         return new Promise(async (resolve, reject) => {
-            const testee: Testee | void = await this.connector.initialize(this.specification, program, args ?? []).catch((e) => {
+            await this.testee.connect(this.connectionTimeout, program, args ?? []).catch((e) => {
                 reject(e)
             });
-            if (testee) {
-                this.testee = testee;
-            }
             resolve(this);
         });
     }
@@ -133,7 +131,7 @@ abstract class WARDuinoTestBed implements TestBed { // TODO unified with testee 
             });
 
             before('Compile and upload program', async function () {
-                this.timeout(testee.connector.timeout);
+                this.timeout(testee.timeout);
                 let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
                 try {
                     await timeout<Object | void>(`uploading module`, testee.timeout, testee.testee!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
@@ -143,7 +141,7 @@ abstract class WARDuinoTestBed implements TestBed { // TODO unified with testee 
             });
 
             before('Fetch source map', async function () {
-                this.timeout(testee.connector.timeout);
+                this.timeout(testee.timeout);
                 map = await testee.mapper.map(description.program);
             });
 
@@ -280,7 +278,7 @@ abstract class WARDuinoTestBed implements TestBed { // TODO unified with testee 
     }
 }
 
-export class SingleDeviceTestBed extends WARDuinoTestBed {
+export class SingleDeviceTestBed extends WARDuinoTestBed implements TestBed {
     private scenarios: TestScenario[] = [];
 
     public tests(): TestScenario[] {
@@ -300,10 +298,15 @@ interface OutOfPlaceScenario extends TestScenario {
     steps?: TesteeStep[];
 }
 
-class OutOfPlaceTestBed extends WARDuinoTestBed {
+export class OutOfPlaceTestBed extends WARDuinoTestBed implements TestBed {
     private scenarios: TestScenario[] = [];
 
-    private proxy?: Testee;
+    public proxy: Testee;
+
+    constructor(name: string, specification: TesteeSpecification, proxySpecification: TesteeSpecification, scheduler: Scheduler, timeout: number, connectionTimeout: number) {
+        super(name, specification, scheduler, timeout, connectionTimeout);
+        this.proxy = new TesteeFactory(0).build(proxySpecification);
+    }
 
     public tests(): TestScenario[] {
         return this.scenarios;
@@ -313,5 +316,20 @@ class OutOfPlaceTestBed extends WARDuinoTestBed {
         if (this.testee && this.proxy) {
             this.scenarios.push(test(this.testee, this.proxy));
         }
+    }
+
+    public async initialize(program: string, args: string[]): Promise<TestBed> {
+
+        return new Promise(async (resolve, reject) => {
+            await this.proxy.connect(this.connectionTimeout, program, args ?? []).catch((e) => {
+                reject(e)
+            });
+
+            await this.testee.connect(this.connectionTimeout, program, args ?? []).catch((e) => {
+                reject(e)
+            });
+
+            resolve(this);
+        });
     }
 }

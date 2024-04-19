@@ -1,10 +1,25 @@
-import {EmulatorSpecification, Expected, Framework, Invoker, Kind, Message, Step, WASM} from '../src/index';
+import {
+    EmulatorSpecification,
+    Expected,
+    Framework,
+    Invoker,
+    Kind,
+    Message, OopSuite,
+    Step,
+    Suite,
+    WASM
+} from '../src/index';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
+import {Testee} from '../src/testbeds/Testee';
 
 const framework = Framework.getImplementation();
 
-const spec = framework.suite('Test Wasm spec'); // must be called first
+
+
+//
+
+const spec = framework.single.suite('Test Wasm spec'); // must be called first
 
 spec.testee('emulator [:8500]', new EmulatorSpecification(8500));
 
@@ -23,7 +38,7 @@ spec.test({
     steps: steps
 });
 
-const debug = framework.suite('Test Debugger interface');
+const debug = framework.single.suite('Test Debugger interface');
 debug.testee('emulator [:8520]', new EmulatorSpecification(8520));
 // framework.testee('esp wrover', new ArduinoSpecification('/dev/ttyUSB0', 'esp32:esp32:esp32wrover'));
 

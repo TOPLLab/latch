@@ -4,11 +4,15 @@ import {Request} from '../messaging/Message';
 import {MessageQueue} from '../messaging/MessageQueue';
 import {Connection} from '../bridge/Connection';
 import {SourceMap} from '../sourcemap/SourceMap';
+import {TesteeSpecification} from './TesteeSpecification';
+import {TesteeFactory} from './TesteeFactory';
 
 type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
 
 export abstract class Platform extends EventEmitter implements Testee {
-    abstract connection: Connection;
+    abstract connection?: Connection;
+
+    protected specification: TesteeSpecification;
 
     protected requests: [Request<any>, PromiseResolver<any>][];
 
@@ -20,23 +24,39 @@ export abstract class Platform extends EventEmitter implements Testee {
     // Optional monitor to receive all data from platform
     // protected abstract monitor?: (chunk: any) => void; TODO
 
-    protected constructor() {
+    protected constructor(specification: TesteeSpecification) {
         super();
+        this.specification = specification;
         this.requests = [];
         this.messages = new MessageQueue('\n');
     }
 
+    // connect
+    public async connect(timeout: number, program: string, args: string[]): Promise<Connection> {
+        this.connection = await new TesteeFactory(timeout).initialize(this.specification, program, args);
+        this.listen();
+        return this.connection;
+    }
+
+    connected(): boolean {
+        return this.connection !== undefined;
+    }
+
     // listen on duplex channel
     protected listen(): void {
-        this.connection.channel.on('data', (data: Buffer) => {
-            this.messages.push(data.toString());
-            this.process();
-        });
+        if (this.connection) {
+            this.connection.channel.on('data', (data: Buffer) => {
+                this.messages.push(data.toString());
+                this.process();
+            });
+        }
     }
 
     // listen on duplex channel
     public deafen(): void {
-        this.connection.channel.removeAllListeners('data');
+        if (this.connection) {
+            this.connection.channel.removeAllListeners('data');
+        }
     }
 
     // process messages in queue
@@ -75,15 +95,21 @@ export abstract class Platform extends EventEmitter implements Testee {
 
     // kill connection
     public kill(): Promise<void> {
-        this.connection.channel.destroy();
-        return this.connection.channel.destroyed ? Promise.resolve() : Promise.reject(`Cannot close ${this.connection.channel}`);
+        if (this.connection) {
+            this.connection.channel.destroy();
+            return this.connection.channel.destroyed ? Promise.resolve() : Promise.reject(`Cannot close ${this.connection.channel}`);
+        }
+        return Promise.resolve();
     }
 
     // send request over duplex channel
     public sendRequest<R>(map: SourceMap.Mapping, request: Request<R>): Promise<R> {
+        if (!this.connection) {
+            return Promise.reject('Not connected.');
+        }
         return new Promise((resolve, reject) => {
             this.requests.push([request, resolve]);
-            this.connection.channel.write(`${request.type}${request.payload?.(map) ?? ''}\n`, (err: any) => {
+            this.connection!.channel.write(`${request.type}${request.payload?.(map) ?? ''}\n`, (err: any) => {
                 if (err !== null) {
                     reject(err);
                 }

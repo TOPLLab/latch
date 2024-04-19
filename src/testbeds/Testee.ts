@@ -13,7 +13,11 @@ export enum TestbedEvents {
 export declare interface Testee extends EventEmitter {
     readonly name: string;
 
-    connection: Connection;
+    connection?: Connection;
+
+    connect(timeout: number, program: string, args: string[]): Promise<Connection>;
+
+    connected(): boolean;
 
     sendRequest<R>(map: SourceMap.Mapping, request: Request<R>): Promise<R>;
 

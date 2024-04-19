@@ -1,7 +1,7 @@
 export enum PlatformType {
     arduino,
     emulator,
-    oop
+    // oop
 }
 
 export interface ConnectionOptions {
@@ -35,16 +35,16 @@ export class EmulatorSpecification implements TesteeSpecification {
     }
 }
 
-export class OutofPlaceSpecification implements TesteeSpecification {
-    public readonly type: PlatformType = PlatformType.oop;
-    public readonly options: ConnectionOptions;
-    public readonly proxy: EmulatorSpecification;
-
-    constructor(local: number, proxy: EmulatorSpecification) {
-        this.options = {port: local};
-        this.proxy = proxy;
-    }
-}
+// class OutofPlaceSpecification implements TesteeSpecification {
+//     public readonly type: PlatformType = PlatformType.oop;
+//     public readonly options: ConnectionOptions;
+//     public readonly proxy: EmulatorSpecification;
+//
+//     constructor(local: number, proxy: EmulatorSpecification) {
+//         this.options = {port: local};
+//         this.proxy = proxy;
+//     }
+// }
 
 export class ArduinoSpecification implements TesteeSpecification {
     public readonly type: PlatformType;
