@@ -1,21 +1,27 @@
-import {
-    EmulatorSpecification,
-    Expected,
-    Framework,
-    Invoker,
-    Kind,
-    Message, OopSuite,
-    Step,
-    Suite,
-    WASM
-} from '../src/index';
+import {EmulatorSpecification, Expected, Framework, Invoker, Kind, Message, OopSuite, Step, WASM} from '../src';
+import {Testee} from '../src/testbeds/Testee';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
-import {Testee} from '../src/testbeds/Testee';
 
 const framework = Framework.getImplementation();
 
+const oop: OopSuite = framework.oop.suite('Integration tests: out-of-place dummy call');
 
+oop.test((_: Testee, proxy: Testee) => {
+    return {
+        title: 'Test STEP OVER',
+        program: 'test/call.wast',
+        steps: [{
+            title: 'Send DUMP command',
+            instruction: {kind: Kind.Request, value: dump},
+            target: proxy
+        }]
+    }
+});
+
+oop.testbed('out-of-place [:8450] - [8400]', new EmulatorSpecification(8450), new EmulatorSpecification(8400));
+
+framework.run([oop]);
 
 //
 

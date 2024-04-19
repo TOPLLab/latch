@@ -2,7 +2,6 @@ import {assert, expect} from 'chai';
 import 'mocha';
 import {after, describe, PendingSuiteFunction, SuiteFunction} from 'mocha';
 import {Framework} from './Framework';
-import {Action} from './scenario/Actions';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message} from '../messaging/Message';
 import {Testee} from '../testbeds/Testee';
@@ -46,6 +45,8 @@ export interface TestBed {
     readonly name: string;
 
     readonly timeout: number;
+
+    readonly connectionTimeout: number;
 
     testee: Testee;
 
@@ -318,18 +319,27 @@ export class OutOfPlaceTestBed extends WARDuinoTestBed implements TestBed {
         }
     }
 
-    public async initialize(program: string, args: string[]): Promise<TestBed> {
+    public async initialize(program: string, args: string[] = []): Promise<TestBed> {
 
         return new Promise(async (resolve, reject) => {
             await this.proxy.connect(this.connectionTimeout, program, args ?? []).catch((e) => {
                 reject(e)
             });
 
-            await this.testee.connect(this.connectionTimeout, program, args ?? []).catch((e) => {
+            await this.proxy.sendRequest(new SourceMap.Mapping(), Message.proxify);
+
+            args = args.concat(['--proxy', this.proxy.connection!.address]);
+
+            await this.testee.connect(this.connectionTimeout, program, args).catch((e) => {
                 reject(e)
             });
 
             resolve(this);
         });
+    }
+
+    public async shutdown(): Promise<void> {
+        await this.testee.kill()
+        return this.proxy.kill();
     }
 }
