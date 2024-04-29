@@ -232,13 +232,8 @@ export class ArduinoUploader extends Uploader {
                     }
                 }
             );
-            channel.on('data', function (data) {
-                if (data.toString().includes('LOADED')) {
-                    channel.removeAllListeners('data');
-                    that.emit(UploaderEvents.connected);
-                    resolve(new Serial(channel));
-                }
-            });
+            that.emit(UploaderEvents.connected);
+            resolve(new Serial(channel));
         });
     }
 }
