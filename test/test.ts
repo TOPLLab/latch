@@ -1,4 +1,4 @@
-import {EmulatorSpecification, Expected, Framework, Invoker, Kind, Message, Step, WASM} from '../src/index';
+import {ArduinoSpecification, EmulatorSpecification, Expected, Framework, HybridScheduler, Invoker, Kind, Message, Step, WASM} from '../src/index';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
 
@@ -25,7 +25,7 @@ spec.test({
 
 const debug = framework.suite('Test Debugger interface');
 debug.testee('emulator [:8520]', new EmulatorSpecification(8520));
-// framework.testee('esp wrover', new ArduinoSpecification('/dev/ttyUSB0', 'esp32:esp32:esp32wrover'));
+// debug.testee('esp wrover', new ArduinoSpecification('/dev/ttyUSB0', 'esp32:esp32:esp32wrover'), new HybridScheduler(), {connectionTimout: 0});
 
 debug.test({
     title: 'Test STEP OVER',

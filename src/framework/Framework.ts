@@ -1,4 +1,4 @@
-import {Testee} from './Testee';
+import {Testee, timeout} from './Testee';
 import {HybridScheduler, Scheduler} from './Scheduler';
 import {TestScenario} from './scenario/TestScenario';
 
@@ -83,34 +83,30 @@ export class Framework {
     public run(suites: Suite[], cores: number = 1) {   // todo remove cores
         this.scheduled.concat(suites);
         suites.forEach((suite: Suite) => {
-            suite.testees.forEach((testee: Testee) => {
+            suite.testees.forEach(async (testee: Testee) => {
                 const order: TestScenario[] = testee.scheduler.schedule(suite);
                 const first: TestScenario = order[0];
-                before('Initialize testbed', async function () {
-                    this.timeout(testee.connector.timeout);
-                    await testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e));
-                });
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e)));
 
-                describe(`${testee.name}: ${suite.title}`, () => {
-                    // todo add parallelism
+                testee.reporter.suite(`${testee.name}: ${suite.title}`);
+                // todo add parallelism
 
-                    // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
-                    //
-                    //     after('Shutdown debugger', async function () {
-                    //         if (bed.describer.instance) {
-                    //             await bed.connection.kill();
-                    //         }
-                    //     });
-                    // }
+                // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
+                //
+                //     after('Shutdown debugger', async function () {
+                //         if (bed.describer.instance) {
+                //             await bed.connection.kill();
+                //         }
+                //     });
+                // }
 
-                    order.forEach((test: TestScenario) => {
-                        testee.describe(test, this.runs);
-                    });
-                });
+                for (const test of order) {
+                    await testee.describe(test, this.runs);
+                }
 
-                after('Shutdown testbed', async function () {
-                    await testee.shutdown();
-                });
+                await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+
+                testee.reporter.report();
             });
         });
     }
