@@ -10,7 +10,7 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {Scheduler} from './Scheduler';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
-import {Completion, expect, Reporter, Result} from './Reporter';
+import {Completion, expect, Reporter, Result, SuiteResults} from './Reporter';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -63,8 +63,6 @@ export class Testee { // TODO unified with testbed interface
 
     public testbed?: Testbed;
 
-    public reporter = new Reporter();
-
     constructor(name: string, specification: TestbedSpecification, scheduler: Scheduler, timeout: number, connectionTimeout: number) {
         this.name = name;
         this.specification = specification;
@@ -99,14 +97,12 @@ export class Testee { // TODO unified with testbed interface
         return timeout<Object | void>(name, limit, fn());
     }
 
-    public async describe(description: TestScenario, runs: number = 1) {
+    public async describe(description: TestScenario, suiteResult: SuiteResults, runs: number = 1) {
         const testee = this;
 
         if (description.skip) {
             return;
         }
-
-        this.reporter.test(description.title);
 
         // call(this.formatTitle(description.title), function () {
         let map: SourceMap.Mapping = new SourceMap.Mapping();
@@ -176,7 +172,7 @@ export class Testee { // TODO unified with testbed interface
                     }
 
                     testee.states.set(description.title, result);
-                    testee.reporter.step(result);
+                    suiteResult.results.push(result);
                 });
             }
         }
@@ -189,7 +185,7 @@ export class Testee { // TODO unified with testbed interface
 
     private async reset(instance: Testbed | void) {
         if (instance === undefined) {
-            this.reporter.error('Cannot run test: no debugger connection.');
+            this.framework.reporter.error('Cannot run test: no debugger connection.'); // todo
         } else {
             await timeout<Object | void>('resetting vm', this.timeout, this.testbed!.sendRequest(new SourceMap.Mapping(), Message.reset));
         }

@@ -1,13 +1,15 @@
-import {Framework, OutputStyle} from './Framework';
+import {Framework, OutputStyle, Suite} from './Framework';
 import {Behaviour, Description, Step} from './scenario/Step';
 import {getValue, Testee} from './Testee';
+import * as chalk from 'chalk';
 
 // import {deepEqual} from 'deep-equal';
 
 export enum Completion {
     uncommenced = 'not started',  // test hasn't started
     succeeded = 'success',        // test succeeded
-    failed = 'failure: ',         // test failed
+    failed = 'Failure: ',         // test failed
+    timedout = 'timed out',         // test failed
     error = 'error: '             // test was unable to complete
 }
 
@@ -40,6 +42,37 @@ export function expect(step: Step, actual: Object | void, previous?: Object): Re
     return result;
 }
 
+export class SuiteResults {
+    public suite: Suite;
+    public testee: Testee;
+    public results: Result[] = [];
+
+    constructor(suite: Suite, testee: Testee) {
+        this.suite = suite;
+        this.testee = testee;
+    }
+
+    title(): string {
+        return `${this.testee.name}: ${this.suite.title}`;
+    }
+
+    steps(): string[] {
+        return this.results.map((result) => result.toString());
+    }
+
+    passing(): boolean {
+        return this.results.every((result) => result.completion === Completion.succeeded);
+    }
+
+    failing(): boolean {
+        return this.results.some((result) => result.completion === Completion.failed);
+    }
+
+    skipped(): boolean {
+        return this.results.every((result) => result.completion === Completion.uncommenced);
+    }
+}
+
 export class Result {
     public completion: Completion = Completion.uncommenced;  // completion status of the step
     public name: string; // name of the step
@@ -51,7 +84,17 @@ export class Result {
     }
 
     toString(): string {
-        return `${this.name}\n      ${this.completion}${this.description}`;
+        switch (this.completion) {
+            case Completion.succeeded:
+                return `${chalk.hex('#40a02b')('✔')} ${this.name}`;
+            case Completion.uncommenced:
+                return `${this.name}: skipped`;
+            case Completion.error:
+            case Completion.failed:
+            default:
+                return `${chalk.hex('#e64553')('✖')} ${this.name}\n        ${chalk.hex('#e64553')(this.completion)}${chalk.hex('#e64553')(this.description)}`;
+
+        }
     }
 
     error(description: string) {
@@ -65,7 +108,7 @@ export class Result {
             this.completion = Completion.succeeded;
         } else {
             this.completion = Completion.failed;
-            this.description = `Expected ${expected} got ${actual}`;
+            this.description = `Expected ${chalk.bold(expected)} got ${chalk.bold(actual)}`;
         }
     }
 
@@ -137,11 +180,61 @@ export class Result {
 export class Reporter {
     private output: string = '';
 
+    private readonly indentationSize: number = 2;
+    private indentationLevel: number = 2;
+
+    private suites: SuiteResults[] = [];
+
     constructor() {
     }
 
-    report() {
-        console.log(this.output);
+    private indent(override?: number): string {
+        return ' '.repeat((override ?? this.indentationLevel) * this.indentationSize);
+    }
+
+    general() {
+        console.log(chalk.hex('#8839EF')(`${this.indent()}General Information`));
+        console.log(chalk.hex('#8839EF')(`${this.indent()}===================`));
+        console.log(chalk.hex('#8839EF')(`${this.indent()}VM commit  ${'47a672e'}`));
+        console.log();
+    }
+
+    report(suiteResult: SuiteResults) {
+        this.suites.push(suiteResult);
+        console.log(chalk.hex('#8839EF')(`${this.indent()}${suiteResult.title()}`));
+        this.indentationLevel += 1;
+        suiteResult.steps().forEach((result) => {
+            console.log(chalk.black(`${this.indent()}${result}`));
+        });
+        this.indentationLevel -= 1;
+        console.log();
+    }
+
+    results(time: number) {
+        console.log(chalk.hex('#8839EF')(`${this.indent()}Test Suite Results`));
+        console.log(chalk.hex('#8839EF')(`${this.indent()}==================`));
+        console.log();
+        console.log(chalk.hex('#8839EF')(`${this.indent()}Scenarios:`));
+
+        this.indentationLevel += 1;
+        console.log(chalk.hex('#40a02b')(`${this.indent()}${this.suites.filter((suite) => suite.passing()).length} passing` + chalk.black(` (${time.toFixed(0)}ms)`)));
+        console.log(chalk.hex('#e64553')(`${this.indent()}${this.suites.filter((suite) => suite.failing()).length} failing`));
+        console.log(chalk.black(`${this.indent()}${this.suites.filter((suite) => suite.skipped()).length} skipped`));
+        console.log();
+        this.indentationLevel -= 1;
+
+        console.log(chalk.hex('#8839EF')(`${this.indent()}Actions:`));
+
+        this.indentationLevel += 1;
+        console.log(chalk.hex('#40a02b')(`${this.indent()}${this.suites.flatMap((suite) =>
+            suite.results.filter((result) => result.completion === Completion.succeeded).length).reduce((acc, val) => acc + val, 0)} passing`));
+        console.log(chalk.hex('#e64553')(`${this.indent()}${this.suites.flatMap((suite) =>
+            suite.results.filter((result) => result.completion === Completion.failed).length).reduce((acc, val) => acc + val, 0)} failing`));
+        console.log(chalk.black(`${this.indent()}${this.suites.flatMap((suite) =>
+            suite.results.filter((result) => result.completion === Completion.timedout).length).reduce((acc, val) => acc + val, 0)} timeouts`));
+        this.indentationLevel -= 1;
+
+        console.log();
     }
 
     style(style: OutputStyle) {
