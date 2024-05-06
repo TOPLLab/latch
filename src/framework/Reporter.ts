@@ -2,6 +2,7 @@ import {Framework, OutputStyle, Suite} from './Framework';
 import {Behaviour, Description, Step} from './scenario/Step';
 import {getValue, Testee} from './Testee';
 import * as chalk from 'chalk';
+import {Archiver} from './Archiver';
 
 // import {deepEqual} from 'deep-equal';
 
@@ -185,7 +186,11 @@ export class Reporter {
 
     private suites: SuiteResults[] = [];
 
+    private archiver: Archiver;
+
     constructor() {
+        this.archiver = new Archiver(`${process.env.TESTFILE?.replace('.asserts.wast', '.wast') ?? 'suite'}.${Date.now()}.log`);
+        this.archiver.set('date', new Date(Date.now()).toISOString());
     }
 
     private indent(override?: number): string {
@@ -211,30 +216,52 @@ export class Reporter {
     }
 
     results(time: number) {
+        this.archiver.set('duration (ms)', Math.round(time));
+
+        let passing = this.suites.filter((suite) => suite.passing()).length;
+        let failing = this.suites.filter((suite) => suite.failing()).length;
+        const skipped = this.suites.filter((suite) => suite.skipped()).length;
+
+        this.suites.filter((suite) => suite.failing()).forEach((suite) => this.archiver.extend('failures', suite.title()));
+        this.suites.filter((suite) => suite.passing()).forEach((suite) => this.archiver.extend('passes', suite.title()));
+
+        this.archiver.set('passed scenarios', passing);
+        this.archiver.set('skipped scenarios', skipped);
+        this.archiver.set('failed scenarios', failing);
+
         console.log(chalk.hex('#8839EF')(`${this.indent()}Test Suite Results`));
         console.log(chalk.hex('#8839EF')(`${this.indent()}==================`));
         console.log();
         console.log(chalk.hex('#8839EF')(`${this.indent()}Scenarios:`));
 
         this.indentationLevel += 1;
-        console.log(chalk.hex('#40a02b')(`${this.indent()}${this.suites.filter((suite) => suite.passing()).length} passing` + chalk.black(` (${time.toFixed(0)}ms)`)));
-        console.log(chalk.hex('#e64553')(`${this.indent()}${this.suites.filter((suite) => suite.failing()).length} failing`));
-        console.log(chalk.black(`${this.indent()}${this.suites.filter((suite) => suite.skipped()).length} skipped`));
+        console.log(chalk.hex('#40a02b')(`${this.indent()}${passing} passing` + chalk.black(` (${time.toFixed(0)}ms)`)));
+        console.log(chalk.hex('#e64553')(`${this.indent()}${failing} failing`));
+        console.log(chalk.black(`${this.indent()}${skipped} skipped`));
         console.log();
         this.indentationLevel -= 1;
 
         console.log(chalk.hex('#8839EF')(`${this.indent()}Actions:`));
 
+        passing = this.suites.flatMap((suite) =>
+            suite.results.filter((result) =>
+                result.completion === Completion.succeeded).length).reduce((acc, val) => acc + val, 0);
+        failing = this.suites.flatMap((suite) =>
+            suite.results.filter((result) =>
+                result.completion === Completion.failed).length).reduce((acc, val) => acc + val, 0);
+        const timedout = this.suites.flatMap((suite) =>
+            suite.results.filter((result) =>
+                result.completion === Completion.timedout).length).reduce((acc, val) => acc + val, 0);
+
         this.indentationLevel += 1;
-        console.log(chalk.hex('#40a02b')(`${this.indent()}${this.suites.flatMap((suite) =>
-            suite.results.filter((result) => result.completion === Completion.succeeded).length).reduce((acc, val) => acc + val, 0)} passing`));
-        console.log(chalk.hex('#e64553')(`${this.indent()}${this.suites.flatMap((suite) =>
-            suite.results.filter((result) => result.completion === Completion.failed).length).reduce((acc, val) => acc + val, 0)} failing`));
-        console.log(chalk.black(`${this.indent()}${this.suites.flatMap((suite) =>
-            suite.results.filter((result) => result.completion === Completion.timedout).length).reduce((acc, val) => acc + val, 0)} timeouts`));
+        console.log(chalk.hex('#40a02b')(`${this.indent()}${passing} passing`));
+        console.log(chalk.hex('#e64553')(`${this.indent()}${failing} failing`));
+        console.log(chalk.black(`${this.indent()}${timedout} timeouts`));
         this.indentationLevel -= 1;
 
         console.log();
+
+        this.archiver.write();
     }
 
     style(style: OutputStyle) {
