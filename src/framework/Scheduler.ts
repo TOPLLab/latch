@@ -1,31 +1,43 @@
 import {Suite} from './Framework';
-import {TestScenario} from "./scenario/TestScenario";
+import {TestScenario} from './scenario/TestScenario';
+import {Test} from 'mocha';
 
 export abstract class Scheduler {
     public abstract readonly identifier: string;
 
-    // sort the scenario into an efficient schedule
-    abstract schedule(suite: Suite): TestScenario[];
+    // sort the scenario into an efficient sequential schedule
+    abstract sequential(suite: Suite): TestScenario[];
+
+    // sort the scenario into an efficient schedule for parallel execution
+    abstract parallel(suite: Suite, cores: number): TestScenario[][];
 }
 
 class NoScheduler implements Scheduler {
     identifier = 'no schedule';
 
-    public schedule(suite: Suite): TestScenario[] {
+    public sequential(suite: Suite): TestScenario[] {
         return suite.scenarios;
+    }
+
+    public parallel(suite: Suite): TestScenario[][] {
+        return [suite.scenarios];
     }
 }
 
 class SimpleScheduler implements Scheduler {
     identifier = 'sort on program';
 
-    public schedule(suite: Suite): TestScenario[] {
+    public sequential(suite: Suite): TestScenario[] {
+        // flatten forest
+        return this.parallel(suite).flat(2);
+    }
+
+    public parallel(suite: Suite): TestScenario[][] {
         // get trees
         const forest = trees(suite.scenarios);
         // sort trees by program
         forest.forEach(tree => tree.sort((a: TestScenario, b: TestScenario) => a.program.localeCompare(b.program)));
-        // flatten forest
-        return forest.flat(2);
+        return forest;
     }
 }
 
@@ -38,7 +50,7 @@ class SimpleScheduler implements Scheduler {
 export class HybridScheduler implements Scheduler {
     identifier = 'hybrid schedule';
 
-    public schedule(suite: Suite): TestScenario[] {
+    public sequential(suite: Suite): TestScenario[] {
         let scheme: TestScenario[] = [];
         const forest: TestScenario[][] = trees(suite.scenarios);
         for (const tree of forest) {
@@ -48,15 +60,33 @@ export class HybridScheduler implements Scheduler {
         }
         return scheme;
     }
+
+    public parallel(suite: Suite): TestScenario[][] {
+        const scheme: TestScenario[][] = [];
+        const forest: TestScenario[][] = trees(suite.scenarios);
+        for (const tree of forest) {
+            const split: TestScenario[][] = levels(tree);
+            split.forEach(level => level.sort(sortOnProgram));
+            for (let i = 0; i < split.length; i++) {
+                scheme[i].concat(split[i]);
+            }
+        }
+        return scheme;
+    }
 }
 
 export class DependenceScheduler implements Scheduler {
     identifier = 'dependence-prioritizing schedule';
 
-    public schedule(suite: Suite): TestScenario[] {
-        const schedule: TestScenario[][] = levels(suite.scenarios);
+    public sequential(suite: Suite): TestScenario[] {
+        // flatten forest
+        return this.parallel(suite).flat(2);
+    }
+
+    public parallel(suite: Suite): TestScenario[][] {
+        const schedule: TestScenario[][] = levels([...suite.scenarios]);
         schedule.forEach(level => level.sort(sortOnProgram));
-        return schedule.flat(2);  // we flatten since we don't support parallelism yet (otherwise scenario in the same level can be run in parallel)
+        return schedule;
     }
 }
 

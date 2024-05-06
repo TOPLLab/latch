@@ -31,12 +31,15 @@ export class Suite {
     public scenarios: TestScenario[] = [];
     public testees: Testee[] = [];
 
-    public constructor(title: string) {
+    public scheduler: Scheduler;
+
+    public constructor(title: string, scheduler: Scheduler = new HybridScheduler()) {
         this.title = title;
+        this.scheduler = scheduler;
     }
 
-    public testee(name: string, specification: TestbedSpecification, scheduler: Scheduler = new HybridScheduler(), options: TesteeOptions = {}) {
-        const testee = new Testee(name, specification, scheduler, options.timeout ?? 2000, options.connectionTimout ?? 5000);
+    public testee(name: string, specification: TestbedSpecification, options: TesteeOptions = {}) {
+        const testee = new Testee(name, specification, options.timeout ?? 2000, options.connectionTimout ?? 5000);
         if (options.disabled) {
             testee.skipall();
         }
@@ -67,8 +70,8 @@ export class Framework {
     private constructor() {
     }
 
-    public suite(title: string): Suite {
-        return new Suite(title);
+    public suite(title: string, scheduler: Scheduler = new HybridScheduler()): Suite {
+        return new Suite(title, scheduler);
     }
 
     public suites(): Suite[] {
@@ -83,16 +86,30 @@ export class Framework {
         return this.outputStyle;
     }
 
-    public async run(suites: Suite[]) {   // todo remove cores
+    public async sequencial(suites: Suite[]) {
         this.scheduled.concat(suites);
         this.reporter.general();
         const t0 = performance.now();
         for (const suite of suites) {
             for (const testee of suite.testees) {
-                const order: TestScenario[] = testee.scheduler.schedule(suite);
+                const order: TestScenario[] = suite.scheduler.sequential(suite);
                 await this.runSuite(suite, testee, order);
             }
         }
+        const t1 = performance.now();
+        this.reporter.results(t1 - t0);
+    }
+
+    public async run(suites: Suite[]) {
+        this.scheduled.concat(suites);
+        this.reporter.general();
+        const t0 = performance.now();
+        await Promise.all(suites.map(async (suite: Suite) => {
+            await Promise.all(suite.testees.map(async (testee: Testee) => {
+                const order: TestScenario[] = suite.scheduler.sequential(suite);
+                await this.runSuite(suite, testee, order);
+            }))
+        }))
         const t1 = performance.now();
         this.reporter.results(t1 - t0);
     }
@@ -102,9 +119,9 @@ export class Framework {
         this.reporter.general();
         const t0 = performance.now();
         await Promise.all(suites.map(async (suite: Suite) => {
-            await Promise.all(suite.testees.map(async (testee: Testee) => {
-                const order: TestScenario[] = testee.scheduler.schedule(suite);
-                await this.runSuite(suite, testee, order);
+            const order: TestScenario[][] = suite.scheduler.parallel(suite, suite.testees.length);
+            await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
+                await this.runSuite(suite, testee, order[i % suite.testees.length]);
             }))
         }))
         const t1 = performance.now();
