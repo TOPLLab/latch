@@ -80,41 +80,53 @@ export class Framework {
         return this.outputStyle;
     }
 
-    public run(suites: Suite[], cores: number = 1) {   // todo remove cores
+    public async run(suites: Suite[]) {   // todo remove cores
         this.scheduled.concat(suites);
-        suites.forEach((suite: Suite) => {
-            suite.testees.forEach(async (testee: Testee) => {
+        const t0 = performance.now();
+        for (const suite of suites) {
+            for (const testee of suite.testees) {
                 const order: TestScenario[] = testee.scheduler.schedule(suite);
-                const first: TestScenario = order[0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e)));
+                await this.execute(suite, testee, order);
+            }
+        }
+        const t1 = performance.now();
+        console.log(`(${(t1 - t0).toFixed(0)}ms)`);
+    }
 
-                testee.reporter.suite(`${testee.name}: ${suite.title}`);
-                // todo add parallelism
+    public async parallel(suites: Suite[]) {
+        this.scheduled.concat(suites);
+        const t0 = performance.now();
+        await Promise.all(suites.map(async (suite: Suite) => {
+            await Promise.all(suite.testees.map(async (testee: Testee) => {
+                const order: TestScenario[] = testee.scheduler.schedule(suite);
+                await this.execute(suite, testee, order);
+            }))
+        }))
+        const t1 = performance.now();
+        console.log(`(${(t1 - t0).toFixed(0)}ms)`);
+    }
 
-                // if (!bed.disabled) { // TODO necessary? isn't this done in de test itself?
-                //
-                //     after('Shutdown debugger', async function () {
-                //         if (bed.describer.instance) {
-                //             await bed.connection.kill();
-                //         }
-                //     });
-                // }
+    private async execute(suite: Suite, testee: Testee, order: TestScenario[]) {
+        const first: TestScenario = order[0];
 
-                for (const test of order) {
-                    await testee.describe(test, this.runs);
-                }
+        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e)));
 
-                await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+        testee.reporter.suite(`${testee.name}: ${suite.title}`);
 
-                testee.reporter.report();
-            });
-        });
+        for (const test of order) {
+            await testee.describe(test, this.runs);
+        }
+
+        await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+
+        testee.reporter.report();
+        console.log(`ran on ${testee.name}`)
     }
 
     // Analyse flakiness
-    public analyse(suite: Suite[], runs: number = 3, cores: number = 1) {
+    public analyse(suite: Suite[], runs: number = 3) {
         this.runs = runs;
-        this.run(suite, cores);
+        this.run(suite);
     }
 
     public static getImplementation() {
