@@ -1,7 +1,7 @@
 import {Framework, OutputStyle, Suite} from './Framework';
 import {Behaviour, Description, Step} from './scenario/Step';
 import {getValue, Testee} from './Testee';
-import * as chalk from 'chalk';
+import * as chalk from 'ansi-colors';
 import {Archiver} from './Archiver';
 
 // import {deepEqual} from 'deep-equal';
@@ -87,13 +87,13 @@ export class Result {
     toString(): string {
         switch (this.completion) {
             case Completion.succeeded:
-                return `${chalk.hex('#40a02b')('✔')} ${this.name}`;
+                return `${chalk.green('✔')} ${this.name}`;
             case Completion.uncommenced:
                 return `${this.name}: skipped`;
             case Completion.error:
             case Completion.failed:
             default:
-                return `${chalk.hex('#e64553')('✖')} ${this.name}\n        ${chalk.hex('#e64553')(this.completion)}${chalk.hex('#e64553')(this.description)}`;
+                return `${chalk.red('✖')} ${this.name}\n        ${chalk.red(this.completion)}${chalk.red(this.description)}`;
 
         }
     }
@@ -109,7 +109,7 @@ export class Result {
             this.completion = Completion.succeeded;
         } else {
             this.completion = Completion.failed;
-            this.description = `Expected ${chalk.bold(expected)} got ${chalk.bold(actual)}`;
+            this.description = `Expected ${chalk.bold(`${expected}`)} got ${chalk.bold(`${actual}`)}`;
         }
     }
 
@@ -198,18 +198,18 @@ export class Reporter {
     }
 
     general() {
-        console.log(chalk.hex('#8839EF')(`${this.indent()}General Information`));
-        console.log(chalk.hex('#8839EF')(`${this.indent()}===================`));
-        console.log(chalk.hex('#8839EF')(`${this.indent()}VM commit  ${'47a672e'}`));
+        console.log(chalk.blue(`${this.indent()}General Information`));
+        console.log(chalk.blue(`${this.indent()}===================`));
+        console.log(chalk.blue(`${this.indent()}VM commit   ${'47a672e'}`));
         console.log();
     }
 
     report(suiteResult: SuiteResults) {
         this.suites.push(suiteResult);
-        console.log(chalk.hex('#8839EF')(`${this.indent()}${suiteResult.title()}`));
+        console.log(chalk.blue(`${this.indent()}${suiteResult.title()}`));
         this.indentationLevel += 1;
         suiteResult.steps().forEach((result) => {
-            console.log(chalk.black(`${this.indent()}${result}`));
+            console.log(chalk.reset(`${this.indent()}${result}`));
         });
         this.indentationLevel -= 1;
         console.log();
@@ -229,19 +229,21 @@ export class Reporter {
         this.archiver.set('skipped scenarios', skipped);
         this.archiver.set('failed scenarios', failing);
 
-        console.log(chalk.hex('#8839EF')(`${this.indent()}Test Suite Results`));
-        console.log(chalk.hex('#8839EF')(`${this.indent()}==================`));
+        console.log(chalk.blue(`${this.indent()}Test Suite Results`));
+        console.log(chalk.blue(`${this.indent()}==================`));
         console.log();
-        console.log(chalk.hex('#8839EF')(`${this.indent()}Scenarios:`));
+        console.log(chalk.blue(`${this.indent()}Scenarios:`));
 
         this.indentationLevel += 1;
-        console.log(chalk.hex('#40a02b')(`${this.indent()}${passing} passing` + chalk.black(` (${time.toFixed(0)}ms)`)));
-        console.log(chalk.hex('#e64553')(`${this.indent()}${failing} failing`));
-        console.log(chalk.black(`${this.indent()}${skipped} skipped`));
+        console.log(chalk.green(`${this.indent()}${passing} passing` + chalk.reset(` (${time.toFixed(0)}ms)`)));
+        if (failing > 0) {
+            console.log(chalk.red(`${this.indent()}${failing} failing`));
+        }
+        console.log(chalk.reset(`${this.indent()}${skipped} skipped`));
         console.log();
         this.indentationLevel -= 1;
 
-        console.log(chalk.hex('#8839EF')(`${this.indent()}Actions:`));
+        console.log(chalk.blue(`${this.indent()}Actions:`));
 
         passing = this.suites.flatMap((suite) =>
             suite.results.filter((result) =>
@@ -249,14 +251,18 @@ export class Reporter {
         failing = this.suites.flatMap((suite) =>
             suite.results.filter((result) =>
                 result.completion === Completion.failed).length).reduce((acc, val) => acc + val, 0);
-        const timedout = this.suites.flatMap((suite) =>
+        const timeouts = this.suites.flatMap((suite) =>
             suite.results.filter((result) =>
                 result.completion === Completion.timedout).length).reduce((acc, val) => acc + val, 0);
 
         this.indentationLevel += 1;
-        console.log(chalk.hex('#40a02b')(`${this.indent()}${passing} passing`));
-        console.log(chalk.hex('#e64553')(`${this.indent()}${failing} failing`));
-        console.log(chalk.black(`${this.indent()}${timedout} timeouts`));
+        console.log(chalk.green(`${this.indent()}${passing} passing`));
+        if (failing > 0) {
+            console.log(chalk.red(`${this.indent()}${failing} failing`));
+        }
+        if (timeouts > 0) {
+            console.log(chalk.reset(`${this.indent()}${timeouts} timeouts`));
+        }
         this.indentationLevel -= 1;
 
         console.log();
