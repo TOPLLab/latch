@@ -10,7 +10,7 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {Scheduler} from './Scheduler';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
-import {Completion, expect, Reporter, Result, SuiteResults} from './Reporter';
+import {Completion, expect, Reporter, Result, ScenarioResult, SuiteResults} from './Reporter';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -96,6 +96,7 @@ export class Testee { // TODO unified with testbed interface
 
     public async describe(description: TestScenario, suiteResult: SuiteResults, runs: number = 1) {
         const testee = this;
+        const scenarioResult: ScenarioResult = new ScenarioResult(description, testee);
 
         if (description.skip) {
             return;
@@ -137,7 +138,6 @@ export class Testee { // TODO unified with testbed interface
 
             for (const step of description.steps ?? []) {
                 /** Perform the step and check if expectations were met */
-
                 await this.step(step.title, testee.timeout, async function () {
                     let result: Result = new Result(step.title, 'incomplete');
                     if (testee.testbed === undefined) {
@@ -169,9 +169,10 @@ export class Testee { // TODO unified with testbed interface
                     }
 
                     testee.states.set(description.title, result);
-                    suiteResult.results.push(result);
+                    scenarioResult.results.push(result);
                 });
             }
+            suiteResult.scenarios.push(scenarioResult);
         }
     }
 

@@ -3,6 +3,7 @@ import {Behaviour, Description, Step} from './scenario/Step';
 import {getValue, Testee} from './Testee';
 import * as chalk from 'ansi-colors';
 import {Archiver} from './Archiver';
+import {TestScenario} from './scenario/TestScenario';
 
 // import {deepEqual} from 'deep-equal';
 
@@ -46,7 +47,7 @@ export function expect(step: Step, actual: Object | void, previous?: Object): Re
 export class SuiteResults {
     public suite: Suite;
     public testee: Testee;
-    public results: Result[] = [];
+    public scenarios: ScenarioResult[] = [];
 
     constructor(suite: Suite, testee: Testee) {
         this.suite = suite;
@@ -55,6 +56,33 @@ export class SuiteResults {
 
     title(): string {
         return `${this.testee.name}: ${this.suite.title}`;
+    }
+
+    passing(): boolean {
+        return this.scenarios.every((scenario) => scenario.passing());
+    }
+
+    failing(): boolean {
+        return this.scenarios.some((scenario) => scenario.failing());
+    }
+
+    skipped(): boolean {
+        return this.scenarios.every((scenario) => scenario.skipped());
+    }
+}
+
+export class ScenarioResult {
+    public test: TestScenario;
+    public testee: Testee;
+    public results: Result[] = [];
+
+    constructor(test: TestScenario, testee: Testee) {
+        this.test = test;
+        this.testee = testee;
+    }
+
+    title(): string {
+        return `${this.testee.name}: ${this.test.title}`;
     }
 
     steps(): string[] {
@@ -207,23 +235,29 @@ export class Reporter {
     report(suiteResult: SuiteResults) {
         this.suites.push(suiteResult);
         console.log(chalk.blue(`${this.indent()}${suiteResult.title()}`));
-        this.indentationLevel += 1;
-        suiteResult.steps().forEach((result) => {
-            console.log(chalk.reset(`${this.indent()}${result}`));
+        console.log();
+        suiteResult.scenarios.forEach((scenario) => {
+            console.log(chalk.blue(`${this.indent()}${scenario.title()}`));
+            this.indentationLevel += 1;
+            scenario.results.forEach((result) => {
+                console.log(chalk.reset(`${this.indent()}${result}`));
+            });
+            this.indentationLevel -= 1;
         });
-        this.indentationLevel -= 1;
         console.log();
     }
 
     results(time: number) {
         this.archiver.set('duration (ms)', Math.round(time));
 
-        let passing = this.suites.filter((suite) => suite.passing()).length;
-        let failing = this.suites.filter((suite) => suite.failing()).length;
-        const skipped = this.suites.filter((suite) => suite.skipped()).length;
+        let passing = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.passing()).length;
+        let failing = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.failing()).length;
+        const skipped = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.skipped()).length;
 
-        this.suites.filter((suite) => suite.failing()).forEach((suite) => this.archiver.extend('failures', suite.title()));
-        this.suites.filter((suite) => suite.passing()).forEach((suite) => this.archiver.extend('passes', suite.title()));
+        const scs = this.suites.flatMap((suite) => suite.scenarios);
+
+        this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.failing()).forEach((scenario) => this.archiver.extend('failures', scenario.title()));
+        this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.passing()).forEach((scenario) => this.archiver.extend('passes', scenario.title()));
 
         this.archiver.set('passed scenarios', passing);
         this.archiver.set('skipped scenarios', skipped);
@@ -245,14 +279,14 @@ export class Reporter {
 
         console.log(chalk.blue(`${this.indent()}Actions:`));
 
-        passing = this.suites.flatMap((suite) =>
-            suite.results.filter((result) =>
+        passing = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
+            scenario.results.filter((result) =>
                 result.completion === Completion.succeeded).length).reduce((acc, val) => acc + val, 0);
-        failing = this.suites.flatMap((suite) =>
-            suite.results.filter((result) =>
+        failing = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
+            scenario.results.filter((result) =>
                 result.completion === Completion.failed).length).reduce((acc, val) => acc + val, 0);
-        const timeouts = this.suites.flatMap((suite) =>
-            suite.results.filter((result) =>
+        const timeouts = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
+            scenario.results.filter((result) =>
                 result.completion === Completion.timedout).length).reduce((acc, val) => acc + val, 0);
 
         this.indentationLevel += 1;
