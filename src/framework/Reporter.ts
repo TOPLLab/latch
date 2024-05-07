@@ -1,11 +1,9 @@
-import {Framework, OutputStyle, Suite} from './Framework';
+import {OutputStyle, Suite} from './Framework';
 import {Behaviour, Description, Step} from './scenario/Step';
 import {getValue, Testee} from './Testee';
-import * as chalk from 'ansi-colors';
+import {blue, bold, green, red, reset} from 'ansi-colors';
 import {Archiver} from './Archiver';
 import {TestScenario} from './scenario/TestScenario';
-
-// import {deepEqual} from 'deep-equal';
 
 export enum Completion {
     uncommenced = 'not started',  // test hasn't started
@@ -115,13 +113,13 @@ export class Result {
     toString(): string {
         switch (this.completion) {
             case Completion.succeeded:
-                return `${chalk.green('✔')} ${this.name}`;
+                return `${green('✔')} ${this.name}`;
             case Completion.uncommenced:
                 return `${this.name}: skipped`;
             case Completion.error:
             case Completion.failed:
             default:
-                return `${chalk.red('✖')} ${this.name}\n        ${chalk.red(this.completion)}${chalk.red(this.description)}`;
+                return `${red('✖')} ${this.name}\n        ${red(this.completion)}${red(this.description)}`;
 
         }
     }
@@ -133,11 +131,11 @@ export class Result {
 
     public expectPrimitive<T>(actual: T, expected: T): void {
         // this.completion = deepEqual(actual, expected) ? Completion.succeeded : Completion.failed;
-        if (actual === expected) {
+        if (deepEqual(actual, expected)) {
             this.completion = Completion.succeeded;
         } else {
             this.completion = Completion.failed;
-            this.description = `Expected ${chalk.bold(`${expected}`)} got ${chalk.bold(`${actual}`)}`;
+            this.description = `Expected ${bold(`${expected}`)} got ${bold(`${actual}`)}`;
         }
     }
 
@@ -169,7 +167,7 @@ export class Result {
     public expectBehaviour(actual: any, previous: any, behaviour: Behaviour): void {
         switch (behaviour) {
             case Behaviour.unchanged:
-                if (actual === previous) {
+                if (deepEqual(actual, previous)) {
                     this.completion = Completion.succeeded;
                 } else {
                     this.completion = Completion.failed;
@@ -177,7 +175,7 @@ export class Result {
                 }
                 break;
             case Behaviour.changed:
-                if (actual !== previous) {
+                if (!deepEqual(actual, previous)) {
                     this.completion = Completion.succeeded;
                 } else {
                     this.completion = Completion.failed;
@@ -226,21 +224,21 @@ export class Reporter {
     }
 
     general() {
-        console.log(chalk.blue(`${this.indent()}General Information`));
-        console.log(chalk.blue(`${this.indent()}===================`));
-        console.log(chalk.blue(`${this.indent()}VM commit   ${'47a672e'}`));
+        console.log(blue(`${this.indent()}General Information`));
+        console.log(blue(`${this.indent()}===================`));
+        console.log(blue(`${this.indent()}VM commit   ${'47a672e'}`));
         console.log();
     }
 
     report(suiteResult: SuiteResults) {
         this.suites.push(suiteResult);
-        console.log(chalk.blue(`${this.indent()}${suiteResult.title()}`));
+        console.log(blue(`${this.indent()}${suiteResult.title()}`));
         console.log();
         suiteResult.scenarios.forEach((scenario) => {
-            console.log(chalk.blue(`${this.indent()}${scenario.title()}`));
+            console.log(blue(`${this.indent()}${scenario.title()}`));
             this.indentationLevel += 1;
             scenario.results.forEach((result) => {
-                console.log(chalk.reset(`${this.indent()}${result}`));
+                console.log(reset(`${this.indent()}${result}`));
             });
             this.indentationLevel -= 1;
         });
@@ -263,21 +261,21 @@ export class Reporter {
         this.archiver.set('skipped scenarios', skipped);
         this.archiver.set('failed scenarios', failing);
 
-        console.log(chalk.blue(`${this.indent()}Test Suite Results`));
-        console.log(chalk.blue(`${this.indent()}==================`));
+        console.log(blue(`${this.indent()}Test Suite Results`));
+        console.log(blue(`${this.indent()}==================`));
         console.log();
-        console.log(chalk.blue(`${this.indent()}Scenarios:`));
+        console.log(blue(`${this.indent()}Scenarios:`));
 
         this.indentationLevel += 1;
-        console.log(chalk.green(`${this.indent()}${passing} passing` + chalk.reset(` (${time.toFixed(0)}ms)`)));
+        console.log(green(`${this.indent()}${passing} passing` + reset(` (${time.toFixed(0)}ms)`)));
         if (failing > 0) {
-            console.log(chalk.red(`${this.indent()}${failing} failing`));
+            console.log(red(`${this.indent()}${failing} failing`));
         }
-        console.log(chalk.reset(`${this.indent()}${skipped} skipped`));
+        console.log(reset(`${this.indent()}${skipped} skipped`));
         console.log();
         this.indentationLevel -= 1;
 
-        console.log(chalk.blue(`${this.indent()}Actions:`));
+        console.log(blue(`${this.indent()}Actions:`));
 
         passing = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
             scenario.results.filter((result) =>
@@ -290,12 +288,12 @@ export class Reporter {
                 result.completion === Completion.timedout).length).reduce((acc, val) => acc + val, 0);
 
         this.indentationLevel += 1;
-        console.log(chalk.green(`${this.indent()}${passing} passing`));
+        console.log(green(`${this.indent()}${passing} passing`));
         if (failing > 0) {
-            console.log(chalk.red(`${this.indent()}${failing} failing`));
+            console.log(red(`${this.indent()}${failing} failing`));
         }
         if (timeouts > 0) {
-            console.log(chalk.reset(`${this.indent()}${timeouts} timeouts`));
+            console.log(reset(`${this.indent()}${timeouts} timeouts`));
         }
         this.indentationLevel -= 1;
 
@@ -326,4 +324,8 @@ export class Reporter {
     step(result: Result) {
         this.output += `    ${result.toString()}\n`;
     }
+}
+
+function deepEqual(a: any, b: any): boolean {
+    return a === b || (isNaN(a) && isNaN(b));
 }
