@@ -121,7 +121,7 @@ export class Framework {
         await Promise.all(suites.map(async (suite: Suite) => {
             const order: TestScenario[][] = suite.scheduler.parallel(suite, suite.testees.length);
             await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
-                await this.runSuite(suite, testee, order[i % suite.testees.length]);
+                await this.runSuite(suite, testee, order[i % order.length]);
             }))
         }))
         const t1 = performance.now();
