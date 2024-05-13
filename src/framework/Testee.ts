@@ -7,10 +7,9 @@ import {Kind} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './scenario/TestScenario';
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
-import {Scheduler} from './Scheduler';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
-import {Completion, expect, Reporter, Result, ScenarioResult, SuiteResults} from './Reporter';
+import {Completion, expect, Result, ScenarioResult, SuiteResults} from './Reporter';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -195,6 +194,9 @@ export class Testee { // TODO unified with testbed interface
     }
 
     private failedDependencies(description: TestScenario): TestScenario[] {
-        return (description?.dependencies ?? []).filter(dependence => this.states.get(dependence.title)?.completion !== Completion.succeeded);
+        return (description?.dependencies ?? []).filter(dependence => {
+            const c = this.states.get(dependence.title)?.completion;
+            return !(c === Completion.succeeded || c === Completion.uncommenced);
+        });
     }
 }

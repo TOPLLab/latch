@@ -241,8 +241,8 @@ export class Reporter {
                 console.log(reset(`${this.indent()}${result}`));
             });
             this.indentationLevel -= 1;
+            console.log();
         });
-        console.log();
     }
 
     results(time: number) {
