@@ -86,7 +86,7 @@ export class Framework {
         return this.outputStyle;
     }
 
-    public async sequencial(suites: Suite[]) {
+    public async sequential(suites: Suite[]) {
         this.scheduled.concat(suites);
         this.reporter.general();
         const t0 = performance.now();

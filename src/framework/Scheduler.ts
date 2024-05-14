@@ -12,7 +12,7 @@ export abstract class Scheduler {
     abstract parallel(suite: Suite, cores: number): TestScenario[][];
 }
 
-class NoScheduler implements Scheduler {
+export class NoScheduler implements Scheduler {
     identifier = 'no schedule';
 
     public sequential(suite: Suite): TestScenario[] {
@@ -36,8 +36,7 @@ class SimpleScheduler implements Scheduler {
         // get trees
         const forest = trees(suite.scenarios);
         // sort trees by program
-        forest.forEach(tree => tree.sort((a: TestScenario, b: TestScenario) => a.program.localeCompare(b.program)));
-        return forest;
+        return forest.map(tree => tree.flat().sort((a: TestScenario, b: TestScenario) => a.program.localeCompare(b.program)));
     }
 }
 
@@ -52,23 +51,21 @@ export class HybridScheduler implements Scheduler {
 
     public sequential(suite: Suite): TestScenario[] {
         let scheme: TestScenario[] = [];
-        const forest: TestScenario[][] = trees(suite.scenarios);
+        const forest: TestScenario[][][] = trees(suite.scenarios);
         for (const tree of forest) {
-            const split = levels(tree);
-            split.forEach(level => level.sort(sortOnProgram));
-            scheme = scheme.concat(split.flat(2));
+            tree.forEach(level => level.sort(sortOnProgram));
+            scheme = scheme.concat(tree.flat(2));
         }
-        return scheme;
+        return scheme.reverse();
     }
 
     public parallel(suite: Suite): TestScenario[][] {
         const scheme: TestScenario[][] = [];
-        const forest: TestScenario[][] = trees(suite.scenarios);
+        const forest: TestScenario[][][] = trees(suite.scenarios);
         for (const tree of forest) {
-            const split: TestScenario[][] = levels(tree);
-            split.forEach(level => level.sort(sortOnProgram));
-            for (let i = 0; i < split.length; i++) {
-                scheme[i].concat(split[i]);
+            tree.forEach(level => level.sort(sortOnProgram));
+            for (let i = 0; i < tree.length; i++) {
+                scheme[i] = tree[i];
             }
         }
         return scheme;
@@ -84,9 +81,8 @@ export class DependenceScheduler implements Scheduler {
     }
 
     public parallel(suite: Suite): TestScenario[][] {
-        const schedule: TestScenario[][] = levels([...suite.scenarios]);
-        schedule.forEach(level => level.sort(sortOnProgram));
-        return schedule;
+        const forest: TestScenario[][][] = trees([...suite.scenarios]);
+        return forest.map(tree => tree.map(level => level.sort(sortOnProgram)).flat()).reverse();
     }
 }
 
@@ -98,64 +94,87 @@ function sortOnProgram(a: TestScenario, b: TestScenario) {
 }
 
 // aggregate dependence forest into trees
-function trees(input: TestScenario[]): TestScenario[][] {
+function trees(input: TestScenario[]): TestScenario[][][] {
     // sort input
     input.sort(comparator);
 
     // output
-    const forest: TestScenario[][] = [];
+    let forest: TestScenario[][][] = [];
 
     // scenario that have already been seen
     const seen = new Set<TestScenario>();
 
     // loop over all scenario of the input
+    let pointer = 0;
     for (const test of input) {
         if (seen.has(test)) {
             // test already in forest, nothing to do
-            break;
+            continue;
         }
         // start a new tree
-        let tree: TestScenario[] = [test];
+        let t: TestScenario[][] = tree(test);
+        forest.push(t);
+        pointer = forest.length - 1;
 
-        // add test to seen
-        seen.add(test);
-
-        // depth first descent over dependencies
-        let lifo: TestScenario[] = [...test.dependencies ?? []];
-        while (lifo.length > 0) {
-            const dep: TestScenario = lifo.shift()!;
-
-            if (seen.has(dep)) {
-                // dependency has been seen: merge the old tree holding the dependency with the new tree
-                const index = forest.findIndex(t => t.includes(dep));
-                if (index < 0) {
-                    // already merged the tree
-                    break;
+        // add all tests to seen
+        for (const s of t.flat()) {
+            if (seen.has(s)) {
+                // fold tree into forest
+                const k = forest.findIndex((tree) => tree.some((l) => l.includes(s)));
+                if (k < 0) {
+                    continue;
                 }
-                const oldTree = forest[index];
-
-                // extend new tree with old tree
-                tree = tree.concat(oldTree);
-
-                // remove old tree from forest
-                forest.splice(index, 1);
+                if (k !== pointer) {
+                    forest[k] = merge(forest[pointer], forest[k]);
+                    forest[pointer] = [];
+                    pointer = k;
+                }
             } else {
-                // dependency has not been seen: add dependency
-                tree.push(dep);
-
-                // traverse its dependencies recursively
-                lifo = lifo.concat(dep.dependencies ?? []);
-
-                // add dependency to seen collection
-                seen.add(dep);
+                seen.add(s);
             }
         }
-
-        // update forest
-        forest.push(tree);
     }
 
-    return forest;
+    return forest.filter((t) => t.length > 0);
+}
+
+function tree(root: TestScenario): TestScenario[][] {
+    let result: TestScenario[][] = [];
+
+    let lifo: TestScenario[] = [...root.dependencies ?? []];
+    for (const test of lifo) {
+        const c = tree(test);
+        result = merge(c, result);
+    }
+
+    result.unshift([root]);
+    return result;
+}
+
+function merge(a: TestScenario[][], b: TestScenario[][]): TestScenario[][] {
+    const seen = new Set<TestScenario>();
+
+    const merged: Set<TestScenario>[] = [];
+    const longest = (a.length > b.length ? a : b).reverse();
+    const other = (a.length <= b.length ? a : b).reverse();
+    for (const [i, tests] of longest.entries()) {
+        merged.push(new Set());
+        tests.forEach((t) => {
+            if (!seen.has(t)) {
+                seen.add(t);
+                merged[i].add(t);
+            }
+        });
+        if (i < other.length) {
+            other[i].forEach((o) => {
+                if (!seen.has(o)) {
+                    seen.add(o);
+                    merged[i].add(o);
+                }
+            });
+        }
+    }
+    return merged.map((s) => Array.from(s)).reverse(); // a.map((l, i) => [...l, ...b[i] ?? []]);
 }
 
 function comparator(a: TestScenario, b: TestScenario): number {
