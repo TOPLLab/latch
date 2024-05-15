@@ -123,7 +123,12 @@ export class Framework {
             await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
                 await this.runSuite(suite, testee, order[i % order.length]);
             }))
+
+            await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
+                await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+            }))
         }))
+
         const t1 = performance.now();
         this.reporter.results(t1 - t0);
     }
@@ -141,7 +146,6 @@ export class Framework {
             await testee.describe(test, suiteResult, this.runs);
         }
 
-        await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
         this.reporter.report(suiteResult);
     }
 
