@@ -59,14 +59,16 @@ export class HybridScheduler implements Scheduler {
         return scheme.reverse();
     }
 
-    public parallel(suite: Suite): TestScenario[][] {
+    public parallel(suite: Suite, cores: number): TestScenario[][] {
         const scheme: TestScenario[][] = [];
+        for (let i = 0; i < cores; i++) {
+            scheme.push([]);
+        }
         const forest: TestScenario[][][] = trees(suite.scenarios);
-        for (const tree of forest) {
+        for (const [i, tree] of forest.entries()) {
             tree.forEach(level => level.sort(sortOnProgram));
-            for (let i = 0; i < tree.length; i++) {
-                scheme[i] = tree[i];
-            }
+            let index = i % cores;
+            scheme[index] = scheme[index].concat(tree.flat(2));
         }
         return scheme;
     }
