@@ -10,6 +10,7 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import {Completion, expect, Result, ScenarioResult, SuiteResults} from './Reporter';
+import {Request} from '../messaging/Message'
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -153,10 +154,12 @@ export class Testee { // TODO unified with testbed interface
                             result.error(err);
                         });
                     } else {
-                        actual = await timeout<Object | void>(`sending instruction ${step.instruction.value.type}`, testee.timeout,
-                            testee.testbed.sendRequest(map, step.instruction.value)).catch((err) => {
-                            result.error(err);
-                        });
+                        actual = await testee.recoverable(testee, step.instruction.value, map,
+                            (testee, req, map) => timeout<Object | void>(`sending instruction ${req.type}`, testee.timeout,
+                                testee.testbed!.sendRequest(map, req)),
+                            (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
+                                await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
+                            }), 1);
                     }
 
                     if (result.completion === Completion.uncommenced) {
@@ -173,6 +176,22 @@ export class Testee { // TODO unified with testbed interface
             }
             suiteResult.scenarios.push(scenarioResult);
         }
+    }
+
+    private async recoverable(testee: Testee, step: Request<any>, map: SourceMap.Mapping,
+        attempt: (t: Testee, req: Request<any>, m: SourceMap.Mapping) => Promise<Object | void>,
+        recover: (t: Testee) => Promise<any>,
+        retries: number = 0): Promise<Object | void> {
+        let result: Object | void = undefined;
+        let error;
+        while (0 <= retries && result === undefined) {
+            result = await attempt(testee, step, map).catch(async (err) => {
+                error = err;
+                await recover(testee);
+            });
+            retries--;
+        }
+        return (result === undefined) ? Promise.reject(error) : result;
     }
 
     public skipall(): Testee {
