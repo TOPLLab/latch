@@ -81,8 +81,8 @@ export class DependenceScheduler implements Scheduler {
     }
 
     public parallel(suite: Suite): TestScenario[][] {
-        const forest: TestScenario[][][] = trees([...suite.scenarios]);
-        return forest.map(tree => tree.map(level => level.sort(sortOnProgram)).flat()).reverse();
+        const forest: TestScenario[][][] = trees(suite.scenarios);
+        return forest.map(tree => tree.reverse().map(level => level.sort(sortOnProgram)).flat()).reverse();
     }
 }
 
