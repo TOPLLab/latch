@@ -13,6 +13,10 @@ export enum Completion {
     error = 'error: '             // test was unable to complete
 }
 
+function indent(level: number, size: number = 2): string {
+    return ' '.repeat(level * size);
+}
+
 export function expect(step: Step, actual: Object | void, previous?: Object): Result {
     const result: Result = new Result(step.title, '');
     result.completion = Completion.succeeded;
@@ -46,6 +50,7 @@ export class SuiteResults {
     public suite: Suite;
     public testee: Testee;
     public scenarios: ScenarioResult[] = [];
+    public error?: Error;
 
     constructor(suite: Suite, testee: Testee) {
         this.suite = suite;
@@ -61,7 +66,7 @@ export class SuiteResults {
     }
 
     failing(): boolean {
-        return this.scenarios.some((scenario) => scenario.failing());
+        return this.error !== undefined || this.scenarios.some((scenario) => scenario.failing());
     }
 
     skipped(): boolean {
@@ -73,6 +78,7 @@ export class ScenarioResult {
     public test: TestScenario;
     public testee: Testee;
     public results: Result[] = [];
+    public error?: Error;
 
     constructor(test: TestScenario, testee: Testee) {
         this.test = test;
@@ -88,15 +94,27 @@ export class ScenarioResult {
     }
 
     passing(): boolean {
-        return this.results.every((result) => result.completion === Completion.succeeded);
+        return this.error === undefined && this.results.every((result) => result.completion === Completion.succeeded);
     }
 
     failing(): boolean {
-        return this.results.some((result) => result.completion === Completion.failed);
+        return this.error !== undefined || this.results.some((result) => result.completion === Completion.failed);
     }
 
     skipped(): boolean {
         return this.results.every((result) => result.completion === Completion.uncommenced);
+    }
+
+    report(level: number): void {
+        console.log(blue(`${indent(level)}${this.title()}`));
+        if (this.error) {
+            console.log(red(`${indent(level + 1)}✖ Error: ${this.error.message}`));
+        } else {
+            this.results.forEach((result) => {
+                result.report(level + 1);
+            });
+        }
+        console.log()
     }
 }
 
@@ -108,6 +126,10 @@ export class Result {
     constructor(name: string, description: string) {
         this.name = name;
         this.description = description;
+    }
+
+    report(level: number) {
+        console.log(reset(`${indent(level)}${this}`));
     }
 
     toString(): string {
@@ -207,7 +229,6 @@ export class Result {
 export class Reporter {
     private output: string = '';
 
-    private readonly indentationSize: number = 2;
     private indentationLevel: number = 2;
 
     private suites: SuiteResults[] = [];
@@ -219,8 +240,8 @@ export class Reporter {
         this.archiver.set('date', new Date(Date.now()).toISOString());
     }
 
-    private indent(override?: number): string {
-        return ' '.repeat((override ?? this.indentationLevel) * this.indentationSize);
+    private indent(override?: number) {
+        return indent(override ?? this.indentationLevel);
     }
 
     general() {
@@ -234,15 +255,14 @@ export class Reporter {
         this.suites.push(suiteResult);
         console.log(blue(`${this.indent()}${suiteResult.title()}`));
         console.log();
-        suiteResult.scenarios.forEach((scenario) => {
-            console.log(blue(`${this.indent()}${scenario.title()}`));
-            this.indentationLevel += 1;
-            scenario.results.forEach((result) => {
-                console.log(reset(`${this.indent()}${result}`));
+        if (suiteResult.error) {
+            console.log(red(`${this.indent(this.indentationLevel + 1)}✖ Error: ${suiteResult.error.message ?? suiteResult.error}`));
+        } else {
+            suiteResult.scenarios.forEach((scenario) => {
+                scenario.report(this.indentationLevel);
             });
-            this.indentationLevel -= 1;
-            console.log();
-        });
+        }
+        console.log();
     }
 
     results(time: number) {

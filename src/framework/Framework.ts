@@ -138,7 +138,7 @@ export class Framework {
 
         const first: TestScenario = order[0];
 
-        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e) => Promise.reject(e)));
+        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => suiteResult.error = e));
 
         // testee.reporter.suite(`${testee.name}: ${suite.title}`);
 

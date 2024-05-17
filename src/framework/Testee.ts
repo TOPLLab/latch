@@ -1,6 +1,6 @@
 import {Framework} from './Framework';
 import {SourceMap} from '../sourcemap/SourceMap';
-import {Message} from '../messaging/Message';
+import {Message, Request} from '../messaging/Message';
 import {Testbed} from '../testbeds/Testbed';
 import {TestbedFactory} from '../testbeds/TestbedFactory';
 import {Kind} from './scenario/Step';
@@ -10,7 +10,6 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import {Completion, expect, Result, ScenarioResult, SuiteResults} from './Reporter';
-import {Request} from '../messaging/Message'
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -111,6 +110,8 @@ export class Testee { // TODO unified with testbed interface
             if (failedDependencies.length > 0) {
                 throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
             }
+        }).catch((e: Error) => {
+            scenarioResult.error = e;
         });
 
         await this.run('Compile and upload program', testee.connector.timeout, async function () {
@@ -120,10 +121,14 @@ export class Testee { // TODO unified with testbed interface
             } catch (e) {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
             }
+        }).catch((e: Error) => {
+            scenarioResult.error = e;
         });
 
         await this.run('Compile and upload program', testee.connector.timeout, async function () {
             map = await testee.mapper.map(description.program);
+        }).catch((e: Error) => {
+            scenarioResult.error = e;
         });
 
         /** Each test is made of one or more scenario */
@@ -133,6 +138,8 @@ export class Testee { // TODO unified with testbed interface
             if (0 < i) {
                 await this.run('resetting before retry', testee.timeout, async function () {
                     await testee.reset(testee.testbed);
+                }).catch((e: Error) => {
+                    scenarioResult.error = e;
                 });
             }
 
@@ -158,8 +165,13 @@ export class Testee { // TODO unified with testbed interface
                             (testee, req, map) => timeout<Object | void>(`sending instruction ${req.type}`, testee.timeout,
                                 testee.testbed!.sendRequest(map, req)),
                             (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
-                                await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
-                            }), 1);
+                                await testee.initialize(description.program, description.args ?? []).catch((o) => {
+                                    return Promise.reject(o)
+                                });
+                            }), 1).catch((e: Error) => {
+                            result.completion = (e.message.includes('timeout')) ? Completion.timedout : Completion.error;
+                            result.description = e.message;
+                        });
                     }
 
                     if (result.completion === Completion.uncommenced) {
