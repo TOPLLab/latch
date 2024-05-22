@@ -9,8 +9,9 @@ export enum Completion {
     uncommenced = 'not started',  // test hasn't started
     succeeded = 'success',        // test succeeded
     failed = 'Failure: ',         // test failed
-    timedout = 'timed out',         // test failed
-    error = 'error: '             // test was unable to complete
+    timedout = 'timed out',       // test failed
+    error = 'error: ',            // test was unable to complete
+    skipped = 'skipped'           // test has failing dependencies
 }
 
 function indent(level: number, size: number = 2): string {
@@ -119,13 +120,14 @@ export class ScenarioResult {
 }
 
 export class Result {
-    public completion: Completion = Completion.uncommenced;  // completion status of the step
+    public completion: Completion;  // completion status of the step
     public name: string; // name of the step
     public description: string;
 
-    constructor(name: string, description: string) {
+    constructor(name: string, description: string, completion?: Completion) {
         this.name = name;
         this.description = description;
+        this.completion = completion ?? Completion.uncommenced;
     }
 
     report(level: number) {

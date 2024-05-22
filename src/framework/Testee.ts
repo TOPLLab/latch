@@ -108,6 +108,7 @@ export class Testee { // TODO unified with testbed interface
         await this.run('Check for failing dependencies', testee.timeout, async function () {
             const failedDependencies: TestScenario[] = testee.failedDependencies(description);
             if (failedDependencies.length > 0) {
+                testee.states.set(description.title, new Result('Skipping', 'Test has failing dependencies', Completion.skipped));
                 throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
             }
         }).catch((e: Error) => {
@@ -130,6 +131,11 @@ export class Testee { // TODO unified with testbed interface
         }).catch((e: Error) => {
             scenarioResult.error = e;
         });
+
+        if (scenarioResult.error) {
+            suiteResult.scenarios.push(scenarioResult);
+            return;
+        }
 
         /** Each test is made of one or more scenario */
 
@@ -226,8 +232,12 @@ export class Testee { // TODO unified with testbed interface
 
     private failedDependencies(description: TestScenario): TestScenario[] {
         return (description?.dependencies ?? []).filter(dependence => {
-            const c = this.states.get(dependence.title)?.completion;
-            return !(c === Completion.succeeded || c === Completion.uncommenced);
+            if (this.states.get(dependence.title)) {
+                const c = this.states.get(dependence.title)!.completion;
+                return !(c === Completion.succeeded || c === Completion.uncommenced);
+            } else {
+                return false;
+            }
         });
     }
 }

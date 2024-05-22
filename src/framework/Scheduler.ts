@@ -50,27 +50,13 @@ export class HybridScheduler implements Scheduler {
     identifier = 'hybrid schedule';
 
     public sequential(suite: Suite): TestScenario[] {
-        let scheme: TestScenario[] = [];
         const forest: TestScenario[][][] = trees(suite.scenarios);
-        for (const tree of forest) {
-            tree.forEach(level => level.sort(sortOnProgram));
-            scheme = scheme.concat(tree.flat(2));
-        }
-        return scheme.reverse();
+        return flatVertical(forest).flat().reverse(); //.flatMap((tree) => flatVertical(tree));
     }
 
     public parallel(suite: Suite, cores: number): TestScenario[][] {
-        const scheme: TestScenario[][] = [];
-        for (let i = 0; i < cores; i++) {
-            scheme.push([]);
-        }
         const forest: TestScenario[][][] = trees(suite.scenarios);
-        for (const [i, tree] of forest.entries()) {
-            tree.forEach(level => level.sort(sortOnProgram));
-            let index = i % cores;
-            scheme[index] = scheme[index].concat(tree.flat(2));
-        }
-        return scheme;
+        return flatVertical(forest)
     }
 }
 
@@ -230,4 +216,19 @@ function lowest(test: TestScenario, levels: TestScenario[][]): number {
         }
     }
     return -1;
+}
+
+function flatVertical<T>(arr: T[][]): T[] {
+    const flattened: T[][] = []
+    for (let i = 0; i < Math.max(...arr.map((r) => r.length)); i++) {
+        flattened.push([]);
+    }
+
+    for (const row of arr) {
+        for (const [index, entry] of row.entries()) {
+            flattened[index].push(entry);
+        }
+    }
+
+    return flattened.flat()
 }
