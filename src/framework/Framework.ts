@@ -93,7 +93,13 @@ export class Framework {
         for (const suite of suites) {
             for (const testee of suite.testees) {
                 const order: TestScenario[] = suite.scheduler.sequential(suite);
-                await this.runSuite(suite, testee, order);
+                const result: SuiteResults = new SuiteResults(suite, testee);
+
+                const first: TestScenario = order[0];
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error = e));
+
+                await this.runSuite(result, testee, order);
+                this.reporter.report(result);
             }
         }
         const t1 = performance.now();
@@ -107,7 +113,13 @@ export class Framework {
         await Promise.all(suites.map(async (suite: Suite) => {
             await Promise.all(suite.testees.map(async (testee: Testee) => {
                 const order: TestScenario[] = suite.scheduler.sequential(suite);
-                await this.runSuite(suite, testee, order);
+                const result: SuiteResults = new SuiteResults(suite, testee);
+
+                const first: TestScenario = order[0];
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error = e));
+
+                await this.runSuite(result, testee, order);
+                this.reporter.report(result);
             }))
         }))
         const t1 = performance.now();
@@ -121,10 +133,19 @@ export class Framework {
         await Promise.all(suites.map(async (suite: Suite) => {
             const order: TestScenario[][] = suite.scheduler.parallel(suite, suite.testees.length);
             await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
-                await this.runSuite(suite, testee, order[i % order.length]);
+                // console.log(`scheduling on ${testee.name}`)
+                const result: SuiteResults = new SuiteResults(suite, testee);
+
+                const first: TestScenario = order[i][0];
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error = e));
+
+                for (let j = i; j < order.length; j += suite.testees.length) {
+                    await this.runSuite(result, testee, order[j]);
+                }
+                this.reporter.report(result);
             }))
 
-            await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
+            await Promise.all(suite.testees.map(async (testee: Testee) => {
                 await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
             }))
         }))
@@ -133,20 +154,10 @@ export class Framework {
         this.reporter.results(t1 - t0);
     }
 
-    private async runSuite(suite: Suite, testee: Testee, order: TestScenario[]) {
-        const suiteResult: SuiteResults = new SuiteResults(suite, testee);
-
-        const first: TestScenario = order[0];
-
-        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => suiteResult.error = e));
-
-        // testee.reporter.suite(`${testee.name}: ${suite.title}`);
-
+    private async runSuite(result: SuiteResults, testee: Testee, order: TestScenario[]) {
         for (const test of order) {
-            await testee.describe(test, suiteResult, this.runs);
+            await testee.describe(test, result, this.runs);
         }
-
-        this.reporter.report(suiteResult);
     }
 
     // Analyse flakiness
