@@ -60,6 +60,8 @@ export class Testee { // TODO unified with testbed interface
 
     public testbed?: Testbed;
 
+    private current?: string; // current program
+
     constructor(name: string, specification: TestbedSpecification, timeout: number, connectionTimeout: number) {
         this.name = name;
         this.specification = specification;
@@ -116,9 +118,15 @@ export class Testee { // TODO unified with testbed interface
         });
 
         await this.run('Compile and upload program', testee.connector.timeout, async function () {
+            if (testee.current === description.program) {
+                await testee.reset(testee.testbed);
+                return;
+            }
+
             let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
             try {
                 await timeout<Object | void>(`uploading module`, testee.timeout, testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
+                testee.current = description.program;
             } catch (e) {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
             }
@@ -126,7 +134,7 @@ export class Testee { // TODO unified with testbed interface
             scenarioResult.error = e;
         });
 
-        await this.run('Compile and upload program', testee.connector.timeout, async function () {
+        await this.run('Get source mapping', testee.connector.timeout, async function () {
             map = await testee.mapper.map(description.program);
         }).catch((e: Error) => {
             scenarioResult.error = e;
