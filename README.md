@@ -5,6 +5,12 @@
     <strong>Large-scale Automated Testing on Constrained Hardware</strong>
   </p>
 
+<b>
+    <a href="https://topllab.github.io/WARDuino/guide/latch.html">Documentation</a>
+    <span> | </span>
+    <a href="https://github.com/TOPLLab/WARDuino/actions/workflows/test.yml">Live example</a>  
+</b>
+
 </div>
 
 ## Quick Start
