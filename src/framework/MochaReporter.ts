@@ -49,7 +49,6 @@ interface Result {
 
 class MochaReporter extends reporters.Base {
     private readonly framework: Framework;
-    private coreReporter: Reporter;
 
     private archiver: Archiver;
 
@@ -72,7 +71,6 @@ class MochaReporter extends reporters.Base {
         super(runner, options);
 
         this.framework = Framework.getImplementation();
-        this.coreReporter = new Reporter(this.framework);
 
         this.archiver = new Archiver(`${process.env.TESTFILE?.replace('.asserts.wast', '.wast') ?? 'suite'}.${Date.now()}.log`);
         this.archiver.set('date', new Date(Date.now()).toISOString());

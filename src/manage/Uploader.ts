@@ -174,30 +174,15 @@ export class ArduinoUploader extends Uploader {
     private stage(program: string): Promise<void> {
         const that = this;
         return new Promise<void>((resolve, reject) => {
-            const command = `xxd -i ${program} | sed -e 's/[^ ]*_wasm/upload_wasm/g' > ${this.sdkpath}/bin/upload.h`;
+            let compile = exec(`make compile PAUSED=true BINARY=${program}`, {cwd: this.sdkpath});
 
-            let createHeaders = exec(command);
-
-            createHeaders.on('close', (code) => {
+            compile.on('close', (code) => {
                 if (code !== 0) {
                     that.emit(UploaderEvents.failed);
-                    reject('staging failed: unable to initialize headers');
+                    reject('staging failed: unable to build Arduino program');
                     return;
                 }
                 resolve();
-            });
-        }).then(() => {
-            return new Promise<void>((resolve, reject) => {
-                let compile = exec('make compile', {cwd: this.sdkpath});
-
-                compile.on('close', (code) => {
-                    if (code !== 0) {
-                        that.emit(UploaderEvents.failed);
-                        reject('staging failed: unable to build Arduino program');
-                        return;
-                    }
-                    resolve();
-                });
             });
         });
     }
@@ -232,13 +217,8 @@ export class ArduinoUploader extends Uploader {
                     }
                 }
             );
-            channel.on('data', function (data) {
-                if (data.toString().includes('LOADED')) {
-                    channel.removeAllListeners('data');
-                    that.emit(UploaderEvents.connected);
-                    resolve(new Serial(channel));
-                }
-            });
+            that.emit(UploaderEvents.connected);
+            resolve(new Serial(channel));
         });
     }
 }
