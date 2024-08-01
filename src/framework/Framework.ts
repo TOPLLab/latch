@@ -104,6 +104,10 @@ export class Framework {
         }
         const t1 = performance.now();
         this.reporter.results(t1 - t0);
+
+        await Promise.all(suites.map(suite => suite.testees.map(async (testee: Testee) => {
+            await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+        })))
     }
 
     public async run(suites: Suite[]) {
@@ -124,6 +128,10 @@ export class Framework {
         }))
         const t1 = performance.now();
         this.reporter.results(t1 - t0);
+
+        await Promise.all(suites.map(suite => suite.testees.map(async (testee: Testee) => {
+            await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+        })))
     }
 
     public async parallel(suites: Suite[]) {
