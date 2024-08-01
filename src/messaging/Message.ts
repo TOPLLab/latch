@@ -1,5 +1,5 @@
 import {WARDuino} from '../debug/WARDuino';
-import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
+import {ackParser, breakpointParser, identityParser, invokeParser, stateParser} from './Parsers';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
 import {write} from 'ieee754';
@@ -210,4 +210,9 @@ export namespace Message {
         type: Interrupt.dumpCallbackmapping,
         parser: stateParser
     }
+
+    export const proxifyRequest: Request<string> =  {
+        type: Interrupt.proxify,
+        parser: identityParser
+    };
 }

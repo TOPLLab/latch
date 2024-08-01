@@ -9,7 +9,7 @@ import {SubProcess} from '../bridge/SubProcess';
 import {Connection} from '../bridge/Connection';
 import {Serial} from '../bridge/Serial';
 import {CompileOutput} from './Compiler';
-import {TestbedSpecification, PlatformType, SerialOptions, SubprocessOptions} from '../testbeds/TestbedSpecification';
+import {PlatformType, SerialOptions, SubprocessOptions, TestbedSpecification} from '../testbeds/TestbedSpecification';
 
 enum UploaderEvents {
     compiled = 'compiled',
@@ -38,11 +38,12 @@ export class UploaderFactory {
             case PlatformType.arduino:
                 return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
             case PlatformType.emulator:
+            case PlatformType.emu2emu:
                 return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
             case PlatformType.debug:
                 return new EmulatorConnector(specification.options as SubprocessOptions)
         }
-        throw new Error('Unsupported file type');
+        throw new Error('Unsupported platform type');
     }
 }
 

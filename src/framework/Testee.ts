@@ -6,7 +6,7 @@ import {TestbedFactory} from '../testbeds/TestbedFactory';
 import {Kind} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './scenario/TestScenario';
-import {TestbedSpecification} from '../testbeds/TestbedSpecification';
+import {OutofPlaceSpecification, PlatformType, TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import {Completion, expect, Result, ScenarioResult, SuiteResults} from './Reporter';
@@ -38,6 +38,11 @@ export function getValue(object: any, field: string): any {
     return object;
 }
 
+export enum Target {
+    supervisor,
+    proxy
+}
+
 export class Testee { // TODO unified with testbed interface
 
     /** The current state for each described test */
@@ -58,7 +63,9 @@ export class Testee { // TODO unified with testbed interface
 
     public readonly name: string;
 
-    public testbed?: Testbed;
+    private testbed?: Testbed;
+
+    private proxy?: Testbed;
 
     private current?: string; // current program
 
@@ -71,9 +78,25 @@ export class Testee { // TODO unified with testbed interface
         this.framework = Framework.getImplementation();
     }
 
-    public async initialize(program: string, args: string[]): Promise<Testee> {
+    public bed(target: Target = Target.supervisor): Testbed | void {
+        return target == Target.proxy ? this.proxy : this.testbed;
+    }
+
+    public async initialize(program: string, args: string[] = []): Promise<Testee> {
         return new Promise(async (resolve, reject) => {
-            const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args ?? []).catch((e) => {
+            if (this.specification.type === PlatformType.emu2emu) {
+                const spec = (this.specification as OutofPlaceSpecification).proxy;
+                const proxy: Testbed | void = await this.connector.initialize(spec, program, args ?? []).catch((e) => {
+                    reject(e)
+                });
+                if (proxy) {
+                    this.proxy = proxy;
+                    await this.proxy.sendRequest(new SourceMap.Mapping(), Message.proxifyRequest);
+                    args.push(`--proxy ${spec.options.port}`);
+                }
+            }
+
+            const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args).catch((e) => {
                 reject(e)
             });
             if (testbed) {
@@ -84,6 +107,7 @@ export class Testee { // TODO unified with testbed interface
     }
 
     public async shutdown(): Promise<void> {
+        await this.proxy?.kill();
         return this.testbed?.kill();
     }
 
@@ -125,7 +149,7 @@ export class Testee { // TODO unified with testbed interface
 
             let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
             try {
-                await timeout<Object | void>(`uploading module`, testee.timeout, testee.testbed!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
+                await timeout<Object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 testee.current = description.program;
             } catch (e) {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
@@ -161,7 +185,7 @@ export class Testee { // TODO unified with testbed interface
                 /** Perform the step and check if expectations were met */
                 await this.step(step.title, testee.timeout, async function () {
                     let result: Result = new Result(step.title, 'incomplete');
-                    if (testee.testbed === undefined) {
+                    if (testee.bed(step.target ?? Target.supervisor) === undefined) {
                         testee.states.set(description.title, result);
                         result.error('Cannot run test: no debugger connection.');
                         testee.states.set(description.title, result);
@@ -177,7 +201,7 @@ export class Testee { // TODO unified with testbed interface
                     } else {
                         actual = await testee.recoverable(testee, step.instruction.value, map,
                             (testee, req, map) => timeout<Object | void>(`sending instruction ${req.type}`, testee.timeout,
-                                testee.testbed!.sendRequest(map, req)),
+                                testee.bed(step.target ?? Target.supervisor)!.sendRequest(map, req)),
                             (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
                                 await testee.initialize(description.program, description.args ?? []).catch((o) => {
                                     return Promise.reject(o)

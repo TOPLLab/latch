@@ -36,7 +36,7 @@ export function awaitBreakpoint(): Action<Breakpoint> {
                     try {
                         const breakpoint = breakpointHitParser(message);
                         // on success: remove listener + resolve
-                        testee.testbed?.removeListener(TestbedEvents.OnMessage, breakpointListener);
+                        testee.bed()?.removeListener(TestbedEvents.OnMessage, breakpointListener);
                         resolve(assertable(breakpoint));
                     } catch (e) {
 
@@ -44,7 +44,7 @@ export function awaitBreakpoint(): Action<Breakpoint> {
                 }
 
                 // await breakpoint hit
-                testee.testbed?.on(TestbedEvents.OnMessage, breakpointListener)
+                testee.bed()?.on(TestbedEvents.OnMessage, breakpointListener)
             });
         }
     };
