@@ -5,6 +5,8 @@
     <strong>Large-scale Automated Testing on Constrained Hardware</strong>
   </p>
 
+  <a href="https://doi.org/10.1016/j.scico.2024.103157"><img src="https://img.shields.io/badge/DOI-10.1016%2Fj.scico.2024.103157-blue.svg"></a>
+
 <b>
     <a href="https://topllab.github.io/WARDuino/guide/latch.html">Documentation</a>
     <span> | </span>
