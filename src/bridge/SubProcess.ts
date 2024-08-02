@@ -4,9 +4,9 @@ import {Connection} from './Connection';
 
 export class SubProcess implements Connection {
     public channel: Duplex;
-    public child: ChildProcess;
+    public child?: ChildProcess;
 
-    constructor(channel: Duplex, process: ChildProcess) {
+    constructor(channel: Duplex, process?: ChildProcess) {
         this.channel = channel;
         this.child = process;
     }

@@ -39,6 +39,8 @@ export class UploaderFactory {
                 return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
             case PlatformType.emulator:
                 return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
+            case PlatformType.debug:
+                return new EmulatorConnector(specification.options as SubprocessOptions)
         }
         throw new Error('Unsupported file type');
     }
@@ -63,6 +65,34 @@ export abstract class Uploader extends EventEmitter {
 
 function isReadable(x: Readable | null): x is Readable {
     return x !== null;
+}
+
+export class EmulatorConnector extends Uploader {
+    private readonly port: number;
+
+    constructor(options: SubprocessOptions) {
+        super();
+        this.port = options.port;
+    }
+
+    upload(compiled: CompileOutput, listener?: (chunk: any) => void): Promise<SubProcess> {
+        return this.connectSocket(compiled.file, listener);
+    }
+
+    private connectSocket(program: string, listener?: (chunk: any) => void): Promise<SubProcess> {
+        const that = this;
+
+        return new Promise(function (resolve, reject) {
+            const client = new net.Socket();
+            client.connect(that.port, () => {
+                that.emit(UploaderEvents.connected);
+                if (listener !== undefined) {
+                    client.on('data', listener);
+                }
+                resolve(new SubProcess(client));
+            });
+        });
+    }
 }
 
 export class EmulatorUploader extends Uploader {

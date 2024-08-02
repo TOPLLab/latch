@@ -14,7 +14,7 @@ export class Emulator extends Platform {
     }
 
     kill(): Promise<void> {
-        this.connection.child.kill();
+        this.connection.child?.kill();
         return super.kill();
     }
 }
