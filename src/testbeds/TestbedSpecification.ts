@@ -1,6 +1,7 @@
 export enum PlatformType {
     arduino,
     emulator,
+    debug
 }
 
 export interface ConnectionOptions {
@@ -27,8 +28,8 @@ export class EmulatorSpecification implements TestbedSpecification {
     public readonly type: PlatformType;
     public readonly options: SubprocessOptions;
 
-    constructor(port: number) {
-        this.type = PlatformType.emulator;
+    constructor(port: number, type: PlatformType = PlatformType.emulator) {
+        this.type = type;
         this.options = {port: port};
     }
 }
