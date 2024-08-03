@@ -1,5 +1,6 @@
 import {Action} from './Actions';
 import {Request} from '../../messaging/Message'
+import {Target} from '../Testee';
 
 export enum Description {
     /** required properties */
@@ -40,6 +41,8 @@ export interface Step {
     readonly title: string;
 
     readonly instruction: Instruction;
+
+    target?: Target;
 
     readonly expected?: Expectation[];
 }

@@ -1,17 +1,24 @@
 import {Expectation, Expected, Instruction, Kind, Step} from './Step';
 import {WASM} from '../../sourcemap/Wasm';
-import {Exception, Message} from '../../messaging/Message';
+import {Message} from '../../messaging/Message';
+import {Target} from '../Testee';
 import Value = WASM.Value;
 
 export class Invoker implements Step {
     readonly title: string;
     readonly instruction: Instruction;
     readonly expected?: Expectation[];
+    readonly target?: Target;
 
-    constructor(func: string, args: Value[], result: Value) {
-        this.title = `ASSERT: ${func} ${args.map(val => val.value).join(' ')} ${result.value}`;
+    constructor(func: string, args: Value[], result: Value, target?: Target) {
+        let prefix = "";
         this.instruction = invoke(func, args);
         this.expected = returns(result);
+        if (target !== undefined) {
+            this.target = target;
+            prefix = `${target === Target.supervisor ? '[supervisor] ' : '[proxy]      '}`
+        }
+        this.title = `${prefix}CHECK: (${func} ${args.map(val => val.value).join(' ')}) returns ${result.value}`;
     }
 }
 

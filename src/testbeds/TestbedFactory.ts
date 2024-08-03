@@ -28,6 +28,7 @@ export class TestbedFactory {
             case PlatformType.arduino:
                 return new Arduino(connection as Serial);
             case PlatformType.emulator:
+            case PlatformType.emu2emu:
             case PlatformType.debug:
                 return new Emulator(connection as SubProcess);
             default:
