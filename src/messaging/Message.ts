@@ -28,6 +28,7 @@ export interface Request<R> {
 }
 
 export namespace Message {
+    import Inspect = WARDuino.Inspect;
     export const run: Request<Ack> = {
         type: Interrupt.run,
         parser: (line: string) => {
@@ -83,10 +84,11 @@ export namespace Message {
         };
     }
 
-    export function inspect(payload: string): Request<State> {
+    export function inspect(fields: Inspect[]): Request<State> {
         return {
             type: Interrupt.inspect,
-            payload: () => payload,
+            payload: () => fields.length.toString(16).padStart(4, '0') + fields.join('')
+            ,
             parser: stateParser
         }
     }
@@ -211,7 +213,7 @@ export namespace Message {
         parser: stateParser
     }
 
-    export const proxifyRequest: Request<string> =  {
+    export const proxifyRequest: Request<string> = {
         type: Interrupt.proxify,
         parser: identityParser
     };
