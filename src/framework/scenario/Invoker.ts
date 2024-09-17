@@ -3,6 +3,8 @@ import {WASM} from '../../sourcemap/Wasm';
 import {Message} from '../../messaging/Message';
 import {Target} from '../Testee';
 import Value = WASM.Value;
+import Type = WASM.Type;
+import nothing = WASM.nothing;
 
 export class Invoker implements Step {
     readonly title: string;
@@ -10,15 +12,15 @@ export class Invoker implements Step {
     readonly expected?: Expectation[];
     readonly target?: Target;
 
-    constructor(func: string, args: Value[], result: Value, target?: Target) {
-        let prefix = "";
+    constructor(func: string, args: Value[], result: Value | undefined, target?: Target) {
+        let prefix = '';
         this.instruction = invoke(func, args);
-        this.expected = returns(result);
+        this.expected = (result == undefined) ? returns(nothing) : returns(result);
         if (target !== undefined) {
             this.target = target;
             prefix = `${target === Target.supervisor ? '[supervisor] ' : '[proxy]      '}`
         }
-        this.title = `${prefix}CHECK: (${func} ${args.map(val => val.value).join(' ')}) returns ${result.value}`;
+        this.title = `${prefix}CHECK: (${func} ${args.map(val => val.value).join(' ')}) returns ${result?.value ?? 'nothing'}`;
     }
 }
 
@@ -27,5 +29,8 @@ export function invoke(func: string, args: Value[]): Instruction {
 }
 
 export function returns(n: Value): Expectation[] {
+    if (n.type == Type.nothing) {
+        return [{'value': {kind: 'primitive', value: undefined} as Expected<undefined>}]
+    }
     return [{'value': {kind: 'primitive', value: n.value} as Expected<number>}]
 }

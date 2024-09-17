@@ -3,6 +3,10 @@
   (memory 1)
   (data (i32.const 0) "abcdefghijklmnopqrstuvwxyz")
 
+  (func (export "func-unwind-by-br")
+    (i32.const 3) (i64.const 1) (br 0)
+  )
+
   (func (export "8u_good1") (param $i i32) (result i32)
     (i32.load8_u offset=0 (local.get $i))                   ;; 97 'a'
   )

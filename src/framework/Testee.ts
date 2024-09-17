@@ -10,6 +10,7 @@ import {OutofPlaceSpecification, PlatformType, TestbedSpecification} from '../te
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import {Completion, expect, Result, ScenarioResult, SuiteResults} from './Reporter';
+import {WASM} from '../sourcemap/Wasm';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -23,6 +24,10 @@ export function timeout<T>(label: string, time: number, promise: Promise<T>): Pr
  * @param field dot string describing the field of the value (or path)
  */
 export function getValue(object: any, field: string): any {
+    if (object?.type == WASM.Type.nothing) {
+        return undefined;
+    }
+
     // convert indexes to properties + remove leading dots
     field = field.replace(/\[(\w+)]/g, '.$1');
     field = field.replace(/^\.?/, '');
@@ -32,7 +37,7 @@ export function getValue(object: any, field: string): any {
             object = object[accessor];
         } else {
             // specified field does not exist
-            return undefined;
+            throw Error(`state does not contain field ${field}`);
         }
     }
     return object;
