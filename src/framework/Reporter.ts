@@ -23,24 +23,25 @@ export function expect(step: Step, actual: Object | void, previous?: Object): Re
     result.completion = Completion.succeeded;
     for (const expectation of step.expected ?? []) {
         for (const [field, entry] of Object.entries(expectation)) {
-            const value = getValue(actual, field);
-            if (value === undefined) {
+            try {
+                const value = getValue(actual, field);
+
+                if (entry.kind === 'primitive') {
+                    result.expectPrimitive(value, entry.value);
+                } else if (entry.kind === 'description') {
+                    result.expectDescription(value, entry.value);
+                } else if (entry.kind === 'comparison') {
+                    result.expectComparison(actual, value, entry.value, entry.message);
+                } else if (entry.kind === 'behaviour') {
+                    if (previous === undefined) {
+                        result.error('Invalid test: no [previous] to compare behaviour to.');
+                        return result;
+                    }
+                    result.expectBehaviour(value, getValue(previous, field), entry.value);
+                }
+            } catch (e) {
                 result.error(`Failure: ${JSON.stringify(actual)} state does not contain '${field}'.`);
                 return result;
-            }
-
-            if (entry.kind === 'primitive') {
-                result.expectPrimitive(value, entry.value);
-            } else if (entry.kind === 'description') {
-                result.expectDescription(value, entry.value);
-            } else if (entry.kind === 'comparison') {
-                result.expectComparison(actual, value, entry.value, entry.message);
-            } else if (entry.kind === 'behaviour') {
-                if (previous === undefined) {
-                    result.error('Invalid test: no [previous] to compare behaviour to.');
-                    return result;
-                }
-                result.expectBehaviour(value, getValue(previous, field), entry.value);
             }
         }
     }

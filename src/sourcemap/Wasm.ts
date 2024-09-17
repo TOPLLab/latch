@@ -4,6 +4,7 @@ export namespace WASM {
         f64,
         i32,
         i64,
+        nothing,
         unknown
     }
 
@@ -17,6 +18,12 @@ export namespace WASM {
     export interface Value {
         type: Type;
         value: number;
+    }
+
+    export interface Nothing extends Value {}
+
+    export const nothing: Nothing = {
+        type: Type.nothing, value: 0
     }
 
     export function i32(n: number): WASM.Value {

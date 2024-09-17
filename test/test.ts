@@ -29,6 +29,9 @@ steps.push(new Invoker('8u_good1', [WASM.i32(0)], WASM.i32(97)));
 // ✔ ((invoke "8u_good3" (i32.const 0)) (i32.const 98))
 steps.push(new Invoker('8u_good3', [WASM.i32(0)], WASM.i32(98)));
 
+// ✔ ((invoke "func-unwind-by-br"))
+steps.push(new Invoker('func-unwind-by-br', [], undefined));
+
 spec.test({
     title: `Test with address_0.wast`,
     program: 'test/address.wast',

@@ -4,6 +4,7 @@ import {Ack, Exception} from './Message';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WARDuino} from '../debug/WARDuino';
 import State = WARDuino.State;
+import nothing = WASM.nothing;
 
 export function identityParser(text: string) {
     return stripEnd(text);
@@ -18,6 +19,9 @@ export function invokeParser(text: string): WASM.Value | Exception {
         return {text: text};
     }
     const stack: {value: any, type: any}[] = stateParser(text).stack!;
+    if (stack.length == 0) {
+        return nothing;
+    }
     return stacking(stack)[stack.length - 1];
 }
 
