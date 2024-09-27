@@ -22,7 +22,7 @@ export namespace WARDuino {
         stack = '08',
         callbacks = '09',
         events = '0a',
-        io = '0a'
+        io = '0b'
     }
 
     export enum Interrupt {
@@ -85,5 +85,6 @@ export namespace WARDuino {
         br_table?: BRTable;
         callbacks?: CallbackMapping[];
         events?: InterruptEvent[];
+        io?: string[];
     }
 }
