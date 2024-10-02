@@ -82,6 +82,7 @@ export class ScenarioResult {
     public results: Result[] = [];
     public error?: Error;
 
+
     constructor(test: TestScenario, testee: Testee) {
         this.test = test;
         this.testee = testee;
