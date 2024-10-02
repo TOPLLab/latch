@@ -80,7 +80,16 @@ export class ScenarioResult {
     public test: TestScenario;
     public testee: Testee;
     public results: Result[] = [];
-    public error?: Error;
+    // public error?: Error;
+
+    private _error?: Error;
+    public get error(): Error|undefined { return this._error; }
+    public set error(value: Error|undefined) {
+        console.log(`Set error to ${value} (${typeof value})`);
+        if(!value || !value.message)
+        console.log(new Error().stack);
+        this._error = value;
+    }
 
     constructor(test: TestScenario, testee: Testee) {
         this.test = test;

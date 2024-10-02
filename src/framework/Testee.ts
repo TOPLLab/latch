@@ -159,14 +159,16 @@ export class Testee { // TODO unified with testbed interface
             } catch (e) {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
             }
-        }).catch((e: Error) => {
-            scenarioResult.error = e;
+        }).catch((e: Error|string) => {
+            if(typeof e === 'string') scenarioResult.error = new Error(e);
+            else scenarioResult.error = e;
         });
 
         await this.run('Get source mapping', testee.connector.timeout, async function () {
             map = await testee.mapper.map(description.program);
-        }).catch((e: Error) => {
-            scenarioResult.error = e;
+        }).catch((e: Error|string) => {
+            if(typeof e === 'string') scenarioResult.error = new Error(e);
+            else scenarioResult.error = e;
         });
 
         if (scenarioResult.error) {
