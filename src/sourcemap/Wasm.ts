@@ -4,6 +4,7 @@ export namespace WASM {
         f64,
         i32,
         i64,
+        v128,
         nothing,
         unknown
     }
@@ -12,12 +13,13 @@ export namespace WASM {
         ['f32', Type.f32],
         ['f64', Type.f64],
         ['i32', Type.i32],
-        ['i64', Type.i64]
+        ['i64', Type.i64],
+        ['v128', Type.v128]
     ]);
 
     export interface Value {
         type: Type;
-        value: number;
+        value: number|string;
     }
 
     export interface Nothing extends Value {}
@@ -32,6 +34,10 @@ export namespace WASM {
 
     export function f32(n: number): WASM.Value {
         return {value: n, type: Type.f32};
+    }
+
+    export function v128(bytes: string): WASM.Value {
+        return {value: bytes, type: Type.v128};
     }
 
     export interface Frame {

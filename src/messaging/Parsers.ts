@@ -61,11 +61,14 @@ export function breakpointHitParser(text: string): Breakpoint {
 function stacking(objects: {value: any, type: any}[]): WASM.Value[] {
     const stacked: WASM.Value[] = [];
     for (const object of objects) {
-        let value: number = object.value;
+        let value: number|string = object.value;
         const type: WASM.Type = WASM.typing.get(object.type.toLowerCase()) ?? WASM.Type.unknown;
         if (type === WASM.Type.f32 || type === WASM.Type.f64) {
             const buff = Buffer.from(object.value, 'hex');
             value = ieee754.read(buff, 0, false, 23, buff.length);
+        }
+        else if(type === WASM.Type.v128) {
+            value = object.value; // just keep the byte string
         }
         stacked.push({value: value, type: type});
     }

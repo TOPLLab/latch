@@ -174,10 +174,13 @@ export namespace Message {
             let payload: string = '';
             args.forEach((arg: Value) => {
                 if (arg.type === Type.i32 || arg.type === Type.i64) {
-                    payload += WASM.leb128(arg.value);
+                    payload += WASM.leb128(arg.value as number);
+                } else if(arg.type === Type.v128) {
+                    // slightly cursed way to extract 128 bits as hex-string
+                    payload += arg.value as string;
                 } else {
                     const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    write(buff, arg.value, 0, true, 23, buff.length);
+                    write(buff, arg.value as number, 0, true, 23, buff.length);
                     payload += buff.toString('hex');
                 }
             });
