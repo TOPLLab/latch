@@ -174,7 +174,7 @@ export namespace Message {
             let payload: string = '';
             args.forEach((arg: Value) => {
                 if (arg.type === Type.i32 || arg.type === Type.i64) {
-                    payload += WASM.leb128(arg.value as number);
+                    payload += WASM.leb128_bigint(BigInt(arg.value), arg.type === Type.i32 ? 32 : 64);
                 } else if(arg.type === Type.v128) {
                     // slightly cursed way to extract 128 bits as hex-string
                     payload += arg.value as string;
@@ -189,7 +189,7 @@ export namespace Message {
 
         return {
             type: Interrupt.invoke,
-            payload: (map: SourceMap.Mapping) => `${WASM.leb128(fidx(map, func))}${convert(args)}`,
+            payload: (map: SourceMap.Mapping) => `${WASM.leb128(fidx(map, func))}${convert(args)}`, // TODO: Might require leb218_bigint
             parser: invokeParser
         }
     }

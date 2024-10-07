@@ -3,15 +3,14 @@ import * as ieee754 from 'ieee754';
 import {Ack, Exception} from './Message';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WARDuino} from '../debug/WARDuino';
-import State = WARDuino.State;
-import nothing = WASM.nothing;
+import {JSONParse} from "./json-with-bigint";
 
 export function identityParser(text: string) {
     return stripEnd(text);
 }
 
-export function stateParser(text: string): State {
-    return JSON.parse(text);
+export function stateParser(text: string): WARDuino.State {
+    return JSONParse(text);
 }
 
 export function invokeParser(text: string): WASM.Value | Exception {
@@ -20,7 +19,7 @@ export function invokeParser(text: string): WASM.Value | Exception {
     }
     const stack: {value: any, type: any}[] = stateParser(text).stack!;
     if (stack.length == 0) {
-        return nothing;
+        return WASM.nothing;
     }
     return stacking(stack)[stack.length - 1];
 }

@@ -19,7 +19,7 @@ export namespace WASM {
 
     export interface Value {
         type: Type;
-        value: number|string;
+        value: number|bigint|string;
     }
 
     export interface Nothing extends Value {}
@@ -28,7 +28,7 @@ export namespace WASM {
         type: Type.nothing, value: 0
     }
 
-    export function i32(n: number): WASM.Value {
+    export function i32(n: bigint|number): WASM.Value {
         return {value: n, type: Type.i32};
     }
 
@@ -80,4 +80,28 @@ export namespace WASM {
         }
     }
 
+    export function leb128_bigint(a: bigint, n_bits: number): string {
+        let more = 1;
+        let negative = (a < 0n);
+        const sizeBig = BigInt(n_bits);
+        const res = [];
+
+        while(more) {
+            let byte = Number(a & 0x7Fn);
+            a >>= 7n;
+
+            if(negative) {
+                a |= (~0n << (sizeBig - 7n));
+            }
+
+            if((a == 0n && (byte & 0x40) == 0) || (a == -1n && (byte & 0x40) != 0)) {
+                more = 0;
+            } else {
+                byte |= 0x80;
+            }
+            res.push(byte);
+        }
+
+        return res.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
 }

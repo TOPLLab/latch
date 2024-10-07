@@ -10,6 +10,7 @@ import {Connection} from '../bridge/Connection';
 import {Serial} from '../bridge/Serial';
 import {CompileOutput} from './Compiler';
 import {PlatformType, SerialOptions, SubprocessOptions, TestbedSpecification} from '../testbeds/TestbedSpecification';
+import {Writable} from "node:stream";
 
 enum UploaderEvents {
     compiled = 'compiled',
@@ -96,6 +97,13 @@ export class EmulatorConnector extends Uploader {
     }
 }
 
+class ConsolePipe extends Writable {
+    _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+        console.log(`[PROC]: ${chunk.toString()}`);
+        callback();
+    }
+}
+
 export class EmulatorUploader extends Uploader {
     private readonly interpreter: string;
     private readonly args: string[];
@@ -136,6 +144,7 @@ export class EmulatorUploader extends Uploader {
 
                 const reader = new ReadlineParser();
                 process.stdout.pipe(reader);
+                // process.stdout.pipe(new ConsolePipe()); // for debug purposes - copy all wdcli output to console
 
                 reader.on('data', (data) => {
                     if (listener !== undefined) {
