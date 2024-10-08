@@ -80,28 +80,24 @@ export namespace WASM {
         }
     }
 
-    export function leb128_bigint(a: bigint, n_bits: number): string {
-        let more = 1;
-        let negative = (a < 0n);
-        const sizeBig = BigInt(n_bits);
-        const res = [];
+    export function leb128_bigint(value: bigint, n_bits: number): string {
+        const result: number[] = [];
+        let more = true;
 
-        while(more) {
-            let byte = Number(a & 0x7Fn);
-            a >>= 7n;
+        while (more) {
+            let byte = Number(value & BigInt(0x7F)); // Get the lower 7 bits
+            const signBit = byte & 0x40; // Check if the sign bit is set
+            value >>= BigInt(7); // Arithmetic shift right by 7 bits
 
-            if(negative) {
-                a |= (~0n << (sizeBig - 7n));
-            }
-
-            if((a == 0n && (byte & 0x40) == 0) || (a == -1n && (byte & 0x40) != 0)) {
-                more = 0;
+            // Determine if we need to continue encoding
+            if ((value === BigInt(0) && signBit === 0) || (value === BigInt(-1) && signBit !== 0)) {
+                more = false;
             } else {
-                byte |= 0x80;
+                byte |= 0x80; // Set the continuation bit
             }
-            res.push(byte);
+            result.push(byte);
         }
 
-        return res.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+        return result.map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
     }
 }

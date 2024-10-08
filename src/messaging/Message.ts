@@ -161,6 +161,30 @@ export namespace Message {
         }
     }
 
+    function float32HexStr(x: number): string {
+        const ab = new ArrayBuffer(4);
+        const fb = new Float32Array(ab);
+        fb[0] = x;
+        const ui8 = new Uint8Array(ab);
+        let res = '';
+        for (let i = 0; i < 4; i++) {
+            res += ui8[i].toString(16).padStart(2, '0');
+        }
+        return res;
+    }
+
+    function float64HexStr(x: number): string {
+        const ab = new ArrayBuffer(8);
+        const fb = new Float64Array(ab);
+        fb[0] = x;
+        const ui8 = new Uint8Array(ab);
+        let res = '';
+        for (let i = 0; i < 8; i++) {
+            res += ui8[i].toString(16).padStart(2, '0');
+        }
+        return res;
+    }
+
     export function invoke(func: string, args: Value[]): Request<WASM.Value | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
@@ -179,9 +203,8 @@ export namespace Message {
                     // slightly cursed way to extract 128 bits as hex-string
                     payload += arg.value as string;
                 } else {
-                    const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    write(buff, arg.value as number, 0, true, 23, buff.length);
-                    payload += buff.toString('hex');
+                    const xStr = arg.type === Type.f32 ? float32HexStr(arg.value as number) : float64HexStr(arg.value as number);
+                    payload += xStr;
                 }
             });
             return payload;
