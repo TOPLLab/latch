@@ -2,6 +2,7 @@ export enum PlatformType {
     arduino,
     emulator,
     emu2emu,
+    emuproxy,
     debug
 }
 
@@ -33,11 +34,11 @@ export class OutofPlaceSpecification implements TestbedSpecification {
     public readonly type: PlatformType = PlatformType.emu2emu;
     public readonly options: SupervisorOptions;
 
-    public readonly proxy: EmulatorSpecification;
+    public readonly proxy: ProxySpecification;
 
-    constructor(supervisor: number, proxy: number) {
+    constructor(supervisor: number, proxy: number, dummy: number = proxy + 1) {
         this.options = {port: supervisor, proxy: proxy};
-        this.proxy = new EmulatorSpecification(proxy);
+        this.proxy = new ProxySpecification(proxy, dummy);
     }
 }
 
@@ -48,6 +49,14 @@ export class EmulatorSpecification implements TestbedSpecification {
     constructor(port: number, type: PlatformType = PlatformType.emulator) {
         this.type = type;
         this.options = {port: port};
+    }
+}
+
+export class ProxySpecification extends EmulatorSpecification {
+    public readonly dummy: SubprocessOptions;
+    constructor(port: number, dummy: number) {
+        super(port, PlatformType.emuproxy);
+        this.dummy = {port: dummy};
     }
 }
 

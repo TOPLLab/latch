@@ -1,13 +1,13 @@
 import {Testbed} from './Testbed';
 import {ARDUINO, EMULATOR, WABT} from '../util/env';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
-import {Emulator} from './Emulator';
+import {DummyProxy, Emulator} from './Emulator';
 import {UploaderFactory} from '../manage/Uploader';
 import {Connection} from '../bridge/Connection';
 import {Arduino} from './Arduino';
 import {Serial} from '../bridge/Serial';
 import {SubProcess} from '../bridge/SubProcess';
-import {TestbedSpecification, PlatformType} from './TestbedSpecification';
+import {PlatformType, ProxySpecification, TestbedSpecification} from './TestbedSpecification';
 
 export class TestbedFactory {
     public readonly timeout: number;
@@ -31,6 +31,8 @@ export class TestbedFactory {
             case PlatformType.emu2emu:
             case PlatformType.debug:
                 return new Emulator(connection as SubProcess);
+            case PlatformType.emuproxy:
+                return new DummyProxy(connection as SubProcess, specification as ProxySpecification);
             default:
                 return Promise.reject('Platform not implemented.');
         }

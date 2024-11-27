@@ -97,7 +97,7 @@ export class Testee { // TODO unified with testbed interface
                 if (proxy) {
                     this.proxy = proxy;
                     await this.proxy.sendRequest(new SourceMap.Mapping(), Message.proxifyRequest);
-                    args = args.concat(['--proxy', `${spec.options.port}`]);
+                    args = args.concat(['--proxy', `${spec.dummy.port}`]);
                 }
             }
 
