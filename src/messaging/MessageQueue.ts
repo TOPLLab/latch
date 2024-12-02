@@ -32,7 +32,7 @@ export class MessageQueue implements Iterable<string> {
         return last !== undefined && !last.includes(this.delimiter);
     }
 
-    private hasCompleteMessage(): boolean {
+    public hasCompleteMessage(): boolean {
         return this.queue.length > 0 && (!this.lastMessageIncomplete() || this.queue.length > 1);
     }
 
