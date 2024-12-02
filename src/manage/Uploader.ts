@@ -39,6 +39,7 @@ export class UploaderFactory {
                 return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
             case PlatformType.emulator:
             case PlatformType.emu2emu:
+            case PlatformType.emuproxy:
                 return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
             case PlatformType.debug:
                 return new EmulatorConnector(specification.options as SubprocessOptions)
