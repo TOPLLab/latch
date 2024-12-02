@@ -1,7 +1,7 @@
 import {Framework} from './Framework';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message, Request} from '../messaging/Message';
-import {Testbed} from '../testbeds/Testbed';
+import {Testbed, TestbedEvents} from '../testbeds/Testbed';
 import {TestbedFactory} from '../testbeds/TestbedFactory';
 import {Kind} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
@@ -11,6 +11,7 @@ import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import {Completion, expect, Result, ScenarioResult, SuiteResults} from './Reporter';
 import {WASM} from '../sourcemap/Wasm';
+import {DummyProxy} from '../testbeds/Emulator';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -70,7 +71,7 @@ export class Testee { // TODO unified with testbed interface
 
     private testbed?: Testbed;
 
-    private proxy?: Testbed;
+    private proxy?: DummyProxy;
 
     private current?: string; // current program
 
@@ -94,20 +95,33 @@ export class Testee { // TODO unified with testbed interface
                 const proxy: Testbed | void = await this.connector.initialize(spec, program, args ?? []).catch((e) => {
                     reject(e)
                 });
-                if (proxy) {
-                    this.proxy = proxy;
-                    await this.proxy.sendRequest(new SourceMap.Mapping(), Message.proxifyRequest);
-                    args = args.concat(['--proxy', `${spec.dummy.port}`]);
-                }
-            }
 
-            const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args).catch((e) => {
-                reject(e)
-            });
-            if (testbed) {
-                this.testbed = testbed;
+                if (!proxy) {
+                    return;
+                }
+
+                this.proxy = proxy as DummyProxy;
+                this.proxy.on(TestbedEvents.Ready, () => {
+                    resolve(this);
+                });
+                await this.proxy.sendRequest(new SourceMap.Mapping(), Message.proxifyRequest);
+                args = args.concat(['--proxy', `${spec.dummy.port}`]);
+
+                const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args).catch((e) => {
+                    reject(e);
+                });
+                if (testbed) {
+                    this.testbed = testbed;
+                }
+            } else {
+                const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args).catch((e) => {
+                    reject(e)
+                });
+                if (testbed) {
+                    this.testbed = testbed;
+                }
+                resolve(this);
             }
-            resolve(this);
         });
     }
 
@@ -159,16 +173,22 @@ export class Testee { // TODO unified with testbed interface
             } catch (e) {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
             }
-        }).catch((e: Error|string) => {
-            if(typeof e === 'string') scenarioResult.error = new Error(e);
-            else scenarioResult.error = e;
+        }).catch((e: Error | string) => {
+            if (typeof e === 'string') {
+                scenarioResult.error = new Error(e);
+            } else {
+                scenarioResult.error = e;
+            }
         });
 
         await this.run('Get source mapping', testee.connector.timeout, async function () {
             map = await testee.mapper.map(description.program);
-        }).catch((e: Error|string) => {
-            if(typeof e === 'string') scenarioResult.error = new Error(e);
-            else scenarioResult.error = e;
+        }).catch((e: Error | string) => {
+            if (typeof e === 'string') {
+                scenarioResult.error = new Error(e);
+            } else {
+                scenarioResult.error = e;
+            }
         });
 
         if (scenarioResult.error) {

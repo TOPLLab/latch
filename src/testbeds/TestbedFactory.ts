@@ -32,9 +32,7 @@ export class TestbedFactory {
             case PlatformType.debug:
                 return new Emulator(connection as SubProcess);
             case PlatformType.emuproxy:
-                const dummy = new DummyProxy(connection as SubProcess);
-                await dummy.init(specification as ProxySpecification);
-                return dummy;
+                return new DummyProxy(connection as SubProcess, specification as ProxySpecification);
             default:
                 return Promise.reject('Platform not implemented.');
         }

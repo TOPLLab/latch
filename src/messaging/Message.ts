@@ -211,7 +211,7 @@ export namespace Message {
         parser: stateParser
     }
 
-    export const proxifyRequest: Request<string> =  {
+    export const proxifyRequest: Request<string> = {
         type: Interrupt.proxify,
         parser: identityParser
     };

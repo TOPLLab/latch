@@ -1,15 +1,10 @@
 import {Platform} from './Platform';
 import {SubProcess} from '../bridge/SubProcess';
-import {Connection} from '../bridge/Connection';
-import {UploaderFactory} from '../manage/Uploader';
-import {ARDUINO, EMULATOR} from '../util/env';
 import {ProxySpecification} from './TestbedSpecification';
-import {CompileOutput} from '../manage/Compiler';
 import * as net from 'node:net';
-import {SourceMap} from '../sourcemap/SourceMap';
-import {Request} from '../messaging/Message';
-import {AddressInfo, Socket} from 'node:net';
+import {Socket} from 'node:net';
 import {MessageQueue} from '../messaging/MessageQueue';
+import {TestbedEvents} from './Testbed';
 
 export class Emulator extends Platform {
     readonly name: string = 'Emulator';
@@ -41,20 +36,19 @@ export class DummyProxy extends Emulator {
 
     private supervisor?: Socket;
 
-    constructor(connection: SubProcess) {
+    constructor(connection: SubProcess, specification: ProxySpecification) {
         super(connection);
 
         this.forwarding = new MessageQueue('\n');
 
         this.dummy = new net.Server();
-    }
 
-    public async init(specification: ProxySpecification) {
         this.dummy.on('connection', (connection) => {
             this.supervisor = connection;
             connection.on('data', (data) => {
                 this.connection.channel.write(data.toString());
-            })
+            });
+            this.emit(TestbedEvents.Ready);
         });
         this.dummy.listen(specification.dummy.port);
     }
@@ -68,7 +62,9 @@ export class DummyProxy extends Emulator {
                 this.forwarding.push(data.toString());
                 while (this.forwarding.hasCompleteMessage()) {
                     const message = this.forwarding.pop()
-                    if(!message?.includes('Interrupt')) this.supervisor!.write(message!.toString());
+                    if (!message?.includes('Interrupt')) {
+                        this.supervisor!.write(message!.toString());
+                    }
                 }
 
             }

@@ -7,7 +7,8 @@ import {Breakpoint} from '../debug/Breakpoint';
 export enum TestbedEvents {
     OnMessage = 'message',
     OnBreakpointHit = 'breakpoint',
-    OnPushEvent = 'push'
+    OnPushEvent = 'push',
+    Ready = 'ready'
 }
 
 export declare interface Testbed extends EventEmitter {
