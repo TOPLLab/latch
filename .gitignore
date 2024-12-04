@@ -39,9 +39,15 @@ lib/*.js
 test/*.js
 *.map
 
+# Project specific
 WABT
 core/
 
 dist/
 
+# IDE folders
 .idea
+
+# c8 Coverage
+coverage
+out
