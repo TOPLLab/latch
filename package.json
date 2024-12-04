@@ -19,9 +19,10 @@
         "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist/cjs && npx convert-extension cjs dist/cjs/ && rm -f dist/cjs/*.map",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src/**/* --config .eslint.config.mjs",
-        "test": "npx ts-node test/test.ts",
-        "debugtest": "npx ts-node test/debugger.test.ts",
-        "spectest": "npx ts-node test/spec.ts"
+        "test:all": "npx ts-node tests/test.ts && npm run test:ava",
+        "test:ava": "ava",
+        "debugtest": "npx ts-node tests/debugger.test.ts",
+        "spectest": "npx ts-node tests/spec.ts"
     },
     "dependencies": {
         "ansi-colors": "^4.1.3",
@@ -39,6 +40,8 @@
         "@types/uuid": "^9.0.0",
         "@types/ws": "^8.5.4",
         "@typescript-eslint/eslint-plugin": "^8.17.0",
+        "ava": "^6.2.0",
+        "@ava/typescript": "^5.0.0",
         "convert-extension": "^0.3.0",
         "eslint": "^9.16.0",
         "globals": "^15.13.0",
@@ -46,5 +49,13 @@
         "serialport": "^10.4.0",
         "typescript": "^4.5.5",
         "typescript-eslint": "^8.17.0"
+    },
+    "ava": {
+        "files": [
+            "tests/unit.ts"
+        ],
+        "extensions": [
+            "ts"
+        ]
     }
 }
