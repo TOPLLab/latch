@@ -6,6 +6,8 @@
   </p>
 
   <a href="https://doi.org/10.1016/j.scico.2024.103157"><img src="https://img.shields.io/badge/DOI-10.1016%2Fj.scico.2024.103157-blue.svg"></a>
+  <a href="https://github.com/TOPLLab/latch/actions/workflows/test.yml"><img src="https://github.com/TOPLLab/latch/actions/workflows/test.yml/badge.svg"></a>
+
 
 <b>
     <a href="https://topllab.github.io/WARDuino/guide/latch.html">Documentation</a>
