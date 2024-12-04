@@ -1,0 +1,18 @@
+name: Tests
+on: [ push ]
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: npm i
+
+      - name: Run ava unit tests
+        run: npm run test:ava
+
