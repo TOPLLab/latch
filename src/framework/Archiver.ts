@@ -2,7 +2,7 @@ import {writeFileSync} from 'fs';
 
 export class Archiver {
     private readonly information: any;
-    private readonly archive: string;
+    public readonly archive: string;
 
     constructor(file: string) {
         this.information = new Map<string, string[]>();
