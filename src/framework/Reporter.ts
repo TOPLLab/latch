@@ -1,9 +1,10 @@
 import {OutputStyle, Suite} from './Framework';
 import {Behaviour, Description, Step} from './scenario/Step';
 import {getValue, Testee} from './Testee';
-import {blue, bold, green, red, reset} from 'ansi-colors';
+import {blue, bold, green, red, yellow, reset, inverse, grey} from 'ansi-colors';
 import {Archiver} from './Archiver';
 import {TestScenario} from './scenario/TestScenario';
+import {version} from '../../package.json';
 
 export enum Completion {
     uncommenced = 'not started',  // test hasn't started
@@ -12,6 +13,16 @@ export enum Completion {
     timedout = 'timed out',       // test failed
     error = 'error: ',            // test was unable to complete
     skipped = 'skipped'           // test has failing dependencies
+}
+
+export enum Verbosity {
+    none,
+    minimal,
+    short,
+    normal,
+    more,
+    all,
+    debug
 }
 
 function indent(level: number, size: number = 2): string {
@@ -52,7 +63,7 @@ export class SuiteResults {
     public suite: Suite;
     public testee: Testee;
     public scenarios: ScenarioResult[] = [];
-    public error?: Error;
+    public error?: Error | string;
 
     constructor(suite: Suite, testee: Testee) {
         this.suite = suite;
@@ -60,7 +71,7 @@ export class SuiteResults {
     }
 
     title(): string {
-        return `${this.testee.name}: ${this.suite.title}`;
+        return this.suite.title;
     }
 
     passing(): boolean {
@@ -89,7 +100,7 @@ export class ScenarioResult {
     }
 
     title(): string {
-        return `${this.testee.name}: ${this.test.title}`;
+        return `${this.test.title}`;
     }
 
     steps(): string[] {
@@ -108,13 +119,14 @@ export class ScenarioResult {
         return this.results.every((result) => result.completion === Completion.uncommenced);
     }
 
-    report(level: number): void {
-        console.log(blue(`${indent(level)}${this.title()}`));
+    report(index: number, level: number): void {
+        // console.log(indent(level) + inverse(blue(` ${index + 1} `)) + ' ' + bold(this.title()) + '\n');
+        console.log(indent(level) + bold(blue(`scenario.`)) + ' ' + bold(this.title()) + ' ' + bold(blue(`(${index + 1})`)) + '\n');
         if (this.error) {
-            console.log(red(`${indent(level + 1)}✖ Error: ${this.error.message}`));
+            console.log(red(`${indent(level)}${bold(inverse(red(' ERROR ')))} ${this.error.message.trim().replace(/\n/g, `\n${indent(level)}`)}`));
         } else {
             this.results.forEach((result) => {
-                result.report(level + 1);
+                result.report(level);
             });
         }
         console.log()
@@ -139,13 +151,13 @@ export class Result {
     toString(): string {
         switch (this.completion) {
             case Completion.succeeded:
-                return `${green('✔')} ${this.name}`;
+                return `${bold(inverse(green(' PASS ')))} ${this.name}`;
             case Completion.uncommenced:
-                return `${this.name}: skipped`;
+                return `${bold(inverse(yellow(' SKIP ')))} ${this.name}`;
             case Completion.error:
             case Completion.failed:
             default:
-                return `${red('✖')} ${this.name}\n        ${red(this.completion)}${red(this.description)}`;
+                return `${bold(inverse(red(' FAIL ')))} ${this.name}\n        ${red(this.completion)}${red(this.description)}`;
 
         }
     }
@@ -239,6 +251,8 @@ export class Reporter {
 
     private archiver: Archiver;
 
+    private verbosity: Verbosity = Verbosity.short;
+
     constructor() {
         this.archiver = new Archiver(`${process.env.TESTFILE?.replace('.asserts.wast', '.wast') ?? 'suite'}.${Date.now()}.log`);
         this.archiver.set('date', new Date(Date.now()).toISOString());
@@ -249,22 +263,33 @@ export class Reporter {
     }
 
     general() {
-        console.log(blue(`${this.indent()}General Information`));
-        console.log(blue(`${this.indent()}===================`));
-        console.log(blue(`${this.indent()}VM commit   ${'47a672e'}`));
+        console.log(this.indent() + blue(bold('● latch')) + bold(' General information'));
+        // console.log(blue(`${this.indent()}===================`));
+        console.log(this.indent() + ' '.repeat(2) + bold('version') + ' '.repeat(5) + version);
+        console.log(this.indent() + ' '.repeat(2) + bold('archive') + ' '.repeat(5) + this.archiver.archive);
         console.log();
     }
 
     report(suiteResult: SuiteResults) {
         this.suites.push(suiteResult);
-        console.log(blue(`${this.indent()}${suiteResult.title()}`));
+        const status = (suiteResult.error ? bold(inverse(red(' ERROR '))) :
+            (suiteResult.passing() ? bold(inverse(green(' PASSED '))) : bold(inverse(red(' FAIL ')))));
+        console.log(this.indent() + blue(bold('● suite')) + ` ${bold(suiteResult.title())}${(this.verbosity === Verbosity.minimal) ? ' ' + status : ''}`);
+        if (this.verbosity > Verbosity.minimal) {
+            console.log(this.indent() + ' '.repeat(2) + bold('testbed') + ' '.repeat(5) + suiteResult.testee.name);
+            console.log(this.indent() + ' '.repeat(2) + bold('scenarios') + ' '.repeat(3) + suiteResult.scenarios.length);
+            console.log(this.indent() + ' '.repeat(2) + bold('actions') + ' '.repeat(5) + suiteResult.suite.scenarios.flatMap((scenario) => scenario.steps ?? []).flat().length); //.reduce((total, count) => total + count));
+            console.log(this.indent() + ' '.repeat(2) + bold('status') + ' '.repeat(6) + status);
+        }
         console.log();
-        if (suiteResult.error) {
-            console.log(red(`${this.indent(this.indentationLevel + 1)}✖ Error: ${suiteResult.error.message ?? suiteResult.error}`));
-        } else {
-            suiteResult.scenarios.forEach((scenario) => {
-                scenario.report(this.indentationLevel);
+        if (this.verbosity >= Verbosity.normal) {
+            suiteResult.scenarios.forEach((scenario, index) => {
+                scenario.report(index, this.indentationLevel + 1);
             });
+        } else if (this.verbosity > Verbosity.minimal) {
+            if (suiteResult.error) {
+                console.log(this.indent() + ' '.repeat(2) + red(suiteResult.error.toString()));
+            }
         }
         console.log();
     }
@@ -285,44 +310,37 @@ export class Reporter {
         this.archiver.set('skipped scenarios', skipped);
         this.archiver.set('failed scenarios', failing);
 
-        console.log(blue(`${this.indent()}Test Suite Results`));
-        console.log(blue(`${this.indent()}==================`));
+        console.log(this.indent() + blue(bold('● results')) + bold(' Overview'));
         console.log();
-        console.log(blue(`${this.indent()}Scenarios:`));
-
         this.indentationLevel += 1;
-        console.log(green(`${this.indent()}${passing} passing` + reset(` (${time.toFixed(0)}ms)`)));
-        if (failing > 0) {
-            console.log(red(`${this.indent()}${failing} failing`));
-        }
-        console.log(reset(`${this.indent()}${skipped} skipped`));
-        console.log();
-        this.indentationLevel -= 1;
 
-        console.log(blue(`${this.indent()}Actions:`));
+        const sc = this.suites.filter((suite) => suite.passing()).length;
+        const tl = this.suites.length;
 
-        passing = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
+        const psa = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
             scenario.results.filter((result) =>
                 result.completion === Completion.succeeded).length).reduce((acc, val) => acc + val, 0);
-        failing = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
+        const fa = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
             scenario.results.filter((result) =>
                 result.completion === Completion.failed).length).reduce((acc, val) => acc + val, 0);
         const timeouts = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
             scenario.results.filter((result) =>
                 result.completion === Completion.timedout).length).reduce((acc, val) => acc + val, 0);
+        const total = this.suites.flatMap((suite) => suite.scenarios).flatMap((scenario) =>
+            scenario.test.steps?.length ?? 0).reduce((acc, val) => acc + val, 0);
 
-        this.indentationLevel += 1;
-        console.log(green(`${this.indent()}${passing} passing`));
-        if (failing > 0) {
-            console.log(red(`${this.indent()}${failing} failing`));
-        }
-        if (timeouts > 0) {
-            console.log(reset(`${this.indent()}${timeouts} timeouts`));
+        const len: number = 12;
+        const pss = [`${sc} passing`, `${passing} passing`, `${psa} passing`]
+        console.log(this.indent() + bold('Test suites:') + ' '.repeat(len - pss[0].length) + bold((sc === tl ? green : red)(pss[0])) + `, ${tl} total` + bold(` (${time.toFixed(0)}ms)`));
+        if (this.verbosity > Verbosity.minimal) {
+            console.log(this.indent() + bold('Scenarios:') +
+                ' '.repeat(2 + len - pss[1].length) + bold((passing === scs.length ? green : red)(pss[1])) +
+                (skipped > 0 ? ', ' + bold(yellow(`${skipped} skipped`)) : '') + `, ${scs.length} total`);
+            console.log(this.indent() + bold('Actions:') + ' '.repeat(4 + len - pss[2].length) + bold((passing === scs.length ? green : red)(pss[2])) + (timeouts > 0 ? `, ${timeouts} timeouts` : '') + `, ${total} total`);
         }
         this.indentationLevel -= 1;
 
         console.log();
-
         this.archiver.write();
     }
 
