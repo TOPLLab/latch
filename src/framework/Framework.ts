@@ -3,7 +3,10 @@ import {HybridScheduler, Scheduler} from './Scheduler';
 import {TestScenario} from './scenario/TestScenario';
 
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
-import {Reporter, SuiteResults} from './Reporter';
+import {Reporter, SuiteResults} from '../reporter/Reporter';
+
+import {StyleType} from '../reporter';
+import {styling} from '../reporter/Style';
 
 export interface Suite {
 
@@ -18,12 +21,6 @@ export interface TesteeOptions {
     disabled?: boolean;
     timeout?: number;
     connectionTimout?: number;
-}
-
-export enum OutputStyle {
-    silent, // TODO
-    plain,
-    github
 }
 
 export class Suite {
@@ -61,11 +58,11 @@ export class Framework {
 
     public runs: number = 1;
 
-    private outputStyle: OutputStyle = OutputStyle.plain;
+    private outputStyle: StyleType = StyleType.plain;
 
     private scheduled: Suite[] = [];
 
-    public readonly reporter: Reporter = new Reporter();
+    public readonly reporter: Reporter = new Reporter(styling(this.outputStyle));
 
     private constructor() {
     }
@@ -78,11 +75,11 @@ export class Framework {
         return this.scheduled;
     }
 
-    public style(style: OutputStyle): void {
+    public style(style: StyleType): void {
         this.outputStyle = style;
     }
 
-    public styling(): OutputStyle {
+    public styling(): StyleType {
         return this.outputStyle;
     }
 

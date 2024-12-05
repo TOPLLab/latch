@@ -9,9 +9,10 @@ import {TestScenario} from './scenario/TestScenario';
 import {OutofPlaceSpecification, PlatformType, TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
-import {Completion, expect, Result, ScenarioResult, SuiteResults} from './Reporter';
+import {Completion, expect, ScenarioResult, SuiteResults} from '../reporter/Reporter';
 import {WASM} from '../sourcemap/Wasm';
 import {DummyProxy} from '../testbeds/Emulator';
+import {Result} from '../reporter/Result';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
