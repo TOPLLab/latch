@@ -14,10 +14,11 @@ export class SourceMapFactory {
     }
 
     public async map(source: string, tmpdir?: string): Promise<SourceMap.Mapping> {
+        let compiled: CompileOutput;
         switch (getFileExtension(source)) {
         case 'wast' :
         case 'wat' :
-            const compiled: CompileOutput = await this.compilerFactory.pickCompiler(source).compile(source);
+            compiled = await this.compilerFactory.pickCompiler(source).compile(source);
             return new WatMapper(compiled.out ?? '', tmpdir ?? path.dirname(compiled.file), WABT).mapping();
         case 'ts' :
             return new AsScriptMapper(source ?? '', tmpdir ?? path.dirname(source)).mapping();
