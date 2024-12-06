@@ -98,7 +98,7 @@ export class WatCompiler extends Compiler {
             let out: string = '';
             let err: string = '';
 
-            function handle(error: ExecException | null, stdout: string, stderr: any) {
+            function handle(error: ExecException | null, stdout: string, stderr: string) {
                 out = stdout;
                 err = error?.message ?? '';
             }
