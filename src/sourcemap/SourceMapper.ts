@@ -170,7 +170,7 @@ function extractMajorSection(section: string, input: string): string[] {
         i++;
     }
 
-    const count: number = +(lines[i++].split(/[\[\]]+/)[1]);
+    const count: number = +(lines[i++].split(/[[]+/)[1]);
     return lines.slice(start, i);
 }
 
