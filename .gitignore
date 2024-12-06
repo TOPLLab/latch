@@ -48,6 +48,8 @@ dist/
 # IDE folders
 .idea
 
+# built ava test files
+out
+
 # c8 Coverage
 coverage
-out

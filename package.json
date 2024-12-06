@@ -19,7 +19,8 @@
         "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist/cjs && npx convert-extension cjs dist/cjs/ && rm -f dist/cjs/*.map",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src/**/* --config .eslint.config.mjs",
-        "test:all": "npx ts-node tests/test.ts && npm run test:ava",
+        "test:prebuild": "npm run build && npx tsc tests/unit/* --outDir out",
+        "test:all": "npm run test:prebuild && npm run test:ava",
         "test:ava": "ava",
         "test:coverage": "c8 --src src/ --all ava"
     },
@@ -52,7 +53,7 @@
     },
     "ava": {
         "files": [
-            "out/tests/unit.js"
+            "out/tests/unit/interface.js"
         ],
         "typescript": {
             "compile": "tsc",
