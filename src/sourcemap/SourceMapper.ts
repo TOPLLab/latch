@@ -34,7 +34,7 @@ export class WatMapper implements SourceMapper {
             let imports: Closure[];
             let sourceMap: Mapping;
 
-            function handleObjDumpStreams(error: ExecException | null, stdout: string, stderr: any) {
+            function handleObjDumpStreams(error: ExecException | null, stdout: string, stderr: string) {
                 if (stderr.match('wasm-objdump')) {
                     reject('Could not find wasm-objdump in the path');
                 } else if (error) {
