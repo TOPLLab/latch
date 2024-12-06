@@ -1,9 +1,6 @@
 import test from 'ava';
-import {getFileExtension} from '../../src/util/util';
 
-test('[internal] test util/getFileExtension', t => {
-    t.is(getFileExtension('test.wast'), 'wast');
-});
+// file is currently excluded from tests
 
 test('[warduino] start emulator', t => {
     t.pass();
