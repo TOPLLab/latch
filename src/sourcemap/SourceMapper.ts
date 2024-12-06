@@ -107,6 +107,7 @@ export class WatMapper implements SourceMapper {
 
             const locals: Variable[] = [];
             const matches: string[] = input.match(new RegExp(`(func\[${fidx}\][^\n]*)`, 'g')) ?? [];
+            // eslint-disable-next-line
             for (const text in matches) {
                 const index: number = +find(/func\[([0-9]+)/, line.toString());
                 const local: string = find(/<(.*)>/, line.toString());
