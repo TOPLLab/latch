@@ -20,7 +20,7 @@ export class WatMapper implements SourceMapper {
 
     private lineMapping: SourceMap.SourceLine[];
 
-    constructor(compileOutput: String, tmpdir: string, wabt: string) {
+    constructor(compileOutput: string, tmpdir: string, wabt: string) {
         this.lineMapping = [];
         this.parse(compileOutput);
         this.wabt = wabt;
@@ -34,7 +34,7 @@ export class WatMapper implements SourceMapper {
             let imports: Closure[];
             let sourceMap: Mapping;
 
-            function handleObjDumpStreams(error: ExecException | null, stdout: String, stderr: any) {
+            function handleObjDumpStreams(error: ExecException | null, stdout: string, stderr: string) {
                 if (stderr.match('wasm-objdump')) {
                     reject('Could not find wasm-objdump in the path');
                 } else if (error) {
@@ -62,12 +62,12 @@ export class WatMapper implements SourceMapper {
         });
     }
 
-    private parse(compileOutput: String) {
+    private parse(compileOutput: string) {
         this.lineMapping = [];
         const lines = compileOutput.split('\n');
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].match(/^@ {/)) {
-                let mapping: SourceLine = WatMapper.extractLineInfo(lines[i]);
+                const mapping: SourceLine = WatMapper.extractLineInfo(lines[i]);
                 mapping.instructions = WatMapper.extractAddressInfo(lines[i + 1]);
                 this.lineMapping.push(mapping);
             }
@@ -84,8 +84,8 @@ export class WatMapper implements SourceMapper {
             return [];
         }
 
-        let regexpr = /^(?<address>([\da-f])+):/;
-        let match = line.match(regexpr);
+        const regexpr = /^(?<address>([\da-f])+):/;
+        const match = line.match(regexpr);
         if (match?.groups) {
             return [{address: parseInt(match.groups.address, 16)}];
         }
@@ -93,21 +93,22 @@ export class WatMapper implements SourceMapper {
         throw Error(`Could not parse address from line: ${line}`);
     }
 
-    private static getFunctionInfos(input: String): Closure[] {
-        let functionLines: String[] = extractMajorSection('Function', input);
+    private static getFunctionInfos(input: string): Closure[] {
+        const functionLines: string[] = extractMajorSection('Function', input);
 
         if (functionLines.length === 0) {
             throw Error('Could not messaging \'sourcemap\' section of objdump');
         }
-        let functions: Closure[] = [];
+        const functions: Closure[] = [];
 
-        functionLines.forEach((line: String) => {
+        functionLines.forEach((line: string) => {
             const fidx: number = +find(/func\[([0-9]+)/, line.toString());
             const name: string = find(/<(.*)>/, line.toString());
 
             const locals: Variable[] = [];
             const matches: string[] = input.match(new RegExp(`(func\[${fidx}\][^\n]*)`, 'g')) ?? [];
-            for (let text in matches) {
+            // eslint-disable-next-line
+            for (const text in matches) {
                 const index: number = +find(/func\[([0-9]+)/, line.toString());
                 const local: string = find(/<(.*)>/, line.toString());
                 locals.push({index: index, name: local, type: 'undefined', mutable: true, value: ''});
@@ -119,18 +120,18 @@ export class WatMapper implements SourceMapper {
         return functions;
     }
 
-    private static getGlobalInfos(input: String): Variable[] {
-        let lines: String[] = extractDetailedSection('Global[', input);
-        let globals: Variable[] = [];
+    private static getGlobalInfos(input: string): Variable[] {
+        const lines: string[] = extractDetailedSection('Global[', input);
+        const globals: Variable[] = [];
         lines.forEach((line) => {
             globals.push(extractGlobalInfo(line));
         });
         return globals;
     }
 
-    private static getImportInfos(input: String): Closure[] {
-        let lines: String[] = extractDetailedSection('Import[', input);
-        let globals: Closure[] = [];
+    private static getImportInfos(input: string): Closure[] {
+        const lines: string[] = extractDetailedSection('Import[', input);
+        const globals: Closure[] = [];
         lines.forEach((line) => {
             globals.push(extractImportInfo(line));
         });
@@ -142,8 +143,8 @@ export class WatMapper implements SourceMapper {
     }
 }
 
-function extractDetailedSection(section: string, input: String): String[] {
-    let lines = input.split('\n');
+function extractDetailedSection(section: string, input: string): string[] {
+    const lines = input.split('\n');
     let i = 0;
     while (i < lines.length && !lines[i].startsWith(section)) {
         i++;
@@ -153,29 +154,28 @@ function extractDetailedSection(section: string, input: String): String[] {
         return [];
     }
 
-    let count: number = +(lines[i++].split(/[\[\]]+/)[1]);
+    const count: number = +(lines[i++].split(/[[]+/)[1]);
     return lines.slice(i, ((isNaN(count)) ? lines.length : i + count));
 }
 
-function extractMajorSection(section: string, input: String): String[] {
-    let lines = input.split('\n');
+function extractMajorSection(section: string, input: string): string[] {
+    const lines = input.split('\n');
     let i = 0;
     while (i < lines.length && !lines[i].startsWith(section)) {
         i++;
     }
 
     i += 2;
-    let start = i;
+    const start = i;
     while (i < lines.length && lines[i] !== '') {
         i++;
     }
 
-    let count: number = +(lines[i++].split(/[\[\]]+/)[1]);
     return lines.slice(start, i);
 }
 
-function extractGlobalInfo(line: String): Variable {
-    let global = {} as Variable;
+function extractGlobalInfo(line: string): Variable {
+    const global = {} as Variable;
     let match = line.match(/\[([0-9]+)]/);
     global.index = (match === null) ? NaN : +match[1];
     match = line.match(/ ([if][0-9][0-9]) /);
@@ -189,8 +189,8 @@ function extractGlobalInfo(line: String): Variable {
     return global;
 }
 
-function extractImportInfo(line: String): Closure {
-    let primitive = {} as Closure;
+function extractImportInfo(line: string): Closure {
+    const primitive = {} as Closure;
     let match = line.match(/\[([0-9]+)]/);
     primitive.index = (match === null) ? NaN : +match[1];
     match = line.match(/<([a-zA-Z0-9 ._]+)>/);

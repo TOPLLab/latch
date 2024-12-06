@@ -21,20 +21,20 @@ export class TestbedFactory {
     }
 
     public async initialize(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
-        let compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e));
-        let connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
+        const compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e));
+        const connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
 
         switch (specification.type) {
-            case PlatformType.arduino:
-                return new Arduino(connection as Serial);
-            case PlatformType.emulator:
-            case PlatformType.emu2emu:
-            case PlatformType.debug:
-                return new Emulator(connection as SubProcess);
-            case PlatformType.emuproxy:
-                return new DummyProxy(connection as SubProcess, specification as ProxySpecification);
-            default:
-                return Promise.reject('Platform not implemented.');
+        case PlatformType.arduino:
+            return new Arduino(connection as Serial);
+        case PlatformType.emulator:
+        case PlatformType.emu2emu:
+        case PlatformType.debug:
+            return new Emulator(connection as SubProcess);
+        case PlatformType.emuproxy:
+            return new DummyProxy(connection as SubProcess, specification as ProxySpecification);
+        default:
+            return Promise.reject('Platform not implemented.');
         }
     }
 }

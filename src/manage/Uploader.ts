@@ -35,14 +35,14 @@ export class UploaderFactory {
 
     public pickUploader(specification: TestbedSpecification, args: string[] = []): Uploader {
         switch (specification.type) {
-            case PlatformType.arduino:
-                return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
-            case PlatformType.emulator:
-            case PlatformType.emu2emu:
-            case PlatformType.emuproxy:
-                return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
-            case PlatformType.debug:
-                return new EmulatorConnector(specification.options as SubprocessOptions)
+        case PlatformType.arduino:
+            return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
+        case PlatformType.emulator:
+        case PlatformType.emu2emu:
+        case PlatformType.emuproxy:
+            return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
+        case PlatformType.debug:
+            return new EmulatorConnector(specification.options as SubprocessOptions)
         }
         throw new Error('Unsupported platform type');
     }
@@ -206,7 +206,7 @@ export class ArduinoUploader extends Uploader {
     private stage(program: string): Promise<void> {
         const that = this;
         return new Promise<void>((resolve, reject) => {
-            let compile = exec(`make compile PAUSED=true BINARY=${program}`, {cwd: this.sdkpath});
+            const compile = exec(`make compile PAUSED=true BINARY=${program}`, {cwd: this.sdkpath});
 
             compile.on('close', (code) => {
                 if (code !== 0) {
