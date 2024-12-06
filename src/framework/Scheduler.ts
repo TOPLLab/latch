@@ -87,7 +87,7 @@ function trees(input: TestScenario[]): TestScenario[][][] {
     input.sort(comparator);
 
     // output
-    let forest: TestScenario[][][] = [];
+    const forest: TestScenario[][][] = [];
 
     // scenario that have already been seen
     const seen = new Set<TestScenario>();
@@ -100,7 +100,7 @@ function trees(input: TestScenario[]): TestScenario[][][] {
             continue;
         }
         // start a new tree
-        let t: TestScenario[][] = tree(test);
+        const t: TestScenario[][] = tree(test);
         forest.push(t);
         pointer = forest.length - 1;
 
@@ -129,7 +129,7 @@ function trees(input: TestScenario[]): TestScenario[][][] {
 function tree(root: TestScenario): TestScenario[][] {
     let result: TestScenario[][] = [];
 
-    let lifo: TestScenario[] = [...root.dependencies ?? []];
+    const lifo: TestScenario[] = [...root.dependencies ?? []];
     for (const test of lifo) {
         const c = tree(test);
         result = merge(c, result);
@@ -188,7 +188,7 @@ function levels(input: TestScenario[]): TestScenario[][] {
         const test: TestScenario = input.shift()!;
 
         // skip any test with unresolved dependencies
-        let skip: boolean = (test.dependencies ?? []).some((dependence: TestScenario) => input.includes(dependence));
+        const skip: boolean = (test.dependencies ?? []).some((dependence: TestScenario) => input.includes(dependence));
 
         if (skip) {
             input.push(test);

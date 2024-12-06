@@ -25,10 +25,10 @@ interface Labels {
 // strategy factory
 export function styling(type: StyleType): Style {
     switch (type) {
-        case StyleType.github:
-        case StyleType.plain:
-        default:
-            return new Plain();
+    case StyleType.github:
+    case StyleType.plain:
+    default:
+        return new Plain();
     }
 }
 

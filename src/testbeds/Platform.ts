@@ -42,7 +42,7 @@ export abstract class Platform extends EventEmitter implements Testbed {
     // process messages in queue
     protected process(): void {
         // until no complete messages are left
-        for (let message of this.messages) {
+        for (const message of this.messages) {
             const index: number = this.search(message);  // search request
 
             if (0 <= index && index < this.requests.length) {
