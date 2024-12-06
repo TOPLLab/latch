@@ -6,8 +6,7 @@ import stylisticJs from '@stylistic/eslint-plugin-js'
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  { "extends": ["eslint:recommended", "google"],
-    plugins: {
+  { plugins: {
       '@stylistic/js': stylisticJs
     }, rules: {
       '@stylistic/js/indent': ['error', 4],
