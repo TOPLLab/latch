@@ -153,7 +153,7 @@ function extractDetailedSection(section: string, input: string): string[] {
         return [];
     }
 
-    const count: number = +(lines[i++].split(/[\[\]]+/)[1]);
+    const count: number = +(lines[i++].split(/[[]+/)[1]);
     return lines.slice(i, ((isNaN(count)) ? lines.length : i + count));
 }
 
