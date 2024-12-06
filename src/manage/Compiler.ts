@@ -98,7 +98,7 @@ export class WatCompiler extends Compiler {
             let out: string = '';
             let err: string = '';
 
-            function handle(error: ExecException | null, stdout: string, stderr: string) {
+            function handle(error: ExecException | null, stdout: string) {
                 out = stdout;
                 err = error?.message ?? '';
             }
@@ -217,7 +217,7 @@ export class AsScriptCompiler extends Compiler {
             let out: string = '';
             let err: string = '';
 
-            function handle(error: ExecException | null, stdout: string, stderr: any) {
+            function handle(error: ExecException | null, stdout: string) {
                 out = stdout;
                 err = error?.message ?? '';
             }
@@ -250,7 +250,7 @@ export class AsScriptCompiler extends Compiler {
             let out: string = '';
             let err: string = '';
 
-            function handle(error: ExecException | null, stdout: string, stderr: any) {
+            function handle(error: ExecException | null, stdout: string) {
                 out = stdout;
                 err = error?.message ?? '';
             }
