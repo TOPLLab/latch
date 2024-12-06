@@ -39,9 +39,17 @@ lib/*.js
 test/*.js
 *.map
 
+# Project specific
 WABT
 core/
 
 dist/
 
+# IDE folders
 .idea
+
+# built ava test files
+out
+
+# c8 Coverage
+coverage

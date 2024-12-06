@@ -34,7 +34,7 @@ steps.push(new Invoker('func-unwind-by-br', [], undefined));
 
 spec.test({
     title: `Test with address_0.wast`,
-    program: 'test/address.wast',
+    program: 'tests/address.wast',
     dependencies: [],
     steps: steps
 });
@@ -46,7 +46,7 @@ debug.testee('emulator[:8522]', new EmulatorSpecification(8522));
 
 debug.test({
     title: 'Test STEP OVER',
-    program: 'test/call.wast',
+    program: 'tests/call.wast',
     steps: [{
         title: 'Send DUMP command',
         instruction: {kind: Kind.Request, value: dump}
@@ -80,7 +80,7 @@ primitives.testee('debug[:8700]', new EmulatorSpecification(8700));
 
 primitives.test({
     title: `Test store primitive`,
-    program: 'test/dummy.wast',
+    program: 'tests/dummy.wast',
     dependencies: [],
     steps: [{
         title: 'CHECK: execution at start of main',
@@ -115,7 +115,7 @@ oop.testee('supervisor[:8100] - proxy[:8150]', new OutofPlaceSpecification(8100,
 
 oop.test({
     title: `Test store primitive`,
-    program: 'test/dummy.wast',
+    program: 'tests/dummy.wast',
     dependencies: [],
     steps: [
         {

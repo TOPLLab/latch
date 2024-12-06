@@ -15,22 +15,25 @@
     ],
     "scripts": {
         "clean": "rm -rf dist",
-        "build": "npm run clean && npm run build:cjs",
-        "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist/cjs && npx convert-extension cjs dist/cjs/ && rm -f dist/cjs/*.map",
+        "build": "npm run build:cjs",
+        "build:cjs": "tsc --project tsconfig.build.json",
         "watch": "tsc -watch -p ./",
         "lint": "eslint src/**/* --config .eslint.config.mjs",
-        "test": "npx ts-node test/test.ts",
-        "debugtest": "npx ts-node test/debugger.test.ts",
-        "spectest": "npx ts-node test/spec.ts"
+        "test:prebuild": "npm run build && npx tsc tests/unit/* --outDir out --sourceMap",
+        "test:all": "npm run test:prebuild && npm run test:ava",
+        "test:ava": "ava",
+        "coverage:test:ava": "c8 --src src/ --all ava"
     },
     "dependencies": {
         "ansi-colors": "^4.1.3",
         "ieee754": "^1.2.1",
         "ora": "^8.0.1",
         "source-map": "^0.7.4",
-        "ts-node": "^10.5.0"
+        "ts-node": "^10.5.0",
+        "tslib": "^2.8.1"
     },
     "devDependencies": {
+        "@ava/typescript": "^5.0.0",
         "@eslint/js": "^9.16.0",
         "@stylistic/eslint-plugin-js": "^2.11.0",
         "@types/chai": "^4.3.0",
@@ -39,12 +42,25 @@
         "@types/uuid": "^9.0.0",
         "@types/ws": "^8.5.4",
         "@typescript-eslint/eslint-plugin": "^8.17.0",
+        "ava": "^6.2.0",
+        "c8": "^10.1.2",
         "convert-extension": "^0.3.0",
         "eslint": "^9.16.0",
         "globals": "^15.13.0",
         "mqtt": "^4.3.7",
         "serialport": "^10.4.0",
-        "typescript": "^4.5.5",
+        "typescript": "^5.2.0",
         "typescript-eslint": "^8.17.0"
+    },
+    "ava": {
+        "files": [
+            "out/tests/unit/util.test.js"
+        ],
+        "typescript": {
+            "compile": false,
+            "rewritePaths": {
+                "src/": "dist/"
+            }
+        }
     }
 }

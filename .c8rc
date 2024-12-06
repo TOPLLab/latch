@@ -1,0 +1,11 @@
+{
+  "reporter": [
+    "json",
+    "text-summary"
+  ],
+  "extension": [
+      ".ts"
+  ],
+  "sourceMap": true,
+  "exclude-after-remap": true
+}
