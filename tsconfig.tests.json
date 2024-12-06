@@ -1,10 +1,10 @@
 {
-    "extends": "./tsconfig.json",
+    "extends": "./tsconfig.build.json",
     "include": [
-        "src"
+        "tests/unit/**/*.ts"
     ],
     "compilerOptions": {
-        "rootDir": "src",
+        "rootDir": ".",
         "sourceMap": true,
         "noEmit": false,
         "declaration": true,

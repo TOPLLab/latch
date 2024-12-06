@@ -39,6 +39,8 @@ lib/*.js
 test/*.js
 *.map
 
+*.tsbuildinfo
+
 # Project specific
 WABT
 core/
