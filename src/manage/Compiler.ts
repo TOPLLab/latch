@@ -124,7 +124,7 @@ export class WatCompiler extends Compiler {
         return new Promise<CompileOutput>((resolve, reject) => {
             const command = `${this.wabt}/wasm-objdump -x -m ${output.file}`;
 
-            const compile = exec(command, (error: ExecException | null, stdout: string, stderr: any) => {
+            const compile = exec(command, (error: ExecException | null, stdout: string) => {
                 output.map = this.parseWasmObjDump(output, stdout.toString());
                 this.emit(CompilationEvents.sourcemap);
                 resolve(output);
