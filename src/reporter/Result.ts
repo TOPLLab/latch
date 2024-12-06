@@ -20,14 +20,14 @@ export class Result {
 
     toString(): string {
         switch (this.completion) {
-            case Completion.succeeded:
-                return `${bold(inverse(green(' PASS ')))} ${this.name}`;
-            case Completion.uncommenced:
-                return `${bold(inverse(yellow(' SKIP ')))} ${this.name}`;
-            case Completion.error:
-            case Completion.failed:
-            default:
-                return `${bold(inverse(red(' FAIL ')))} ${this.name}\n        ${red(this.completion)}${red(this.description)}`;
+        case Completion.succeeded:
+            return `${bold(inverse(green(' PASS ')))} ${this.name}`;
+        case Completion.uncommenced:
+            return `${bold(inverse(yellow(' SKIP ')))} ${this.name}`;
+        case Completion.error:
+        case Completion.failed:
+        default:
+            return `${bold(inverse(red(' FAIL ')))} ${this.name}\n        ${red(this.completion)}${red(this.description)}`;
 
         }
     }
@@ -74,38 +74,38 @@ export class Result {
 
     public expectBehaviour(actual: any, previous: any, behaviour: Behaviour): void {
         switch (behaviour) {
-            case Behaviour.unchanged:
-                if (deepEqual(actual, previous)) {
-                    this.completion = Completion.succeeded;
-                } else {
-                    this.completion = Completion.failed;
-                    this.description = `Expected ${actual} to equal ${previous}`
-                }
-                break;
-            case Behaviour.changed:
-                if (!deepEqual(actual, previous)) {
-                    this.completion = Completion.succeeded;
-                } else {
-                    this.completion = Completion.failed;
-                    this.description = `Expected ${actual} to be different from ${previous}`
-                }
-                break;
-            case Behaviour.increased:
-                if (actual > previous) {
-                    this.completion = Completion.succeeded;
-                } else {
-                    this.completion = Completion.failed;
-                    this.description = `Expected ${actual} to be greater than ${previous}`
-                }
-                break;
-            case Behaviour.decreased:
-                if (actual < previous) {
-                    this.completion = Completion.succeeded;
-                } else {
-                    this.completion = Completion.failed;
-                    this.description = `Expected ${actual} to be less than ${previous}`
-                }
-                break;
+        case Behaviour.unchanged:
+            if (deepEqual(actual, previous)) {
+                this.completion = Completion.succeeded;
+            } else {
+                this.completion = Completion.failed;
+                this.description = `Expected ${actual} to equal ${previous}`
+            }
+            break;
+        case Behaviour.changed:
+            if (!deepEqual(actual, previous)) {
+                this.completion = Completion.succeeded;
+            } else {
+                this.completion = Completion.failed;
+                this.description = `Expected ${actual} to be different from ${previous}`
+            }
+            break;
+        case Behaviour.increased:
+            if (actual > previous) {
+                this.completion = Completion.succeeded;
+            } else {
+                this.completion = Completion.failed;
+                this.description = `Expected ${actual} to be greater than ${previous}`
+            }
+            break;
+        case Behaviour.decreased:
+            if (actual < previous) {
+                this.completion = Completion.succeeded;
+            } else {
+                this.completion = Completion.failed;
+                this.description = `Expected ${actual} to be less than ${previous}`
+            }
+            break;
         }
     }
 }

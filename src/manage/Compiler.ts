@@ -18,8 +18,8 @@ enum CompilationEvents {
 
 export interface CompileOutput {
     file: string;
-    out?: String;
-    err?: String;
+    out?: string;
+    err?: string;
     map?: SourceMap.Mapping;
 }
 
@@ -33,13 +33,13 @@ export class CompilerFactory {
     }
 
     public pickCompiler(file: string): Compiler {
-        let fileType = getFileExtension(file);
+        const fileType = getFileExtension(file);
         switch (fileType) {
-            case 'wast' :
-            case 'wat' :
-                return this.wat;
-            case 'ts' :
-                return this.asc;
+        case 'wast' :
+        case 'wat' :
+            return this.wat;
+        case 'ts' :
+            return this.asc;
         }
         throw new Error('Unsupported file type');
     }
@@ -95,15 +95,15 @@ export class WatCompiler extends Compiler {
         return new Promise<CompileOutput>((resolve, reject) => {
             const file = `${dir}/upload.wasm`;
             const command = `${this.wabt}/wat2wasm --no-canonicalize-leb128s --disable-bulk-memory --debug-names -v -o ${file} ${program}`;
-            let out: String = '';
-            let err: String = '';
+            let out: string = '';
+            let err: string = '';
 
-            function handle(error: ExecException | null, stdout: String, stderr: any) {
+            function handle(error: ExecException | null, stdout: string) {
                 out = stdout;
                 err = error?.message ?? '';
             }
 
-            let compile = exec(command, handle);
+            const compile = exec(command, handle);
             this.emit(CompilationEvents.started, command);
 
             compile.on('close', (code) => {
@@ -124,7 +124,7 @@ export class WatCompiler extends Compiler {
         return new Promise<CompileOutput>((resolve, reject) => {
             const command = `${this.wabt}/wasm-objdump -x -m ${output.file}`;
 
-            let compile = exec(command, (error: ExecException | null, stdout: String, stderr: any) => {
+            const compile = exec(command, (error: ExecException | null, stdout: string) => {
                 output.map = this.parseWasmObjDump(output, stdout.toString());
                 this.emit(CompilationEvents.sourcemap);
                 resolve(output);
@@ -212,17 +212,17 @@ export class AsScriptCompiler extends Compiler {
 
         // compile AS to Wasm and WAT
         return new Promise<CompileOutput>(async (resolve, reject) => {
-            let file = `${dir}/upload.wasm`;
+            const file = `${dir}/upload.wasm`;
             const command = await this.getCompilationCommand(program, file);
-            let out: String = '';
-            let err: String = '';
+            let out: string = '';
+            let err: string = '';
 
-            function handle(error: ExecException | null, stdout: String, stderr: any) {
+            function handle(error: ExecException | null, stdout: string) {
                 out = stdout;
                 err = error?.message ?? '';
             }
 
-            let compile = exec(command, handle);
+            const compile = exec(command, handle);
 
             compile.on('close', (code) => {
                 if (code !== 0) {
@@ -239,7 +239,7 @@ export class AsScriptCompiler extends Compiler {
     private getCompilationCommand(program: string, output: string): Promise<string> {
         // builds asc command based on the version of asc
         return new Promise<string>(async (resolve) => {
-            let version: Version = await AsScriptCompiler.retrieveVersion();
+            const version: Version = await AsScriptCompiler.retrieveVersion();
             resolve(`npx asc ${program} --exportTable --disable bulk-memory --sourceMap --debug ` +
                 `${(version.major > 0 || +version.minor >= 20) ? '--outFile' : '--binaryFile'} ${output}`);
         });
@@ -247,15 +247,15 @@ export class AsScriptCompiler extends Compiler {
 
     private static retrieveVersion(): Promise<Version> {
         return new Promise<Version>((resolve, reject) => {
-            let out: String = '';
-            let err: String = '';
+            let out: string = '';
+            let err: string = '';
 
-            function handle(error: ExecException | null, stdout: String, stderr: any) {
+            function handle(error: ExecException | null, stdout: string) {
                 out = stdout;
                 err = error?.message ?? '';
             }
 
-            let compilerVersion = exec('npx asc --version', handle);
+            const compilerVersion = exec('npx asc --version', handle);
             compilerVersion.on('close', (code) => {
                 if (code !== 0) {
                     reject(`asc --version failed: ${err}`);
@@ -299,7 +299,7 @@ function parseLines(context: CompileOutput): SourceMap.SourceLine[] {
 
     const lines: string[] = context.out.split('\n');
     const corrections = extractSectionAddressCorrections(lines);
-    let result: SourceLine[] = [];
+    const result: SourceLine[] = [];
     let lastLineInfo = undefined;
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -331,8 +331,8 @@ function parseLines(context: CompileOutput): SourceMap.SourceLine[] {
 }
 
 export function extractAddressInformation(addressLine: string): string {
-    let regexpr = /^(?<address>([\da-f])+):/;
-    let match = addressLine.match(regexpr);
+    const regexpr = /^(?<address>([\da-f])+):/;
+    const match = addressLine.match(regexpr);
     if (match?.groups) {
         return match.groups.address;
     }

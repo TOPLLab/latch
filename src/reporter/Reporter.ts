@@ -183,8 +183,8 @@ export class Reporter {
     results(time: number) {
         this.archiver.set('duration (ms)', Math.round(time));
 
-        let passing = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.passing()).length;
-        let failing = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.failing()).length;
+        const passing = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.passing()).length;
+        const failing = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.failing()).length;
         const skipped = this.suites.flatMap((suite) => suite.scenarios).filter((scenario) => scenario.skipped()).length;
 
         const scs = this.suites.flatMap((suite) => suite.scenarios);

@@ -1,5 +1,5 @@
 export function getFileExtension(file: string): string {
-    let result = /(?:\.([^.]+))?$/.exec(file)
+    const result = /(?:\.([^.]+))?$/.exec(file)
     if (result === null || result.length < 1) {
         throw Error('Could not determine file type');
     }

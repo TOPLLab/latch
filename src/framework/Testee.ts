@@ -167,7 +167,7 @@ export class Testee { // TODO unified with testbed interface
                 return;
             }
 
-            let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
+            const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
             try {
                 await timeout<Object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 testee.current = description.program;

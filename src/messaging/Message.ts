@@ -128,7 +128,7 @@ export namespace Message {
     }
 
     export async function uploadFile(program: string): Promise<Request<Ack>> {
-        let compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program);
+        const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program);
         return updateModule(compiled.file);
     }
 

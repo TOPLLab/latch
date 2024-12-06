@@ -1,6 +1,5 @@
 import {v4 as randomUUID} from 'uuid';
 
-/* eslint-disable @typescript-eslint/naming-convention */
 export enum Status {
     FAILED = 'failed',
     BROKEN = 'broken',
@@ -8,7 +7,6 @@ export enum Status {
     SKIPPED = 'skipped',
 }
 
-/* eslint-disable @typescript-eslint/naming-convention */
 export enum Stage {
     SCHEDULED = 'scheduled',
     RUNNING = 'running',

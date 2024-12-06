@@ -39,7 +39,7 @@ export function ackParser(text: string, ack: string): Ack {
 export function breakpointParser(text: string): Breakpoint {
     const ack: Ack = ackParser(text, 'BP');
 
-    let breakpointInfo = ack.text.match(/BP (0x.*)!/);
+    const breakpointInfo = ack.text.match(/BP (0x.*)!/);
     if (breakpointInfo!.length > 1) {
         return new Breakpoint(parseInt(breakpointInfo![1]), 0); // TODO address to line mapping
     }
@@ -50,7 +50,7 @@ export function breakpointParser(text: string): Breakpoint {
 export function breakpointHitParser(text: string): Breakpoint {
     const ack: Ack = ackParser(text, 'AT ');
 
-    let breakpointInfo = ack.text.match(/AT (0x.*)!/);
+    const breakpointInfo = ack.text.match(/AT (0x.*)!/);
     if (breakpointInfo!.length > 1) {
         return new Breakpoint(parseInt(breakpointInfo![1]), 0); // TODO address to line mapping
     }
