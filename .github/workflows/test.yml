@@ -37,6 +37,9 @@ jobs:
         run: |
           echo "LINE_COVERAGE=$(npm run coverage:test:ava | grep -E '^\s*Lines\s*:\s*[0-9]+(\.[0-9]+)?%' | awk '{print $3}' | tr -d '%')" >> $GITHUB_ENV
 
+      - name: Report coverage
+        run: npx c8 report
+
       - name: Update coverage badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
