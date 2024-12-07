@@ -1,0 +1,100 @@
+
+blink.wasm:	file format wasm 0x1
+, , , , , 
+Section Details:
+
+Type[4]:
+ - type[0] (i32, i32) -> nil
+ - type[1] (i32) -> i32
+ - type[2] (i32) -> nil
+ - type[3] () -> nil
+Import[4]:
+ - func[0] sig=2 <env.chip_delay> <- env.chip_delay
+ - func[1] sig=0 <env.chip_pin_mode> <- env.chip_pin_mode
+ - func[2] sig=1 <env.chip_digital_read> <- env.chip_digital_read
+ - func[3] sig=0 <env.chip_digital_write> <- env.chip_digital_write
+Function[2]:
+ - func[4] sig=3 <init>
+ - func[5] sig=3 <blink>
+Global[3]:
+ - global[0] i32 mutable=0 <led> - init i32=23
+ - global[1] i32 mutable=0 <on> - init i32=1
+ - global[2] i32 mutable=0 <off> - init i32=0
+Export[1]:
+ - func[5] <blink> -> "main"
+Code[2]:
+ - func[4] size=8 <init>
+ - func[5] size=44 <blink>
+Custom:
+ - name: "name"
+ - func[0] <env.chip_delay>
+,  - func[1] <env.chip_pin_mode>
+,  - func[2] <env.chip_digital_read>
+,  - func[3] <env.chip_digital_write>
+,  - func[4] <init>
+,  - func[5] <blink>
+ - func[5] local[0] <delay>
+ - type[0] <int32->int32->void>
+ - type[1] <int32->int32>
+ - type[2] <int32->void>
+ - type[3] <void->void>
+ - global[0] <led>
+ - global[1] <on>
+ - global[2] <off>
+
+Code Disassembly:
+
+0000b6 func[4] <init>:
+ 0000b7: 23 00                      | global.get 0 <led>
+ 0000b9: 41 02                      | i32.const 2
+ 0000bb: 10 01                      | call 1 <env.chip_pin_mode>
+ 0000bd: 0b                         | end
+0000c3 func[5] <blink>:
+ 0000c4: 01 7f                      | local[0] type=i32
+ 0000c6: 41 e8 07                   | i32.const 1000
+ 0000c9: 21 00                      | local.set 0 <delay>
+ 0000cb: 10 04                      | call 4 <init>
+ 0000cd: 03 40                      | loop
+ 0000cf: 23 00                      |   global.get 0 <led>
+ 0000d1: 23 01                      |   global.get 1 <on>
+ 0000d3: 10 03                      |   call 3 <env.chip_digital_write>
+ 0000d5: 20 00                      |   local.get 0 <delay>
+ 0000d7: 10 00                      |   call 0 <env.chip_delay>
+ 0000d9: 23 00                      |   global.get 0 <led>
+ 0000db: 10 02                      |   call 2 <env.chip_digital_read>
+ 0000dd: 23 00                      |   global.get 0 <led>
+ 0000df: 23 02                      |   global.get 2 <off>
+ 0000e1: 10 03                      |   call 3 <env.chip_digital_write>
+ 0000e3: 20 00                      |   local.get 0 <delay>
+ 0000e5: 10 00                      |   call 0 <env.chip_delay>
+ 0000e7: 23 00                      |   global.get 0 <led>
+ 0000e9: 10 02                      |   call 2 <env.chip_digital_read>
+ 0000eb: 0c 00                      |   br 0
+ 0000ed: 0b                         | end
+ 0000ee: 0b                         | end
+, , , , , 
+Sourcemap JSON:
+
+{
+	"Functions": [
+		{"name": "env.chip_delay",
+		 "locals": []
+		}, 
+		{"name": "env.chip_pin_mode",
+		 "locals": []
+		}, 
+		{"name": "env.chip_digital_read",
+		 "locals": []
+		}, 
+		{"name": "env.chip_digital_write",
+		 "locals": []
+		}, 
+		{"name": "init",
+		 "locals": []
+		}, 
+		{"name": "blink",
+		 "locals": [{"name": "delay","idx":0}]
+		}
+	]
+}
+
