@@ -56,7 +56,8 @@
     },
     "ava": {
         "files": [
-            "out/tests/unit/util.test.js"
+            "out/tests/unit/util.test.js",
+            "out/tests/unit/sourcemap.test.js"
         ],
         "typescript": {
             "compile": false,
