@@ -12,6 +12,6 @@ export function retry<T>(promise: () => Promise<T>, retries: number): Promise<T>
             }
         }
 
-        reject(`exhausted number of retries (${retries})`);
+        reject(new Error(`exhausted number of retries (${retries})`));
     });
 }
