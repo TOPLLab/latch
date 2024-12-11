@@ -160,4 +160,4 @@ oop.test({
 });
 
 
-framework.run([spec, debug, primitives, oop]);
+framework.run([spec, debug, primitives, oop]).then(() => process.exit(0));

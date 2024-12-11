@@ -3,10 +3,11 @@ import {HybridScheduler, Scheduler} from './Scheduler';
 import {TestScenario} from './scenario/TestScenario';
 
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
-import {Reporter, SuiteResults} from '../reporter/Reporter';
 
 import {StyleType} from '../reporter';
 import {styling} from '../reporter/Style';
+import {SuiteResult} from '../reporter/Results';
+import {Reporter} from '../reporter/Reporter';
 
 export interface Suite {
 
@@ -90,10 +91,10 @@ export class Framework {
         for (const suite of suites) {
             for (const testee of suite.testees) {
                 const order: TestScenario[] = suite.scheduler.sequential(suite);
-                const result: SuiteResults = new SuiteResults(suite, testee);
+                const result: SuiteResult = new SuiteResult(suite);
 
                 const first: TestScenario = order[0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error = e));
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
 
                 await this.runSuite(result, testee, order);
                 this.reporter.report(result);
@@ -114,10 +115,10 @@ export class Framework {
         await Promise.all(suites.map(async (suite: Suite) => {
             await Promise.all(suite.testees.map(async (testee: Testee) => {
                 const order: TestScenario[] = suite.scheduler.sequential(suite);
-                const result: SuiteResults = new SuiteResults(suite, testee);
+                const result: SuiteResult = new SuiteResult(suite);
 
                 const first: TestScenario = order[0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error = e));
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
 
                 await this.runSuite(result, testee, order);
                 this.reporter.report(result);
@@ -139,10 +140,10 @@ export class Framework {
             const order: TestScenario[][] = suite.scheduler.parallel(suite, suite.testees.length);
             await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
                 // console.log(`scheduling on ${testee.name}`)
-                const result: SuiteResults = new SuiteResults(suite, testee);
+                const result: SuiteResult = new SuiteResult(suite);
 
                 const first: TestScenario = order[i][0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error = e));
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
 
                 for (let j = i; j < order.length; j += suite.testees.length) {
                     await this.runSuite(result, testee, order[j]);
@@ -159,7 +160,7 @@ export class Framework {
         this.reporter.results(t1 - t0);
     }
 
-    private async runSuite(result: SuiteResults, testee: Testee, order: TestScenario[]) {
+    private async runSuite(result: SuiteResult, testee: Testee, order: TestScenario[]) {
         for (const test of order) {
             await testee.describe(test, result, this.runs);
         }

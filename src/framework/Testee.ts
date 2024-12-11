@@ -9,10 +9,11 @@ import {TestScenario} from './scenario/TestScenario';
 import {OutofPlaceSpecification, PlatformType, TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
-import {Completion, expect, ScenarioResult, SuiteResults} from '../reporter/Reporter';
+import {Outcome} from '../reporter/verbosity/Describer';
 import {WASM} from '../sourcemap/Wasm';
 import {DummyProxy} from '../testbeds/Emulator';
-import {Result} from '../reporter/Result';
+import {ScenarioResult, Skipped, StepOutcome, SuiteResult} from '../reporter/Results';
+import {Verifier} from './Verifier';
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -46,14 +47,14 @@ export function getValue(object: any, field: string): any {
 }
 
 export enum Target {
-    supervisor,
-    proxy
+    supervisor = 'supervisor',
+    proxy = 'proxy'
 }
 
 export class Testee { // TODO unified with testbed interface
 
     /** The current state for each described test */
-    private states: Map<string, Result> = new Map<string, Result>();
+    private states: Map<string, StepOutcome> = new Map<string, StepOutcome>();
 
     /** Factory to establish new connections to VMs */
     public readonly connector: TestbedFactory;
@@ -139,9 +140,9 @@ export class Testee { // TODO unified with testbed interface
         return timeout<Object | void>(name, limit, fn());
     }
 
-    public async describe(description: TestScenario, suiteResult: SuiteResults, runs: number = 1) {
+    public async describe(description: TestScenario, suiteResult: SuiteResult, runs: number = 1) {
         const testee = this;
-        const scenarioResult: ScenarioResult = new ScenarioResult(description, testee);
+        const scenarioResult: ScenarioResult = new ScenarioResult(description);
 
         if (description.skip) {
             return;
@@ -154,11 +155,11 @@ export class Testee { // TODO unified with testbed interface
         await this.run('Check for failing dependencies', testee.timeout, async function () {
             const failedDependencies: TestScenario[] = testee.failedDependencies(description);
             if (failedDependencies.length > 0) {
-                testee.states.set(description.title, new Result('Skipping', 'Test has failing dependencies', Completion.skipped));
+                testee.states.set(description.title, new Skipped('Skipping', 'Test has failing dependencies'));
                 throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
             }
         }).catch((e: Error) => {
-            scenarioResult.error = e;
+            scenarioResult.error(e.message);
         });
 
         await this.run('Compile and upload program', testee.connector.timeout, async function () {
@@ -176,9 +177,9 @@ export class Testee { // TODO unified with testbed interface
             }
         }).catch((e: Error | string) => {
             if (typeof e === 'string') {
-                scenarioResult.error = new Error(e);
+                scenarioResult.error(e);
             } else {
-                scenarioResult.error = e;
+                scenarioResult.error(e.toString());
             }
         });
 
@@ -186,14 +187,14 @@ export class Testee { // TODO unified with testbed interface
             map = await testee.mapper.map(description.program);
         }).catch((e: Error | string) => {
             if (typeof e === 'string') {
-                scenarioResult.error = new Error(e);
+                scenarioResult.error(e);
             } else {
-                scenarioResult.error = e;
+                scenarioResult.error(e.toString());
             }
         });
 
-        if (scenarioResult.error) {
-            suiteResult.scenarios.push(scenarioResult);
+        if (scenarioResult.outcome === Outcome.error) {
+            suiteResult.add(scenarioResult);
             return;
         }
 
@@ -205,18 +206,16 @@ export class Testee { // TODO unified with testbed interface
                 await this.run('resetting before retry', testee.timeout, async function () {
                     await testee.reset(testee.testbed);
                 }).catch((e: Error) => {
-                    scenarioResult.error = e;
+                    scenarioResult.error(e.toString());
                 });
             }
 
             for (const step of description.steps ?? []) {
                 /** Perform the step and check if expectations were met */
                 await this.step(step.title, testee.timeout, async function () {
-                    let result: Result = new Result(step.title, 'incomplete');
+                    const verifier: Verifier = new Verifier(step);
                     if (testee.bed(step.target ?? Target.supervisor) === undefined) {
-                        testee.states.set(description.title, result);
-                        result.error('Cannot run test: no debugger connection.');
-                        testee.states.set(description.title, result);
+                        testee.states.set(description.title, verifier.error('Cannot run test: no debugger connection.'));
                         return;
                     }
 
@@ -224,7 +223,8 @@ export class Testee { // TODO unified with testbed interface
                     if (step.instruction.kind === Kind.Action) {
                         actual = await timeout<Object | void>(`performing action . ${step.title}`, testee.timeout,
                             step.instruction.value.act(testee)).catch((err) => {
-                            result.error(err);
+                            testee.states.set(description.title, verifier.error(err));
+                            return;
                         });
                     } else {
                         actual = await testee.recoverable(testee, step.instruction.value, map,
@@ -235,24 +235,22 @@ export class Testee { // TODO unified with testbed interface
                                     return Promise.reject(o)
                                 });
                             }), 1).catch((e: Error) => {
-                            result.completion = (e.message.includes('timeout')) ? Completion.timedout : Completion.error;
-                            result.description = e.message;
+                            const result = new StepOutcome(step);
+                            testee.states.set(description.title, result.update((e.message.includes('timeout')) ? Outcome.timedout : Outcome.error, e.message));
                         });
                     }
 
-                    if (result.completion === Completion.uncommenced) {
-                        result = expect(step, actual, previous);
-                    }
+                    const result = verifier.verify(actual, previous);
 
                     if (actual !== undefined) {
                         previous = actual;
                     }
 
                     testee.states.set(description.title, result);
-                    scenarioResult.results.push(result);
+                    scenarioResult.add(result);
                 });
             }
-            suiteResult.scenarios.push(scenarioResult);
+            suiteResult.add(scenarioResult);
         }
     }
 
@@ -293,8 +291,8 @@ export class Testee { // TODO unified with testbed interface
     private failedDependencies(description: TestScenario): TestScenario[] {
         return (description?.dependencies ?? []).filter(dependence => {
             if (this.states.get(dependence.title)) {
-                const c = this.states.get(dependence.title)!.completion;
-                return !(c === Completion.succeeded || c === Completion.uncommenced);
+                const c = this.states.get(dependence.title)!.outcome;
+                return !(c === Outcome.succeeded || c === Outcome.uncommenced);
             } else {
                 return false;
             }
