@@ -63,11 +63,10 @@ jobs:
           chmod u+x $GITHUB_WORKSPACE/.tools/*
           $GITHUB_WORKSPACE/.tools/wasm-objdump --version
 
-      - name: Add .tools to PATH
-        run: echo "$GITHUB_WORKSPACE/.tools" >> $GITHUB_PATH
-
       - name: Run ava unit tests
         run: npm run test:ava
+        env:
+          WABT: ${GITHUB_WORKSPACE}/.tools
 
   coverage:
     name: Code coverage
