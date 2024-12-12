@@ -2,7 +2,7 @@ name: Tests
 on: [ push ]
 
 jobs:
-  build:
+  build-wabt:
     name: Build WAT tools
     runs-on: ubuntu-latest
     steps:
@@ -37,10 +37,45 @@ jobs:
           name: wabt-build-${{ github.run_id }}
           path: tests/unit/artifacts/wabt/build
 
+  build-wdcli:
+    name: Build WARDuino CLI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Get WDCLI commit ID
+        working-directory: tests/unit/artifacts/warduino
+        run: echo "WDCLI_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Cache WARDuino CLI
+        uses: actions/cache@v4
+        id: cache-warduino
+        with:
+          key: ${{ runner.os }}-warduino-${{ env.WDCLI_VERSION }}
+          path: tests/unit/artifacts/warduino
+          restore-keys: |
+            ${{ runner.os }}-warduino-
+
+      - name: Build WARDuino CLI  # Build latest version
+        if: steps.cache-warduino.outputs.cache-hit == false
+        working-directory: tests/unit/artifacts/warduino
+        run: |
+          mkdir build; cd build
+          cmake .. -D BUILD_EMULATOR=ON
+          cmake --build .
+
+      - name: Upload built tools
+        uses: actions/upload-artifact@v4
+        with:
+          name: warduino-build-${{ github.run_id }}
+          path: tests/unit/artifacts/warduino/build
+
   unit:
     name: Unit tests
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-wabt
     strategy:
       fail-fast: false
     if: github.event.pull_request.draft == false
@@ -68,10 +103,50 @@ jobs:
         env:
           WABT: ${GITHUB_WORKSPACE}/.tools
 
+  warduino:
+     name: WARDuino test
+     runs-on: ubuntu-latest
+     needs: [build-wabt, build-wdcli]
+     strategy:
+       fail-fast: false
+     if: github.event.pull_request.draft == false
+     steps:
+       - uses: actions/checkout@v4
+ 
+       - run: npm i
+ 
+       - name: Prebuild files
+         run: npm run test:prebuild
+ 
+       - name: Download WAT tools
+         uses: actions/download-artifact@v4
+         with:
+           name: wabt-build-${{ github.run_id }}
+           path: .tools
+ 
+       - name: Download WARDuino
+         uses: actions/download-artifact@v4
+         with:
+           name: warduino-build-${{ github.run_id }}
+           path: .warduino
+ 
+       - name: Verify
+         run: |
+           chmod u+x $GITHUB_WORKSPACE/.tools/*
+           chmod u+x $GITHUB_WORKSPACE/.warduino/wdcli
+           $GITHUB_WORKSPACE/.tools/wasm-objdump --version
+           #$GITHUB_WORKSPACE/.warduino/wdcli --version
+ 
+       - name: Run example WARDuino test
+         run: npm run test:example
+         env:
+           WABT: ${{ github.workspace }}/.tools
+           EMULATOR: ${{ github.workspace }}/.warduino/wdcli
+
   coverage:
     name: Code coverage
     runs-on: ubuntu-latest
-    needs: build
+    needs: build-wabt
     strategy:
       fail-fast: true
     if: github.event.pull_request.draft == false
@@ -99,7 +174,7 @@ jobs:
 
       - name: Run c8 coverage
         run: |
-          echo "LINE_COVERAGE=$(npm run coverage:test:ava | grep -E '^\s*Lines\s*:\s*[0-9]+(\.[0-9]+)?%' | awk '{print $3}' | tr -d '%')" >> $GITHUB_ENV
+          echo "LINE_COVERAGE=$(npm run coverage:test:ava | grep -E 'Lines\s*:\s*[0-9]+(\.[0-9]+)?%' | awk '{print $3}' | tr -d '%')" >> $GITHUB_ENV
 
       - name: Report coverage
         run: npx c8 report
