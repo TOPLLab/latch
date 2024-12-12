@@ -15,18 +15,18 @@ import {
 
 function describer(verbosity: Verbosity, item: SuiteResult): SuiteDescriber {
     switch (verbosity) {
-        case Verbosity.none:
-            return new SilentDescriber<SuiteResult>(item);
-        case Verbosity.minimal:
-            return new MinimalSuiteDescriber(item);
-        case Verbosity.short:
-            return new ShortSuiteDescriber(item);
-        case Verbosity.normal:
-        case Verbosity.more:
-        case Verbosity.all:
-        case Verbosity.debug:
-        default:
-            return new NormalSuiteDescriber(item);
+    case Verbosity.none:
+        return new SilentDescriber<SuiteResult>(item);
+    case Verbosity.minimal:
+        return new MinimalSuiteDescriber(item);
+    case Verbosity.short:
+        return new ShortSuiteDescriber(item);
+    case Verbosity.normal:
+    case Verbosity.more:
+    case Verbosity.all:
+    case Verbosity.debug:
+    default:
+        return new NormalSuiteDescriber(item);
     }
 }
 
@@ -98,9 +98,6 @@ export class Reporter {
         const psa = this.suites.flatMap((suite) => suite.outcomes()).flatMap((scenario) =>
             scenario.outcomes().filter((result) =>
                 result.outcome === Outcome.succeeded).length).reduce((acc, val) => acc + val, 0);
-        const fa = this.suites.flatMap((suite) => suite.outcomes()).flatMap((scenario) =>
-            scenario.outcomes().filter((result) =>
-                result.outcome === Outcome.failed).length).reduce((acc, val) => acc + val, 0);
         const timeouts = this.suites.flatMap((suite) => suite.outcomes()).flatMap((scenario) =>
             scenario.outcomes().filter((result) =>
                 result.outcome === Outcome.timedout).length).reduce((acc, val) => acc + val, 0);

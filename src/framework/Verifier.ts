@@ -31,7 +31,7 @@ export class Verifier {
                         }
                         result = this.expectBehaviour(value, getValue(previous, field), entry.value);
                     }
-                } catch (e) {
+                } catch {
                     return this.error(`Failure: ${JSON.stringify(actual)} state does not contain '${field}'.`);
                 }
 
@@ -80,7 +80,7 @@ export class Verifier {
         if (comparator(state, actual)) {
             result.update(Outcome.succeeded);
         } else {
-            result.update(Outcome.failed, 'custom comparator failed');
+            result.update(Outcome.failed, `Fail: ${message}`);
         }
 
         return result;
@@ -89,39 +89,40 @@ export class Verifier {
     private expectBehaviour(actual: any, previous: any, behaviour: Behaviour): StepOutcome {
         const result: StepOutcome = new StepOutcome(this.step);
         switch (behaviour) {
-            case Behaviour.unchanged:
-                if (deepEqual(actual, previous)) {
-                    result.update(Outcome.succeeded);
-                } else {
-                    result.update(Outcome.failed, `Expected ${actual} to equal ${previous}`);
-                }
-                break;
-            case Behaviour.changed:
-                if (!deepEqual(actual, previous)) {
-                    result.update(Outcome.succeeded);
-                } else {
-                    result.update(Outcome.failed, `Expected ${actual} to be different from ${previous}`);
-                }
-                break;
-            case Behaviour.increased:
-                if (actual > previous) {
-                    result.update(Outcome.succeeded);
-                } else {
-                    result.update(Outcome.failed, `Expected ${actual} to be greater than ${previous}`);
-                }
-                break;
-            case Behaviour.decreased:
-                if (actual < previous) {
-                    result.update(Outcome.succeeded);
-                } else {
-                    result.update(Outcome.failed, `Expected ${actual} to be less than ${previous}`);
-                }
-                break;
+        case Behaviour.unchanged:
+            if (deepEqual(actual, previous)) {
+                result.update(Outcome.succeeded);
+            } else {
+                result.update(Outcome.failed, `Expected ${actual} to equal ${previous}`);
+            }
+            break;
+        case Behaviour.changed:
+            if (!deepEqual(actual, previous)) {
+                result.update(Outcome.succeeded);
+            } else {
+                result.update(Outcome.failed, `Expected ${actual} to be different from ${previous}`);
+            }
+            break;
+        case Behaviour.increased:
+            if (actual > previous) {
+                result.update(Outcome.succeeded);
+            } else {
+                result.update(Outcome.failed, `Expected ${actual} to be greater than ${previous}`);
+            }
+            break;
+        case Behaviour.decreased:
+            if (actual < previous) {
+                result.update(Outcome.succeeded);
+            } else {
+                result.update(Outcome.failed, `Expected ${actual} to be less than ${previous}`);
+            }
+            break;
         }
         return result;
     }
 }
 
+/* eslint @typescript-eslint/no-explicit-any: off */
 function deepEqual(a: any, b: any): boolean {
     return a === b || (isNaN(a) && isNaN(b));
 }

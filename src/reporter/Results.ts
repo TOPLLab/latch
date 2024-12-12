@@ -183,7 +183,7 @@ export class Skipped implements Result {
         return this;
     }
 
-    public error(clarification: string): Skipped {
+    public error(): Skipped {
         return this;
     }
 }

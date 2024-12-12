@@ -133,11 +133,11 @@ export class Testee { // TODO unified with testbed interface
     }
 
     private run(name: string, limit: number, fn: () => Promise<any>) {
-        return timeout<Object | void>(name, limit, fn());
+        return timeout<object | void>(name, limit, fn());
     }
 
     private step(name: string, limit: number, fn: () => Promise<any>) {
-        return timeout<Object | void>(name, limit, fn());
+        return timeout<object | void>(name, limit, fn());
     }
 
     public async describe(description: TestScenario, suiteResult: SuiteResult, runs: number = 1) {
@@ -170,7 +170,7 @@ export class Testee { // TODO unified with testbed interface
 
             const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
             try {
-                await timeout<Object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
+                await timeout<object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 testee.current = description.program;
             } catch (e) {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
@@ -219,16 +219,16 @@ export class Testee { // TODO unified with testbed interface
                         return;
                     }
 
-                    let actual: Object | void;
+                    let actual: object | void;
                     if (step.instruction.kind === Kind.Action) {
-                        actual = await timeout<Object | void>(`performing action . ${step.title}`, testee.timeout,
+                        actual = await timeout<object | void>(`performing action . ${step.title}`, testee.timeout,
                             step.instruction.value.act(testee)).catch((err) => {
                             testee.states.set(description.title, verifier.error(err));
                             return;
                         });
                     } else {
                         actual = await testee.recoverable(testee, step.instruction.value, map,
-                            (testee, req, map) => timeout<Object | void>(`sending instruction ${req.type}`, testee.timeout,
+                            (testee, req, map) => timeout<object | void>(`sending instruction ${req.type}`, testee.timeout,
                                 testee.bed(step.target ?? Target.supervisor)!.sendRequest(map, req)),
                             (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
                                 await testee.initialize(description.program, description.args ?? []).catch((o) => {
@@ -254,11 +254,12 @@ export class Testee { // TODO unified with testbed interface
         }
     }
 
+    /* eslint @typescript-eslint/no-explicit-any: off */
     private async recoverable(testee: Testee, step: Request<any>, map: SourceMap.Mapping,
-        attempt: (t: Testee, req: Request<any>, m: SourceMap.Mapping) => Promise<Object | void>,
+        attempt: (t: Testee, req: Request<any>, m: SourceMap.Mapping) => Promise<object | void>,
         recover: (t: Testee) => Promise<any>,
-        retries: number = 0): Promise<Object | void> {
-        let result: Object | void = undefined;
+        retries: number = 0): Promise<object | void> {
+        let result: object | void = undefined;
         let error;
         while (0 <= retries && result === undefined) {
             result = await attempt(testee, step, map).catch(async (err) => {
@@ -279,7 +280,7 @@ export class Testee { // TODO unified with testbed interface
         if (instance === undefined) {
             this.framework.reporter.error('Cannot run test: no debugger connection.'); // todo
         } else {
-            await timeout<Object | void>('resetting vm', this.timeout, this.testbed!.sendRequest(new SourceMap.Mapping(), Message.reset));
+            await timeout<object | void>('resetting vm', this.timeout, this.testbed!.sendRequest(new SourceMap.Mapping(), Message.reset));
         }
     }
 
