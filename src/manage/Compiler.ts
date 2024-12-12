@@ -406,4 +406,3 @@ function getIndex(line: string): number {
 function getName(line: string): string {
     return find(/-> "([^"]+)"/, line);
 }
-

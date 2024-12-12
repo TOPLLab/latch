@@ -11,7 +11,6 @@ export function retry<T>(promise: () => Promise<T>, retries: number): Promise<T>
                 trying = ++attempt < retries;
             }
         }
-
         reject(`exhausted number of retries (${retries})`);
     });
 }

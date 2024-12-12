@@ -10,11 +10,13 @@ interface Colors {
     success: Styler;
     skipped: Styler;
     failure: Styler;
+    failureMessage: Styler;
     error: Styler;
 }
 
 interface Labels {
     suiteSuccess: string;
+    suiteSkipped: string;
 
     success: string;
     skipped: string;
@@ -51,14 +53,16 @@ export class Plain implements Style {
     end = '';
     emph = (s: string) => bold(s);
     colors: Colors = {
-        highlight: (s: string) => blue(s),
+        highlight: (s: string) => bold(blue(s)),
         success: (s: string) => inverse(bold(green(s))),
         skipped: (s: string) => inverse(bold(yellow(s))),
         failure: (s: string) => inverse(bold(red(s))),
+        failureMessage: (s: string) => red(s),
         error: (s: string) => inverse(bold(red(s)))
     };
     labels: Labels = {
         suiteSuccess: ' PASSED ',
+        suiteSkipped: ' SKIPPED ',
         success: ' PASS ',
         skipped: ' SKIP ',
         failure: ' FAIL ',

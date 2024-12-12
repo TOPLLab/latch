@@ -1,4 +1,5 @@
 import {
+    Description,
     EmulatorSpecification,
     Expected,
     Framework,
@@ -9,8 +10,7 @@ import {
     Step,
     Target,
     WASM
-} from '../src/index';
-import {WARDuino} from '../src/debug/WARDuino';
+} from '../../src/index';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
 import step = Message.step;
@@ -34,7 +34,7 @@ steps.push(new Invoker('func-unwind-by-br', [], undefined));
 
 spec.test({
     title: `Test with address_0.wast`,
-    program: 'tests/address.wast',
+    program: 'tests/examples/address.wast',
     dependencies: [],
     steps: steps
 });
@@ -46,7 +46,7 @@ debug.testee('emulator[:8522]', new EmulatorSpecification(8522));
 
 debug.test({
     title: 'Test STEP OVER',
-    program: 'tests/call.wast',
+    program: 'tests/examples/call.wast',
     steps: [{
         title: 'Send DUMP command',
         instruction: {kind: Kind.Request, value: dump}
@@ -74,13 +74,35 @@ debug.test({
     }]
 });
 
+const DUMP: Step = {
+    title: 'Send DUMP command',
+    instruction: {kind: Kind.Request, value: Message.dump},
+    expected: [
+    {'pc': {kind: 'description', value: Description.defined} as Expected<string>},
+    {
+        'breakpoints': {
+            kind: 'comparison', value: (state: Object, value: Array<any>) => {
+                return value.length === 0;
+            }, message: 'list of breakpoints should be empty'
+        } as Expected<Array<any>>
+    },
+    {'callstack[0].sp': {kind: 'primitive', value: -1} as Expected<number>},
+    {'callstack[0].fp': {kind: 'primitive', value: -1} as Expected<number>}]
+};
+
+debug.test({
+    title: 'Test DUMP blink',
+    program: `tests/examples/blink.wast`,
+    steps: [DUMP]
+});
+
 const primitives = framework.suite('Test primitives');
 
 primitives.testee('debug[:8700]', new EmulatorSpecification(8700));
 
 primitives.test({
     title: `Test store primitive`,
-    program: 'tests/dummy.wast',
+    program: 'tests/examples/dummy.wast',
     dependencies: [],
     steps: [{
         title: 'CHECK: execution at start of main',
@@ -115,7 +137,7 @@ oop.testee('supervisor[:8100] - proxy[:8150]', new OutofPlaceSpecification(8100,
 
 oop.test({
     title: `Test store primitive`,
-    program: 'tests/dummy.wast',
+    program: 'tests/examples/dummy.wast',
     dependencies: [],
     steps: [
         {
@@ -161,4 +183,4 @@ oop.test({
 });
 
 
-framework.run([spec, debug, primitives, oop]);
+framework.run([spec, debug, primitives, oop]).then(() => process.exit(0));
