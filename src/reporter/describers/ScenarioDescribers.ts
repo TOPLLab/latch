@@ -1,4 +1,4 @@
-// decorator class for minimal verbosity
+// decorator class for minimal describers
 import {Outcome, Describer, StepDescriber} from './Describer';
 import {ScenarioResult} from '../Results';
 import {Style} from '../Style';
@@ -42,6 +42,3 @@ export class NormalScenarioDescriber extends ShortScenarioDescriber {
         return report;
     }
 }
-
-//  / factory                /
-// reporter(verbosity, style).report()

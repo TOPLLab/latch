@@ -1,5 +1,5 @@
 import {Step} from '../framework/scenario/Step';
-import {Outcome} from './verbosity/Describer';
+import {Outcome} from './describers/Describer';
 import {TestScenario} from '../framework/scenario/TestScenario';
 import {Suite} from '../framework/Framework';
 

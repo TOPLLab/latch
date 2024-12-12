@@ -9,7 +9,7 @@ import {TestScenario} from './scenario/TestScenario';
 import {OutofPlaceSpecification, PlatformType, TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
-import {Outcome} from '../reporter/verbosity/Describer';
+import {Outcome} from '../reporter/describers/Describer';
 import {WASM} from '../sourcemap/Wasm';
 import {DummyProxy} from '../testbeds/Emulator';
 import {ScenarioResult, Skipped, StepOutcome, SuiteResult} from '../reporter/Results';

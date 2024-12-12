@@ -11,8 +11,9 @@ const table: (style: Style) => Map<Outcome, string> =
         [Outcome.failed, style.colors.failure(style.labels.failure)],
         [Outcome.skipped, style.colors.skipped(style.labels.suiteSkipped)]]);
 
+export abstract class SuiteDescriber extends Describer<SuiteResult> {}
 
-export class MinimalSuiteDescriber extends Describer<SuiteResult> {
+export class MinimalSuiteDescriber extends SuiteDescriber {
     describe(style: Style): string[] {
         const report: string[] = [];
         const status = (this.item.outcome === Outcome.error ? style.colors.error(style.labels.error) :
@@ -22,7 +23,7 @@ export class MinimalSuiteDescriber extends Describer<SuiteResult> {
     }
 }
 
-export class ShortSuiteDescriber extends Describer<SuiteResult> {
+export class ShortSuiteDescriber extends SuiteDescriber {
     describe(style: Style): string[] {
         let report: string[] = [];
         report = report.concat(this.overview(style));
@@ -57,6 +58,7 @@ export class NormalSuiteDescriber extends ShortSuiteDescriber {
 
         this.item.outcomes().forEach((scenario, index) => {
             report = report.concat(new NormalScenarioDescriber(scenario, `(#${index + 1})`).describe(style));
+            report.push('');
         });
 
         if (this.item.outcome === Outcome.error) {

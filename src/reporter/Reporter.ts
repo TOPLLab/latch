@@ -1,12 +1,34 @@
-import {StepOutcome, SuiteResult} from './Results';
+import {SuiteResult} from './Results';
 import {Archiver} from '../framework/Archiver';
 import {Style} from './Style';
 import {Verbosity} from './index';
 import {version} from '../../package.json';
-import {NormalSuiteDescriber} from './verbosity/SuiteDescribers';
 import {green, red, yellow} from 'ansi-colors';
-import {Outcome, StepDescriber} from './verbosity/Describer';
+import {Outcome, SilentDescriber} from './describers/Describer';
 import {indent} from '../util/printing';
+import {
+    MinimalSuiteDescriber,
+    NormalSuiteDescriber,
+    ShortSuiteDescriber,
+    SuiteDescriber
+} from './describers/SuiteDescribers';
+
+function describer(verbosity: Verbosity, item: SuiteResult): SuiteDescriber {
+    switch (verbosity) {
+        case Verbosity.none:
+            return new SilentDescriber<SuiteResult>(item);
+        case Verbosity.minimal:
+            return new MinimalSuiteDescriber(item);
+        case Verbosity.short:
+            return new ShortSuiteDescriber(item);
+        case Verbosity.normal:
+        case Verbosity.more:
+        case Verbosity.all:
+        case Verbosity.debug:
+        default:
+            return new NormalSuiteDescriber(item);
+    }
+}
 
 export class Reporter {
     private output: string = '';
@@ -42,7 +64,7 @@ export class Reporter {
 
     report(suiteResult: SuiteResult) {
         this.suites.push(suiteResult);
-        const report: string[] = new NormalSuiteDescriber(suiteResult).describe(this.style);
+        const report: string[] = describer(this.verbosity, suiteResult).describe(this.style);
 
         for (const line of report) {
             console.log(this.indent() + line);
@@ -114,9 +136,5 @@ export class Reporter {
 
     test(title: string) {
         this.output += `  test: ${title}\n`;
-    }
-
-    step(result: StepOutcome) {
-        this.output += `    ${new StepDescriber(result).describe(this.style).flat()}\n`;
     }
 }

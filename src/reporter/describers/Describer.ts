@@ -2,11 +2,13 @@ import {Result, StepOutcome} from '../Results';
 import {Style} from '../Style';
 
 export interface Describable<R extends Result> {
+    readonly item: R;
+
     describe(style: Style): string[];
 }
 
 export abstract class Describer<R extends Result> implements Describable<R> {
-    public item: R;
+    public readonly item: R;
 
     constructor(item: R) {
         this.item = item;
@@ -15,7 +17,7 @@ export abstract class Describer<R extends Result> implements Describable<R> {
     abstract describe(style: Style): string[];
 }
 
-class SilentDescriber<R extends Result> extends Describer<R> {
+export class SilentDescriber<R extends Result> extends Describer<R> {
     describe(style: Style): string[] {
         return [];
     }

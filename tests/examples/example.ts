@@ -1,4 +1,5 @@
 import {
+    Description,
     EmulatorSpecification,
     Expected,
     Framework,
@@ -71,6 +72,28 @@ debug.test({
         instruction: {kind: Kind.Request, value: dump},
         expected: [{'pc': {kind: 'primitive', value: 174} as Expected<number>}]
     }]
+});
+
+const DUMP: Step = {
+    title: 'Send DUMP command',
+    instruction: {kind: Kind.Request, value: Message.dump},
+    expected: [
+    {'pc': {kind: 'description', value: Description.defined} as Expected<string>},
+    {
+        'breakpoints': {
+            kind: 'comparison', value: (state: Object, value: Array<any>) => {
+                return value.length === 0;
+            }, message: 'list of breakpoints should be empty'
+        } as Expected<Array<any>>
+    },
+    {'callstack[0].sp': {kind: 'primitive', value: -1} as Expected<number>},
+    {'callstack[0].fp': {kind: 'primitive', value: -1} as Expected<number>}]
+};
+
+debug.test({
+    title: 'Test DUMP blink',
+    program: `tests/examples/blink.wast`,
+    steps: [DUMP]
 });
 
 const primitives = framework.suite('Test primitives');

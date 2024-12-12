@@ -1,7 +1,7 @@
 import {Behaviour, Description, Step} from './scenario/Step';
 import {StepOutcome} from '../reporter/Results';
 import {getValue} from './Testee';
-import {Outcome} from '../reporter/verbosity/Describer';
+import {Outcome} from '../reporter/describers/Describer';
 import {bold} from 'ansi-colors';
 
 // decorator for Step class
