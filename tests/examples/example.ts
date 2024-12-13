@@ -19,7 +19,7 @@ const framework = Framework.getImplementation();
 
 const spec = framework.suite('Test Wasm spec'); // must be called first
 
-spec.testee('emulator[:8500]', new EmulatorSpecification(8500));
+spec.testee('emulator[:8100]', new EmulatorSpecification(8100));
 
 const steps: Step[] = [];
 
@@ -40,9 +40,7 @@ spec.test({
 });
 
 const debug = framework.suite('Test Debugger interface');
-debug.testee('emulator[:8520]', new EmulatorSpecification(8520));
-debug.testee('emulator[:8522]', new EmulatorSpecification(8522));
-// debug.testee('esp wrover', new ArduinoSpecification('/dev/ttyUSB0', 'esp32:esp32:esp32wrover'), new HybridScheduler(), {connectionTimout: 0});
+debug.testee('emulator[:8150]', new EmulatorSpecification(8150));
 
 debug.test({
     title: 'Test STEP OVER',
