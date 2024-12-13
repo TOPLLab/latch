@@ -62,7 +62,7 @@ export class NormalSuiteDescriber extends ShortSuiteDescriber {
         });
 
         if (this.item.outcome === Outcome.error) {
-            report.push(' '.repeat(2) + red(this.item.clarification.toString()));
+            report.push(' '.repeat(2) + red(this.item.clarification));
         }
 
         return report;
