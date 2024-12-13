@@ -11,7 +11,7 @@ jobs:
           submodules: recursive
 
       - name: Get WABT commit ID
-        working-directory: tests/unit/artifacts/wabt
+        working-directory: tests/artifacts/wabt
         run: echo "WABT_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Cache wabt
@@ -19,13 +19,13 @@ jobs:
         id: cache-wabt
         with:
           key: ${{ runner.os }}-wabt-${{ env.WABT_VERSION }}
-          path: tests/unit/artifacts/wabt
+          path: tests/artifacts/wabt
           restore-keys: |
             ${{ runner.os }}-wabt-
 
       - name: Build WABT  # Build latest version
         if: steps.cache-wabt.outputs.cache-hit == false
-        working-directory: tests/unit/artifacts/wabt
+        working-directory: tests/artifacts/wabt
         run: |
           mkdir build; cd build
           cmake ..
@@ -35,7 +35,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wabt-build-${{ github.run_id }}
-          path: tests/unit/artifacts/wabt/build
+          path: tests/artifacts/wabt/build
 
   build-wdcli:
     name: Build WARDuino CLI
@@ -46,7 +46,7 @@ jobs:
           submodules: recursive
 
       - name: Get WDCLI commit ID
-        working-directory: tests/unit/artifacts/warduino
+        working-directory: tests/artifacts/warduino
         run: echo "WDCLI_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Cache WARDuino CLI
@@ -54,13 +54,13 @@ jobs:
         id: cache-warduino
         with:
           key: ${{ runner.os }}-warduino-${{ env.WDCLI_VERSION }}
-          path: tests/unit/artifacts/warduino
+          path: tests/artifacts/warduino
           restore-keys: |
             ${{ runner.os }}-warduino-
 
       - name: Build WARDuino CLI  # Build latest version
         if: steps.cache-warduino.outputs.cache-hit == false
-        working-directory: tests/unit/artifacts/warduino
+        working-directory: tests/artifacts/warduino
         run: |
           mkdir build; cd build
           cmake .. -D BUILD_EMULATOR=ON
@@ -70,7 +70,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: warduino-build-${{ github.run_id }}
-          path: tests/unit/artifacts/warduino/build
+          path: tests/artifacts/warduino/build
 
   unit:
     name: Unit tests
@@ -177,7 +177,7 @@ jobs:
           echo "LINE_COVERAGE=$(npm run coverage:test:ava | grep -E 'Lines\s*:\s*[0-9]+(\.[0-9]+)?%' | awk '{print $3}' | tr -d '%')" >> $GITHUB_ENV
 
       - name: Report coverage
-        run: npx c8 report
+        run: npx c8 report --all
 
       - name: Update coverage badge
         uses: schneegans/dynamic-badges-action@v1.7.0

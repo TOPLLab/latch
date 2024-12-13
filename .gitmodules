@@ -1,9 +1,6 @@
-[submodule "WABT"]
-	path = WABT
-	url = git@github.com:TOPLLab/wabt.git
 [submodule "tests/unit/artifacts/wabt"]
-	path = tests/unit/artifacts/wabt
+	path = tests/artifacts/wabt
 	url = git@github.com:TOPLLab/wabt.git
 [submodule "tests/unit/artifacts/warduino"]
-	path = tests/unit/artifacts/warduino
+	path = tests/artifacts/warduino
 	url = git@github.com:TOPLLab/WARDuino.git

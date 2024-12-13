@@ -5,7 +5,7 @@ import {SourceMap} from '../../src/sourcemap/SourceMap';
 import {WABT} from '../../src/util/env';
 import {mkdtempSync, readFileSync, copyFileSync} from 'fs';
 
-const artifacts = `${__dirname}/../../../tests/unit/artifacts`;
+const artifacts = `${__dirname}/../../../tests/artifacts`;
 
 test('test wasm/leb128', t => {
     t.is(WASM.leb128(0), '00');
