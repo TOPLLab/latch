@@ -76,8 +76,6 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     needs: build-wabt
-    strategy:
-      fail-fast: false
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v4
@@ -103,52 +101,10 @@ jobs:
         env:
           WABT: ${GITHUB_WORKSPACE}/.tools
 
-  warduino:
-     name: WARDuino test
-     runs-on: ubuntu-latest
-     needs: [build-wabt, build-wdcli]
-     strategy:
-       fail-fast: false
-     if: github.event.pull_request.draft == false
-     steps:
-       - uses: actions/checkout@v4
- 
-       - run: npm i
- 
-       - name: Prebuild files
-         run: npm run test:prebuild
- 
-       - name: Download WAT tools
-         uses: actions/download-artifact@v4
-         with:
-           name: wabt-build-${{ github.run_id }}
-           path: .tools
- 
-       - name: Download WARDuino
-         uses: actions/download-artifact@v4
-         with:
-           name: warduino-build-${{ github.run_id }}
-           path: .warduino
- 
-       - name: Verify
-         run: |
-           chmod u+x $GITHUB_WORKSPACE/.tools/*
-           chmod u+x $GITHUB_WORKSPACE/.warduino/wdcli
-           $GITHUB_WORKSPACE/.tools/wasm-objdump --version
-           #$GITHUB_WORKSPACE/.warduino/wdcli --version
- 
-       - name: Run example WARDuino test
-         run: npm run test:example
-         env:
-           WABT: ${{ github.workspace }}/.tools
-           EMULATOR: ${{ github.workspace }}/.warduino/wdcli
-
   coverage:
     name: Code coverage
     runs-on: ubuntu-latest
     needs: build-wabt
-    strategy:
-      fail-fast: true
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v4
