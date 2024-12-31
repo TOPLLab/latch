@@ -3,7 +3,7 @@ import {WASM} from '../../src/sourcemap/Wasm';
 import {WatMapper} from '../../src/sourcemap/SourceMapper';
 import {SourceMap} from '../../src/sourcemap/SourceMap';
 import {WABT} from '../../src/util/env';
-import {mkdtempSync, readFileSync, copyFileSync} from 'fs';
+import {copyFileSync, mkdtempSync, readFileSync, rmdirSync} from 'fs';
 
 const artifacts = `${__dirname}/../../../tests/artifacts`;
 
@@ -18,14 +18,16 @@ test('test wasm/leb128', t => {
 });
 
 function initialize(): string {
-    const tmp: string = mkdtempSync('');
+    const tmp: string = mkdtempSync('test');
     copyFileSync(`${artifacts}/upload.wasm`, `${tmp}/upload.wasm`);
     return tmp;
 }
 
 test('test WatMapper/extractLineInfo', async t => {
     const dummy = readFileSync(`${artifacts}/compile.output`).toString();
-    const mapper: WatMapper = new WatMapper(dummy, initialize(), WABT);
+    const path = initialize();
+    const mapper: WatMapper = new WatMapper(dummy, path, WABT);
     const mapping: SourceMap.Mapping = await mapper.mapping();
     t.true(mapping.lines.length > 0);
+    rmdirSync(path, {recursive: true});
 });
