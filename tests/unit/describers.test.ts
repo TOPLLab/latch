@@ -23,20 +23,20 @@ const dummy = new ScenarioResult({
     title: 'Scenario title', program: 'artifacts/blink.wat', steps: steps
 });
 
-test('Test MinimalScenarioDescriber', t => {
+test('[MinimalScenarioDescriber] : test printing', t => {
     const describer = new MinimalScenarioDescriber(dummy);
     dummy.aggregate([new StepOutcome(steps[0]).update(Outcome.succeeded), new StepOutcome(steps[1]).update(Outcome.succeeded)]);
     t.is(describer.describe(new Plain()).join('\n'), '\x1B[1m\x1B[34mscenario.\x1B[39m\x1B[22m \x1B[1mScenario title\x1B[22m \n');
 });
 
-test('Test ShortScenarioDescriber', t => {
+test('[ShortScenarioDescriber] : test printing', t => {
     const describer = new ShortScenarioDescriber(dummy);
     const output = describer.describe(new Plain()).join('\n');
     t.is(output, '\x1B[1m\x1B[34mscenario.\x1B[39m\x1B[22m \x1B[1mScenario title\x1B[22m \n');
     t.false(['Send DUMP command', 'Send STEP OVER command'].some((element) => output.includes(element)));
 });
 
-test('Test NormalScenarioDescriber', t => {
+test('[NormalScenarioDescriber] : test printing', t => {
     let output = new NormalScenarioDescriber(dummy).describe(new Plain()).join('\n');
     t.true(['PASS', 'Send DUMP command', 'Send STEP OVER command'].every((element) => output.includes(element)));
     t.false(['FAIL'].some((element) => output.includes(element)));

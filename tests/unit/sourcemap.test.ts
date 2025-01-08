@@ -10,7 +10,7 @@ const artifacts = `${__dirname}/../../../tests/artifacts`;
 /**
  * Check LEB 128 encoding
  */
-test('test wasm/leb128', t => {
+test('[leb128] : test encoding', t => {
     t.is(WASM.leb128(0), '00');
     t.is(WASM.leb128(1), '01');
     t.is(WASM.leb128(8), '08');
@@ -20,7 +20,7 @@ test('test wasm/leb128', t => {
     t.is(WASM.leb128(1202), 'B209');
 });
 
-test('test WatMapper/extractLineInfo', async t => {
+test('[extractLineInfo] : test against artifacts (1)', async t => {
     await check(`${artifacts}/compile.output`, (mapping: SourceMap.Mapping) => {
         // check line information
         t.true(mapping.lines.some((entry) =>
@@ -40,7 +40,7 @@ test('test WatMapper/extractLineInfo', async t => {
 })
 ;
 
-test('test WatMapper/extractImportInfo', async t => {
+test('[extractImportInfo] : test against artifacts (1)', async t => {
     await check(`${artifacts}/compile.output`, (mapping: SourceMap.Mapping) => {
         // check imports
         t.true(mapping.imports.some((entry) => entry.name.includes('chip_delay') && entry.index === 0));
@@ -49,7 +49,7 @@ test('test WatMapper/extractImportInfo', async t => {
     });
 });
 
-test('test WatMapper/extractGlobalInfo', async t => {
+test('[extractGlobalInfo] : test against artifacts (1)', async t => {
     await check(`${artifacts}/compile.output`, (mapping: SourceMap.Mapping) => {
         // check globals
         t.true(mapping.globals.some((entry) => entry.name.includes('led') && entry.index === 0));
@@ -58,7 +58,7 @@ test('test WatMapper/extractGlobalInfo', async t => {
     });
 });
 
-test('test WatMapper/getFunctionInfos', async t => {
+test('[getFunctionInfos] : test against artifacts (1)', async t => {
     await check(`${artifacts}/compile.output`, (mapping: SourceMap.Mapping) => {
         // check functions
         t.true(mapping.functions.some((entry) => entry.name.includes('blink') && entry.index === 4));
