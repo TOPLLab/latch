@@ -119,19 +119,7 @@ export class Reporter {
         this.archiver.write();
     }
 
-    info(text: string) {
-        this.output += `info: ${text}\n`;
-    }
-
     error(text: string) {
         this.output += `error: ${text}\n`;
-    }
-
-    suite(title: string) {
-        this.output += `suite: ${title}\n`;
-    }
-
-    test(title: string) {
-        this.output += `  test: ${title}\n`;
     }
 }

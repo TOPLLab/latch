@@ -67,5 +67,4 @@ export class NormalSuiteDescriber extends ShortSuiteDescriber {
 
         return report;
     }
-
 }

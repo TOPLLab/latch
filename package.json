@@ -56,6 +56,7 @@
     },
     "ava": {
         "files": [
+            "out/tests/unit/describers.test.js",
             "out/tests/unit/util.test.js",
             "out/tests/unit/sourcemap.test.js"
         ],
