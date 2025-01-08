@@ -69,3 +69,8 @@ export class Plain implements Style {
         error: ' ERROR '
     }
 }
+
+export class GitHub extends Plain {
+    bullet = '::group::';
+    end = '::endgroup::';
+}
