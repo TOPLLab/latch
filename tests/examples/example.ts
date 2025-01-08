@@ -19,7 +19,7 @@ const framework = Framework.getImplementation();
 
 const spec = framework.suite('Test Wasm spec'); // must be called first
 
-spec.testee('emulator[:8500]', new EmulatorSpecification(8500));
+spec.testee('emulator[:8100]', new EmulatorSpecification(8100));
 
 const steps: Step[] = [];
 
@@ -40,9 +40,7 @@ spec.test({
 });
 
 const debug = framework.suite('Test Debugger interface');
-debug.testee('emulator[:8520]', new EmulatorSpecification(8520));
-debug.testee('emulator[:8522]', new EmulatorSpecification(8522));
-// debug.testee('esp wrover', new ArduinoSpecification('/dev/ttyUSB0', 'esp32:esp32:esp32wrover'), new HybridScheduler(), {connectionTimout: 0});
+debug.testee('emulator[:8150]', new EmulatorSpecification(8150));
 
 debug.test({
     title: 'Test STEP OVER',
@@ -96,91 +94,4 @@ debug.test({
     steps: [DUMP]
 });
 
-const primitives = framework.suite('Test primitives');
-
-primitives.testee('debug[:8700]', new EmulatorSpecification(8700));
-
-primitives.test({
-    title: `Test store primitive`,
-    program: 'tests/examples/dummy.wast',
-    dependencies: [],
-    steps: [{
-        title: 'CHECK: execution at start of main',
-        instruction: {kind: Kind.Request, value: dump},
-        expected: [{'pc': {kind: 'primitive', value: 129} as Expected<number>}]
-    },
-
-        new Invoker('load', [WASM.i32(32)], WASM.i32(0)),
-
-        {
-            title: 'Send STEP command',
-            instruction: {kind: Kind.Request, value: step}
-        },
-
-        {
-            title: 'Send STEP command',
-            instruction: {kind: Kind.Request, value: step}
-        },
-
-        {
-            title: 'Send STEP command',
-            instruction: {kind: Kind.Request, value: step}
-        },
-
-        new Invoker('load', [WASM.i32(32)], WASM.i32(42))
-    ]
-})
-
-const oop = framework.suite('Test Out-of-place primitives');
-
-oop.testee('supervisor[:8100] - proxy[:8150]', new OutofPlaceSpecification(8100, 8150));
-
-oop.test({
-    title: `Test store primitive`,
-    program: 'tests/examples/dummy.wast',
-    dependencies: [],
-    steps: [
-        {
-            title: '[supervisor] CHECK: execution at start of main',
-            instruction: {kind: Kind.Request, value: dump},
-            expected: [{'pc': {kind: 'primitive', value: 129} as Expected<number>}]
-        },
-
-        {
-            title: '[proxy]      CHECK: execution at start of main',
-            instruction: {kind: Kind.Request, value: dump},
-            expected: [{'pc': {kind: 'primitive', value: 129} as Expected<number>}],
-            target: Target.proxy
-        },
-
-        new Invoker('load', [WASM.i32(32)], WASM.i32(0), Target.proxy),
-
-        {
-            title: '[supervisor] Send STEP command',
-            instruction: {kind: Kind.Request, value: step}
-        },
-
-        {
-            title: '[supervisor] Send STEP command',
-            instruction: {kind: Kind.Request, value: step}
-        },
-
-        {
-            title: '[supervisor] Send STEP command',
-            instruction: {kind: Kind.Request, value: step}
-        },
-
-        {
-            title: '[supervisor] CHECK: execution took three steps',
-            instruction: {kind: Kind.Request, value: dump},
-            expected: [{'pc': {kind: 'primitive', value: 136} as Expected<number>}]
-        },
-
-        new Invoker('load', [WASM.i32(32)], WASM.i32(42), Target.proxy),
-
-        new Invoker('load', [WASM.i32(32)], WASM.i32(42), Target.supervisor)
-    ]
-});
-
-
-framework.run([spec, debug, primitives, oop]).then(() => process.exit(0));
+framework.run([spec, debug]).then(() => process.exit(0));

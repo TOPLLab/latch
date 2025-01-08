@@ -2,6 +2,9 @@ export class MessageQueue implements Iterable<string> {
     private readonly delimiter: string;
     private queue: string[];
 
+    /**
+     * @param delimiter the EOM (end-of-message) token
+     */
     constructor(delimiter: string) {
         this.delimiter = delimiter;
         this.queue = [];
