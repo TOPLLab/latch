@@ -211,8 +211,10 @@ export namespace Message {
         parser: stateParser
     }
 
-    export const proxifyRequest: Request<string> = {
+    export const proxifyRequest: Request<Ack> = {
         type: Interrupt.proxify,
-        parser: identityParser
+        parser: (line: string) => {
+            return ackParser(line, 'PROXIED');
+        }
     };
 }
