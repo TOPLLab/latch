@@ -177,7 +177,7 @@ export namespace Message {
                     payload += WASM.leb128(arg.value);
                 } else {
                     const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    write(buff, arg.value, 0, true, 23, buff.length);
+                    write(buff, arg.value, 0, true, arg.type === Type.f32 ? 23 : 52, buff.length);
                     payload += buff.toString('hex');
                 }
             });
