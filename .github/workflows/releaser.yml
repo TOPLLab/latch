@@ -21,7 +21,7 @@ jobs:
         run: |
           sed -i 's/"version": "[^"]*"/"version": "${{ env.VERSION }}"/' package.json
         env:
-          VERSION: ${{ github.GITHUB_REF#v }}
+          VERSION: $(echo "${{ github.ref }}" | sed -e 's:v\(.*\):\1:'
 
       # clone warduino
       - uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
           sed -i "s|\"latch\": \"file:./latch-[^\"]*\"|\"latch\": \"file:./latch-$VERSION.tgz\"|" package.json
         working-directory: 'warduino'
         env:
-          VERSION: ${{ github.GITHUB_REF#v }}
+          VERSION: $(echo "${{ github.ref }}" | sed -e 's:v\(.*\):\1:'
 
       # commit
       - name: Push changes
@@ -58,7 +58,7 @@ jobs:
           git push --set-upstream origin bump/latch-$VERSION
         working-directory: 'warduino'
         env:
-          VERSION: ${{ github.GITHUB_REF#v }}
+          VERSION: $(echo "${{ github.ref }}" | sed -e 's:v\(.*\):\1:'
 
       # create pull request
       - name: Create Pull Request
@@ -66,6 +66,6 @@ jobs:
           gh pr create --title "⬆️ Bump latch to $VERSION" --body "Bumping latch to \`$VERSION\`" --base main --head bump/latch-$VERSION --label dependencies
         working-directory: 'warduino'
         env:
-          VERSION: ${{ github.GITHUB_REF#v }}
+          VERSION: $(echo "${{ github.ref }}" | sed -e 's:v\(.*\):\1:'
           GH_TOKEN: ${{ secrets.WARDUINO_LATCH }}
 
