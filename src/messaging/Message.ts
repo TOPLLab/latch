@@ -1,16 +1,16 @@
 import {WARDuino} from '../debug/WARDuino';
-import {ackParser, breakpointParser, identityParser, invokeParser, stateParser} from './Parsers';
+import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
 import {write} from 'ieee754';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {readFileSync} from 'fs';
+import {CompileOutput, CompilerFactory} from '../manage/Compiler';
+import {WABT} from '../util/env';
 import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
 import Type = WASM.Type;
-import {CompileOutput, CompilerFactory} from '../manage/Compiler';
-import {WABT} from '../util/env';
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -144,7 +144,7 @@ export namespace Message {
 
         return {
             type: Interrupt.updateModule,
-            payload: (map: SourceMap.Mapping) => payload(readFileSync(wasm)),
+            payload: () => payload(readFileSync(wasm)),
             parser: (line: string) => {
                 return ackParser(line, 'CHANGE Module');
             }
@@ -154,7 +154,7 @@ export namespace Message {
     export function pushEvent(topic: string, payload: string): Request<Ack> {
         return {
             type: Interrupt.pushEvent,
-            payload: (map: SourceMap.Mapping) => `{topic: '${topic}', payload: '${payload}'}`,
+            payload: () => `{topic: '${topic}', payload: '${payload}'}`,
             parser: (line: string) => {
                 return ackParser(line, 'Interrupt: 73');
             }

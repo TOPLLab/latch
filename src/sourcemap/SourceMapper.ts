@@ -211,7 +211,7 @@ export class AsScriptMapper implements SourceMapper {
     public mapping(): Promise<Mapping> {
         const input = fs.readFileSync(`${this.tmpdir}/upload.wasm.map`)
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             new SourceMapConsumer(input.toString()).then((consumer: SourceMapConsumer) => {
                 const mapping: Mapping = new SourceMap.Mapping().init([], [], [], []);
                 consumer.eachMapping(function (item: MappingItem) {
