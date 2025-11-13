@@ -60,12 +60,12 @@ export abstract class Platform extends EventEmitter implements Testbed {
     private search(message: string): number {
         let index: number = 0;
         while (index < this.requests.length) {
-            const [candidate, resolver] = this.requests[index];
+            const [candidate] = this.requests[index];
             try {
                 // try candidate parser
                 candidate.parser(message);
                 return index;
-            } catch (e) {
+            } catch {
                 // failure: try next request
                 index++;
             }

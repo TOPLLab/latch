@@ -7,7 +7,7 @@ export function retry<T>(promise: () => Promise<T>, retries: number): Promise<T>
             try {
                 const result: T = await promise();
                 resolve(result);
-            } catch (e) {
+            } catch {
                 trying = ++attempt < retries;
             }
         }
