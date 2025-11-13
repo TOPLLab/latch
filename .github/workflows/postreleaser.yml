@@ -1,4 +1,4 @@
-name: Publish new release
+name: Post release
 
 on:
   release:
@@ -8,20 +8,14 @@ permissions: write-all
 
 env:
   WARDUINO: 'warduino'
+  VERSIONNAME: ${{ github.ref_name }}
 
 jobs:
-  create-release:
+  bump-in-warduino:
     runs-on: ubuntu-latest
     steps:
       # clone latch
       - uses: actions/checkout@v4
-
-      # update version
-      - name: Update version in package.json
-        run: |
-          sed -i 's/"version": "[^"]*"/"version": "${{ env.VERSION }}"/' package.json
-        env:
-          VERSION: $(echo "${{ github.ref }}" | sed -e 's:v\(.*\):\1:')
 
       # clone warduino
       - uses: actions/checkout@v4
@@ -42,6 +36,7 @@ jobs:
       - name: Update package.json in WARDuino
         run: |
           cd tests/latch
+          VERSION=${VERSIONNAME#v}
           sed -i "s|\"latch\": \"file:./latch-[^\"]*\"|\"latch\": \"file:./latch-$VERSION.tgz\"|" package.json
         working-directory: 'warduino'
         env:
@@ -53,6 +48,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add tests/latch/
+          VERSION=${VERSIONNAME#v}
           git checkout -b bump/latch-$VERSION
           git commit -m "⬆️ Bump latch version"
           git push --set-upstream origin bump/latch-$VERSION
@@ -63,7 +59,8 @@ jobs:
       # create pull request
       - name: Create Pull Request
         run: |
-          gh pr create --title "⬆️ Bump latch to $VERSION" --body "Bumping latch to \`$VERSION\`" --base main --head bump/latch-$VERSION --label dependencies
+          VERSION=${VERSIONNAME#v}
+          gh pr create --title "⬆️ Bump latch to $VERSIONNAME" --body "Bumping latch to \`$VERSIONNAME\`" --base main --head bump/latch-$VERSION --label dependencies
         working-directory: 'warduino'
         env:
           VERSION: $(echo "${{ github.ref }}" | sed -e 's:v\(.*\):\1:')
