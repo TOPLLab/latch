@@ -9,10 +9,6 @@ import {styling} from '../reporter/Style';
 import {SuiteResult} from '../reporter/Results';
 import {Reporter} from '../reporter/Reporter';
 
-export interface Suite {
-
-}
-
 interface DependenceTree {
     test: TestScenario;
     children: DependenceTree[];
