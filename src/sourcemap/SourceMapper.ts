@@ -32,7 +32,6 @@ export class WatMapper implements SourceMapper {
             let functions: Closure[];
             let globals: Variable[];
             let imports: Closure[];
-            let sourceMap: Mapping;
 
             function handleObjDumpStreams(error: ExecException | null, stdout: string, stderr: string) {
                 if (stderr.match('wasm-objdump')) {
@@ -52,7 +51,7 @@ export class WatMapper implements SourceMapper {
 
             const objDump = exec(this.getNameDumpCommand(), handleObjDumpStreams);
 
-            sourceMap = new SourceMap.Mapping().init(this.lineMapping, [], [], []);
+            const sourceMap = new SourceMap.Mapping().init(this.lineMapping, [], [], []);
             objDump.on('close', () => {
                 sourceMap.functions = functions;
                 sourceMap.globals = globals;
