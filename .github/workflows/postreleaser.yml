@@ -1,4 +1,4 @@
-name: Publish new release
+name: Post release
 
 on:
   release:
@@ -10,18 +10,11 @@ env:
   WARDUINO: 'warduino'
 
 jobs:
-  create-release:
+  bump-in-warduino:
     runs-on: ubuntu-latest
     steps:
       # clone latch
       - uses: actions/checkout@v4
-
-      # update version
-      - name: Update version in package.json
-        run: |
-          sed -i 's/"version": "[^"]*"/"version": "${{ env.VERSION }}"/' package.json
-        env:
-          VERSION: $(echo "${{ github.ref }}" | sed -e 's:v\(.*\):\1:')
 
       # clone warduino
       - uses: actions/checkout@v4
