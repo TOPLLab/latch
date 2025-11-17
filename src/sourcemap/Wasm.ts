@@ -34,6 +34,14 @@ export namespace WASM {
         return {value: n, type: Type.f32};
     }
 
+    export function f64(n: number): WASM.Value {
+        return {value: n, type: Type.f64};
+    }
+
+    export function i64(n: number): WASM.Value {
+        return {value: n, type: Type.i64};
+    }
+
     export interface Frame {
         type: number;
         fidx: string;
