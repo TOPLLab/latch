@@ -94,4 +94,4 @@ debug.test({
     steps: [DUMP]
 });
 
-framework.run([spec, debug]).then(() => process.exit(0));
+framework.analyse([spec, debug]);

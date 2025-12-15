@@ -8,6 +8,7 @@ import {StyleType} from '../reporter';
 import {styling} from '../reporter/Style';
 import {SuiteResult} from '../reporter/Results';
 import {Reporter} from '../reporter/Reporter';
+import {Outcome} from "../reporter/describers/Describer";
 
 interface DependenceTree {
     test: TestScenario;
@@ -104,7 +105,9 @@ export class Framework {
         })))
     }
 
-    public async run(suites: Suite[]) {
+    public async run(suites: Suite[]): Promise<boolean> {
+        let success: boolean = true;
+
         this.scheduled.concat(suites);
         this.reporter.general();
         const t0 = performance.now();
@@ -118,6 +121,7 @@ export class Framework {
 
                 await this.runSuite(result, testee, order);
                 this.reporter.report(result);
+                success = success && result.outcome === Outcome.succeeded;
             }))
         }))
         const t1 = performance.now();
@@ -126,6 +130,8 @@ export class Framework {
         await Promise.all(suites.map(suite => suite.testees.map(async (testee: Testee) => {
             await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
         })))
+
+        return success;
     }
 
     public async parallel(suites: Suite[]) {
@@ -162,10 +168,9 @@ export class Framework {
         }
     }
 
-    // Analyse flakiness
-    public analyse(suite: Suite[], runs: number = 3) {
+    public analyse(suite: Suite[], runs: number = 1) {
         this.runs = runs;
-        this.run(suite);
+        this.run(suite).then((success: boolean) => process.exit(success ? 0 : 1));
     }
 
     public static getImplementation() {

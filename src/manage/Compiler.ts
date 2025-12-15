@@ -72,7 +72,7 @@ export class WatCompiler extends Compiler {
 
     constructor(wabt: string) {
         super();
-        this.wabt = wabt;
+        this.wabt = wabt.length > 0 ? wabt + "/" : "";
     }
 
     public async compile(program: string, dir?: string): Promise<CompileOutput> {
@@ -94,7 +94,7 @@ export class WatCompiler extends Compiler {
         // compile WAT to Wasm
         return new Promise<CompileOutput>((resolve, reject) => {
             const file = `${dir}/upload.wasm`;
-            const command = `${this.wabt}/wat2wasm --no-canonicalize-leb128s --disable-bulk-memory --debug-names -v -o ${file} ${program}`;
+            const command = `${this.wabt}wat2wasm --no-canonicalize-leb128s --disable-bulk-memory --debug-names -v -o ${file} ${program}`;
             let out: string = '';
             let err: string = '';
 
@@ -122,7 +122,7 @@ export class WatCompiler extends Compiler {
     public dump(output: CompileOutput): Promise<CompileOutput> {
         // object dump
         return new Promise<CompileOutput>((resolve, reject) => {
-            const command = `${this.wabt}/wasm-objdump -x -m ${output.file}`;
+            const command = `${this.wabt}wasm-objdump -x -m ${output.file}`;
 
             const compile = exec(command, (error: ExecException | null, stdout: string) => {
                 output.map = this.parseWasmObjDump(output, stdout.toString());
