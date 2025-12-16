@@ -1,7 +1,7 @@
 import {SuiteResult} from './Results';
 import {Archiver} from '../framework/Archiver';
-import {Style} from './Style';
-import {Verbosity} from './index';
+import {Style, styling as styleMap} from './Style';
+import {StyleType, Verbosity} from './index';
 import {version} from '../../package.json';
 import {green, red, yellow} from 'ansi-colors';
 import {Outcome, SilentDescriber} from './describers/Describer';
@@ -39,32 +39,44 @@ export class Reporter {
 
     private archiver: Archiver;
 
-    private readonly style: Style;
+    private design: Style;
 
-    private readonly verbosity: Verbosity;
+    private verboseness: Verbosity;
 
-    constructor(style: Style, verbosity: Verbosity = Verbosity.normal) {
-        this.style = style;
-        this.verbosity = verbosity;
+    constructor(style: StyleType = StyleType.plain, verbosity: Verbosity = Verbosity.normal) {
+        this.design = styleMap(style);
+        this.verboseness = verbosity;
         this.archiver = new Archiver(`${process.env.TESTFILE?.replace('.asserts.wast', '.wast') ?? 'suite'}.${Date.now()}.log`);
         this.archiver.set('date', new Date(Date.now()).toISOString());
     }
 
     private indent(override?: number) {
-        return indent(override ?? this.indentationLevel, this.style.indentation);
+        return indent(override ?? this.indentationLevel, this.design.indentation);
+    }
+
+    style(type: StyleType) {
+        this.design = styleMap(type);
+    }
+
+    styling(): StyleType {
+        return this.design.type;
+    }
+
+    verbosity(level: Verbosity) {
+        this.verboseness = level;
     }
 
     general() {
-        console.log(this.indent() + this.style.colors.highlight(this.style.bullet) + this.style.colors.highlight('latch.') + this.style.emph(' General information'));
+        console.log(this.indent() + this.design.colors.highlight(this.design.bullet) + this.design.colors.highlight('latch.') + this.design.emph(' General information'));
         // console.log(blue(`${this.indent()}===================`));
-        console.log(this.indent() + ' '.repeat(2) + this.style.emph('version') + ' '.repeat(5) + version);
-        console.log(this.indent() + ' '.repeat(2) + this.style.emph('archive') + ' '.repeat(5) + this.archiver.archive);
+        console.log(this.indent() + ' '.repeat(2) + this.design.emph('version') + ' '.repeat(5) + version);
+        console.log(this.indent() + ' '.repeat(2) + this.design.emph('archive') + ' '.repeat(5) + this.archiver.archive);
         console.log();
     }
 
     report(suiteResult: SuiteResult) {
         this.suites.push(suiteResult);
-        const report: string[] = describer(this.verbosity, suiteResult).describe(this.style);
+        const report: string[] = describer(this.verboseness, suiteResult).describe(this.design);
 
         for (const line of report) {
             console.log(this.indent() + line);
@@ -88,7 +100,7 @@ export class Reporter {
         this.archiver.set('skipped scenarios', skipped);
         this.archiver.set('failed scenarios', failing);
 
-        console.log(this.indent() + this.style.colors.highlight(this.style.bullet) + this.style.colors.highlight('results.') + this.style.emph(' Overview'));
+        console.log(this.indent() + this.design.colors.highlight(this.design.bullet) + this.design.colors.highlight('results.') + this.design.emph(' Overview'));
         console.log();
         this.indentationLevel += 1;
 
@@ -106,17 +118,21 @@ export class Reporter {
 
         const len: number = 12;
         const pss = [`${sc} passing`, `${passing} passing`, `${psa} passing`]
-        console.log(this.indent() + this.style.emph('Test suites:') + ' '.repeat(len - pss[0].length) + this.style.emph((sc === tl ? green : red)(pss[0])) + `, ${tl} total` + this.style.emph(` (${time.toFixed(0)}ms)`));
-        if (this.verbosity > Verbosity.minimal) {
-            console.log(this.indent() + this.style.emph('Scenarios:') +
-                ' '.repeat(2 + len - pss[1].length) + this.style.emph((passing === scs.length ? green : red)(pss[1])) +
-                (skipped > 0 ? ', ' + this.style.emph(yellow(`${skipped} skipped`)) : '') + `, ${scs.length} total`);
-            console.log(this.indent() + this.style.emph('Actions:') + ' '.repeat(4 + len - pss[2].length) + this.style.emph((passing === scs.length ? green : red)(pss[2])) + (timeouts > 0 ? `, ${timeouts} timeouts` : '') + `, ${total} total`);
+        console.log(this.indent() + this.design.emph('Test suites:') + ' '.repeat(len - pss[0].length) + this.design.emph((sc === tl ? green : red)(pss[0])) + `, ${tl} total` + this.design.emph(` (${time.toFixed(0)}ms)`));
+        if (this.verboseness > Verbosity.minimal) {
+            console.log(this.indent() + this.design.emph('Scenarios:') +
+                ' '.repeat(2 + len - pss[1].length) + this.design.emph((passing === scs.length ? green : red)(pss[1])) +
+                (skipped > 0 ? ', ' + this.design.emph(yellow(`${skipped} skipped`)) : '') + `, ${scs.length} total`);
+            console.log(this.indent() + this.design.emph('Actions:') + ' '.repeat(4 + len - pss[2].length) + this.design.emph((passing === scs.length ? green : red)(pss[2])) + (timeouts > 0 ? `, ${timeouts} timeouts` : '') + `, ${total} total`);
         }
         this.indentationLevel -= 1;
 
         console.log();
         this.archiver.write();
+    }
+
+    info(text: string) {
+        this.output += `info: ${text}\n`;
     }
 
     error(text: string) {
