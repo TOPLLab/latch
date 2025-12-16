@@ -1,13 +1,13 @@
 {
   "name": "latch",
   "description": "A testing language for constraint environments",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "type": "commonjs",
   "exports": {
     "types": "./dist/types/index.d.ts",
-    "require": "./dist/cjs/index.js"
+    "require": "./dist/index.js"
   },
-  "main": "dist/cjs/index.js",
+  "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "files": [
     "dist",
@@ -15,8 +15,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "npm run build:cjs",
-    "build:cjs": "tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.build.json",
     "build:tests": "tsc --outDir out --project tsconfig.tests.json",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src/**/* --config .eslint.config.mjs",
