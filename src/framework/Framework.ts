@@ -56,11 +56,9 @@ export class Framework {
 
     public runs: number = 1;
 
-    private outputStyle: StyleType = StyleType.plain;
-
     private scheduled: Suite[] = [];
 
-    public readonly reporter: Reporter = new Reporter(styling(this.outputStyle));
+    public readonly reporter: Reporter = new Reporter();
 
     private constructor() {
     }
@@ -71,14 +69,6 @@ export class Framework {
 
     public suites(): Suite[] {
         return this.scheduled;
-    }
-
-    public style(style: StyleType): void {
-        this.outputStyle = style;
-    }
-
-    public styling(): StyleType {
-        return this.outputStyle;
     }
 
     public async sequential(suites: Suite[]) {

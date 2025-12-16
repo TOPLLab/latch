@@ -6,14 +6,12 @@ import {
     Invoker,
     Kind,
     Message,
-    OutofPlaceSpecification,
     Step,
-    Target,
+    Verbosity,
     WASM
 } from '../../src/index';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
-import step = Message.step;
 
 const framework = Framework.getImplementation();
 
@@ -94,4 +92,5 @@ debug.test({
     steps: [DUMP]
 });
 
+framework.reporter.verbosity(Verbosity.debug);
 framework.analyse([spec, debug]);

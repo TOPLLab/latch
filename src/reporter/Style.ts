@@ -36,6 +36,8 @@ export function styling(type: StyleType): Style {
 
 // strategy pattern
 export interface Style {
+    readonly type: StyleType;
+
     indentation: number;
 
     bullet: string;
@@ -48,6 +50,7 @@ export interface Style {
 }
 
 export class Plain implements Style {
+    type = StyleType.plain;
     indentation = 2;
     bullet = '● ';
     end = '';
@@ -71,6 +74,7 @@ export class Plain implements Style {
 }
 
 export class GitHub extends Plain {
+    type = StyleType.github;
     bullet = '::group::';
     end = '::endgroup::';
 }
