@@ -12,7 +12,7 @@ export class Invoker implements Step {
     readonly expected?: Expectation[];
     readonly target?: Target;
 
-    constructor(func: string, args: Value[], result: Value | undefined, target?: Target) {
+    constructor(func: string, args: Value<Type>[], result: Value<Type> | undefined, target?: Target) {
         let prefix = '';
         this.instruction = invoke(func, args);
         this.expected = (result == undefined) ? returns(nothing) : returns(result);
@@ -24,12 +24,12 @@ export class Invoker implements Step {
     }
 }
 
-export function invoke(func: string, args: Value[]): Instruction {
+export function invoke(func: string, args: Value<Type>[]): Instruction {
     return {kind: Kind.Request, value: Message.invoke(func, args)};
 }
 
-export function returns(n: Value): Expectation[] {
-    if (n.type == Type.nothing) {
+export function returns(n: Value<Type>): Expectation[] {
+    if (n.type === WASM.Special.nothing) {
         return [{'value': {kind: 'primitive', value: undefined} as Expected<undefined>}]
     }
     return [{'value': {kind: 'primitive', value: n.value} as Expected<number>}]

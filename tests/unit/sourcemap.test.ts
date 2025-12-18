@@ -5,19 +5,34 @@ import {SourceMap} from '../../src/sourcemap/SourceMap';
 import {WABT} from '../../src/util/env';
 import {copyFileSync, mkdtempSync, readFileSync, rmSync} from 'fs';
 
+import * as leb from '@thi.ng/leb128';
+
 const artifacts = `${__dirname}/../../../tests/artifacts`;
 
 /**
  * Check LEB 128 encoding
  */
-test('[leb128] : test encoding', t => {
-    t.is(WASM.leb128(0), '00');
-    t.is(WASM.leb128(1), '01');
-    t.is(WASM.leb128(8), '08');
-    t.is(WASM.leb128(32), '20');
-    t.is(WASM.leb128(64), 'C000');
-    t.is(WASM.leb128(128), '8001');
-    t.is(WASM.leb128(1202), 'B209');
+test('[leb128] : test encode positive numbers', t => {
+    t.is(WASM.leb128(BigInt(0)), '00');
+    t.is(WASM.leb128(BigInt(1)), '01');
+    t.is(WASM.leb128(BigInt(8)), '08');
+    t.is(WASM.leb128(BigInt(32)), '20');
+    t.is(WASM.leb128(BigInt(64)), 'C000');
+    t.is(WASM.leb128(BigInt(127)), 'FF00');
+    t.is(WASM.leb128(BigInt(128)), '8001');
+    t.is(WASM.leb128(BigInt(1202)), 'B209');
+    t.is(WASM.leb128(BigInt(2147483647)), 'FFFFFFFF07');
+    t.is(WASM.leb128(BigInt(4294967295)), 'FFFFFFFF0F');
+    t.is(WASM.leb128(Number.MAX_SAFE_INTEGER), 'FFFFFFFFFFFFFF0F');
+});
+
+test('[leb128] : test encode negative numbers', t => {
+    t.is(WASM.leb128(BigInt(-1)), '7F');
+    t.is(WASM.leb128(BigInt(-8)), '78');
+    t.is(WASM.leb128(BigInt(-32)), '60');
+    t.is(WASM.leb128(BigInt(-64)), '40');
+    t.is(WASM.leb128(BigInt(-127)), '817F');
+    t.is(WASM.leb128(BigInt(-128)), '807F');
 });
 
 test('[extractLineInfo] : test against artifacts (1)', async t => {
