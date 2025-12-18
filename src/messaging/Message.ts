@@ -2,7 +2,7 @@ import {WARDuino} from '../debug/WARDuino';
 import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
-import {write} from 'ieee754';
+import ieee754 from 'ieee754';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {readFileSync} from 'fs';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
@@ -27,6 +27,7 @@ export interface Request<R> {
 }
 
 export namespace Message {
+    import Float = WASM.Float;
     import Inspect = WARDuino.Inspect;
     export const run: Request<Ack> = {
         type: Interrupt.run,
@@ -162,7 +163,7 @@ export namespace Message {
         }
     }
 
-    export function invoke(func: string, args: Value<bigint | number>[]): Request<WASM.Value<bigint | number> | Exception> {
+    export function invoke(func: string, args: Value<Type>[]): Request<WASM.Value<Type> | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
             if (fidx === undefined) {
@@ -171,15 +172,22 @@ export namespace Message {
             return fidx!;
         }
 
-        function convert(args: Value<bigint | number>[]) {
+        function convert(args: Value<Type>[]) {
             let payload: string = '';
-            args.forEach((arg: Value<bigint | number>) => {
-                if (arg.type === Type.i32 || arg.type === Type.i64) {
-                    payload += WASM.leb128(arg.value);
-                } else {
-                    const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    write(buff, Number(arg.value), 0, true, arg.type === Type.f32 ? 23 : 52, buff.length);  // todo fix precision loss
-                    payload += buff.toString('hex');
+            args.forEach((arg: Value<Type>) => {
+                switch (arg.type) {
+                    case WASM.Float.f32:
+                    case WASM.Float.f64:
+                        const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
+                        ieee754.write(buff, <number>arg.value, 0, true, arg.type === Float.f32 ? 23 : 52, buff.length); // TODO write BigInt without loss of precision (don't use ieee754.write)
+                        payload += buff.toString('hex');
+                        break;
+                    case WASM.Integer.i32:
+                    case WASM.Integer.i64:
+                        payload += WASM.leb128(<bigint>arg.value);
+                        break;
+                    default:
+                        break;
                 }
             });
             return payload;

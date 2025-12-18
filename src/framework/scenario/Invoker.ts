@@ -5,6 +5,7 @@ import {Target} from '../Testee';
 import Value = WASM.Value;
 import Type = WASM.Type;
 import nothing = WASM.nothing;
+import Float = WASM.Float;
 
 export class Invoker implements Step {
     readonly title: string;
@@ -12,7 +13,7 @@ export class Invoker implements Step {
     readonly expected?: Expectation[];
     readonly target?: Target;
 
-    constructor(func: string, args: Value<any>[], result: Value<any> | undefined, target?: Target) {
+    constructor(func: string, args: Value<Type>[], result: Value<Type> | undefined, target?: Target) {
         let prefix = '';
         this.instruction = invoke(func, args);
         this.expected = (result == undefined) ? returns(nothing) : returns(result);
@@ -24,13 +25,14 @@ export class Invoker implements Step {
     }
 }
 
-export function invoke(func: string, args: Value<any>[]): Instruction {
+export function invoke(func: string, args: Value<Type>[]): Instruction {
     return {kind: Kind.Request, value: Message.invoke(func, args)};
 }
 
-export function returns<T extends bigint | number>(n: Value<T>): Expectation[] {
-    if (n.type == Type.nothing) {
+export function returns<T extends Type>(n: Value<T>): Expectation[] {
+    if (n.type === WASM.Special.nothing) {
         return [{'value': {kind: 'primitive', value: undefined} as Expected<undefined>}]
     }
-    return [{'value': {kind: 'primitive', value: n.value} as Expected<T>}]
+    type R = T extends Float ? number : bigint;
+    return [{'value': {kind: 'primitive', value: n.value} as Expected<R>}]
 }
