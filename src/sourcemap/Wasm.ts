@@ -32,7 +32,7 @@ export namespace WASM {
         value: T extends Float ? number : bigint;
     }
 
-    export interface Nothing extends Value<Type> {}
+    export type Nothing = Value<Type>
 
     export const nothing: Nothing = {
         type: Special.nothing, value: 0

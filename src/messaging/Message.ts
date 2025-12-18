@@ -11,6 +11,7 @@ import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
 import Type = WASM.Type;
+import Float = WASM.Float;
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -177,9 +178,7 @@ export namespace Message {
                 switch (arg.type) {
                     case WASM.Float.f32:
                     case WASM.Float.f64:
-                        const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
-                        ieee754.write(buff, <number>arg.value, 0, true, arg.type === Float.f32 ? 23 : 52, buff.length); // TODO write BigInt without loss of precision (don't use ieee754.write)
-                        payload += buff.toString('hex');
+                        payload += ieeefloat(<Value<Float>>arg)
                         break;
                     case WASM.Integer.i32:
                     case WASM.Integer.i64:
@@ -225,4 +224,10 @@ export namespace Message {
             return ackParser(line, 'PROXIED');
         }
     };
+}
+
+function ieeefloat(arg: Value<Float>): String {
+    const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
+    ieee754.write(buff, <number>arg.value, 0, true, arg.type === Float.f32 ? 23 : 52, buff.length); // TODO write BigInt without loss of precision (don't use ieee754.write)
+    return buff.toString('hex');
 }

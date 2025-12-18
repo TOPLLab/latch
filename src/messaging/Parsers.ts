@@ -59,6 +59,7 @@ export function breakpointHitParser(text: string): Breakpoint {
     throw new Error('Could not messaging BREAKPOINT address in ack.');
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stacking(objects: {value: any, type: any}[]): WASM.Value<Type>[] {
     const stacked: WASM.Value<Type>[] = [];
     for (const object of objects) {
