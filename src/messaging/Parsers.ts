@@ -5,6 +5,7 @@ import {Breakpoint} from '../debug/Breakpoint';
 import {WARDuino} from '../debug/WARDuino';
 import State = WARDuino.State;
 import nothing = WASM.nothing;
+import Type = WASM.Type;
 
 export function identityParser(text: string) {
     return stripEnd(text);
@@ -14,7 +15,7 @@ export function stateParser(text: string): State {
     return JSON.parse(text);
 }
 
-export function invokeParser(text: string): WASM.Value | Exception {
+export function invokeParser(text: string): WASM.Value<Type> | Exception {
     if (exception(text)) {
         return {text: text};
     }
@@ -58,20 +59,19 @@ export function breakpointHitParser(text: string): Breakpoint {
     throw new Error('Could not messaging BREAKPOINT address in ack.');
 }
 
-function stacking(objects: {value: any, type: any}[]): WASM.Value[] {
-    const stacked: WASM.Value[] = [];
+function stacking(objects: {value: any, type: any}[]): WASM.Value<Type>[] {
+    const stacked: WASM.Value<Type>[] = [];
     for (const object of objects) {
         let value: number = object.value;
-        const type: WASM.Type = WASM.typing.get(object.type.toLowerCase()) ?? WASM.Type.unknown;
-        if (type === WASM.Type.f32 || type === WASM.Type.f64) {
+        const type: WASM.Type = WASM.typing.get(object.type.toLowerCase()) ?? WASM.Special.unknown;
+        if (type === WASM.Float.f32 || type === WASM.Float.f64) {
             const buff = Buffer.from(object.value, 'hex');
-            value = ieee754.read(buff, 0, false, type === WASM.Type.f32 ? 23 : 52, buff.length);
+            value = ieee754.read(buff, 0, false, type === WASM.Float.f32 ? 23 : 52, buff.length);
         }
         stacked.push({value: value, type: type});
     }
     return stacked;
 }
-
 
 // Strips all trailing newlines
 function stripEnd(text: string): string {

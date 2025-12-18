@@ -1,45 +1,57 @@
+import * as leb from "@thi.ng/leb128";
+
 export namespace WASM {
-    export enum Type {
+
+    export enum Float {
         f32,
         f64,
+    }
+
+    export enum Integer {
         i32,
         i64,
+    }
+
+    export enum Special {
         nothing,
         unknown
     }
 
+    export type Type = Float | Integer | Special;
+
+
     export const typing = new Map<string, Type>([
-        ['f32', Type.f32],
-        ['f64', Type.f64],
-        ['i32', Type.i32],
-        ['i64', Type.i64]
+        ['f32', Float.f32],
+        ['f64', Float.f64],
+        ['i32', Integer.i32],
+        ['i64', Integer.i64]
     ]);
 
-    export interface Value {
-        type: Type;
-        value: number;
+    export interface Value<T extends Type> {
+        type: T;
+        value: T extends Float ? number : bigint;
     }
 
-    export interface Nothing extends Value {}
+    export interface Nothing extends Value<Type> {}
 
     export const nothing: Nothing = {
-        type: Type.nothing, value: 0
+        type: Special.nothing, value: 0
     }
 
-    export function i32(n: number): WASM.Value {
-        return {value: n, type: Type.i32};
+    export function i32(n: bigint): WASM.Value<Integer> {
+        return {value: n, type: Integer.i32};
     }
 
-    export function f32(n: number): WASM.Value {
-        return {value: n, type: Type.f32};
+    export function f32(n: number): WASM.Value<Float> {
+        return {value: n, type: Float.f32};
     }
 
-    export function f64(n: number): WASM.Value {
-        return {value: n, type: Type.f64};
+    export function f64(n: number): WASM.Value<Float> {
+        return {value: n, type: Float.f64};
     }
 
-    export function i64(n: number): WASM.Value {
-        return {value: n, type: Type.i64};
+    export function i64(n: bigint): WASM.Value<Integer> {
+        return {value: n, type: Integer.i64};
     }
 
     export interface Frame {
@@ -65,21 +77,5 @@ export namespace WASM {
         bytes: Uint8Array;
     }
 
-    export function leb128(a: number): string { // TODO can only handle 32 bit
-        a |= 0;
-        const result = [];
-        while (true) {
-            const byte_ = a & 0x7f;
-            a >>= 7;
-            if (
-                (a === 0 && (byte_ & 0x40) === 0) ||
-                (a === -1 && (byte_ & 0x40) !== 0)
-            ) {
-                result.push(byte_.toString(16).padStart(2, '0'));
-                return result.join('').toUpperCase();
-            }
-            result.push((byte_ | 0x80).toString(16).padStart(2, '0'));
-        }
-    }
-
+    export const leb128 = (v: number | bigint) => Buffer.from(leb.encodeSLEB128(v)).toString('hex').toUpperCase().padStart(2, '0')
 }

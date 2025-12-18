@@ -27,7 +27,7 @@ export function timeout<T>(label: string, time: number, promise: Promise<T>): Pr
  * @param field dot string describing the field of the value (or path)
  */
 export function getValue(object: any, field: string): any {
-    if (object?.type == WASM.Type.nothing) {
+    if (object?.type == WASM.Special.nothing) {
         return undefined;
     }
 

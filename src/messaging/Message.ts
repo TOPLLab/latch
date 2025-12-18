@@ -2,7 +2,7 @@ import {WARDuino} from '../debug/WARDuino';
 import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
-import {write} from 'ieee754';
+import ieee754 from 'ieee754';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {readFileSync} from 'fs';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
@@ -28,6 +28,7 @@ export interface Request<R> {
 }
 
 export namespace Message {
+    import Float = WASM.Float;
     export const run: Request<Ack> = {
         type: Interrupt.run,
         parser: (line: string) => {
@@ -135,7 +136,7 @@ export namespace Message {
     export function updateModule(wasm: string): Request<Ack> {
         function payload(binary: Buffer): string {
             const w = new Uint8Array(binary);
-            const sizeHex: string = WASM.leb128(w.length);
+            const sizeHex: string = WASM.leb128(BigInt(w.length));
             const sizeBuffer = Buffer.allocUnsafe(4);
             sizeBuffer.writeUint32BE(w.length);
             const wasmHex = Buffer.from(w).toString('hex');
@@ -161,7 +162,7 @@ export namespace Message {
         }
     }
 
-    export function invoke(func: string, args: Value[]): Request<WASM.Value | Exception> {
+    export function invoke(func: string, args: Value<Type>[]): Request<WASM.Value<Type> | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
             if (fidx === undefined) {
@@ -170,15 +171,22 @@ export namespace Message {
             return fidx!;
         }
 
-        function convert(args: Value[]) {
+        function convert(args: Value<Type>[]) {
             let payload: string = '';
-            args.forEach((arg: Value) => {
-                if (arg.type === Type.i32 || arg.type === Type.i64) {
-                    payload += WASM.leb128(arg.value);
-                } else {
-                    const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    write(buff, arg.value, 0, true, arg.type === Type.f32 ? 23 : 52, buff.length);
-                    payload += buff.toString('hex');
+            args.forEach((arg: Value<Type>) => {
+                switch (arg.type) {
+                    case WASM.Float.f32:
+                    case WASM.Float.f64:
+                        const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
+                        ieee754.write(buff, <number>arg.value, 0, true, arg.type === Float.f32 ? 23 : 52, buff.length); // TODO write BigInt without loss of precision (don't use ieee754.write)
+                        payload += buff.toString('hex');
+                        break;
+                    case WASM.Integer.i32:
+                    case WASM.Integer.i64:
+                        payload += WASM.leb128(<bigint>arg.value);
+                        break;
+                    default:
+                        break;
                 }
             });
             return payload;
@@ -186,7 +194,7 @@ export namespace Message {
 
         return {
             type: Interrupt.invoke,
-            payload: (map: SourceMap.Mapping) => `${WASM.leb128(fidx(map, func))}${convert(args)}`,
+            payload: (map: SourceMap.Mapping) => `${WASM.leb128(BigInt(fidx(map, func)))}${convert(args)}`,
             parser: invokeParser
         }
     }
