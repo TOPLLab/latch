@@ -11,7 +11,7 @@ export default [
   { plugins: {
       '@stylistic/js': stylisticJs
     }, rules: {
-      '@stylistic/js/indent': ['error', 4],
+      '@stylistic/js/indent': ['error', 4, { "SwitchCase": 1 }],
       '@typescript-eslint/no-wrapper-object-types': 'off'
     }
   },

@@ -22,10 +22,10 @@ spec.testee('emulator[:8100]', new EmulatorSpecification(8100));
 const steps: Step[] = [];
 
 // ✔ ((invoke "8u_good1" (i32.const 0)) (i32.const 97))
-steps.push(new Invoker('8u_good1', [WASM.i32(0)], WASM.i32(97)));
+steps.push(new Invoker('8u_good1', [WASM.i32(BigInt(0))], WASM.i32(BigInt(97))));
 
 // ✔ ((invoke "8u_good3" (i32.const 0)) (i32.const 98))
-steps.push(new Invoker('8u_good3', [WASM.i32(0)], WASM.i32(98)));
+steps.push(new Invoker('8u_good3', [WASM.i32(BigInt(0))], WASM.i32(BigInt(98))));
 
 // ✔ ((invoke "func-unwind-by-br"))
 steps.push(new Invoker('func-unwind-by-br', [], undefined));
