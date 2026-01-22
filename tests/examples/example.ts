@@ -8,10 +8,13 @@ import {
     Message,
     Step,
     Verbosity,
-    WASM
+    WASM,
+    WARDuino
 } from '../../src/index';
 import dump = Message.dump;
 import stepOver = Message.stepOver;
+import Inspect = WARDuino.Inspect;
+import State = WARDuino.State;
 
 const framework = Framework.getImplementation();
 
@@ -74,16 +77,16 @@ const DUMP: Step = {
     title: 'Send DUMP command',
     instruction: {kind: Kind.Request, value: Message.dump},
     expected: [
-    {'pc': {kind: 'description', value: Description.defined} as Expected<string>},
-    {
-        'breakpoints': {
-            kind: 'comparison', value: (state: Object, value: Array<any>) => {
-                return value.length === 0;
-            }, message: 'list of breakpoints should be empty'
-        } as Expected<Array<any>>
-    },
-    {'callstack[0].sp': {kind: 'primitive', value: -1} as Expected<number>},
-    {'callstack[0].fp': {kind: 'primitive', value: -1} as Expected<number>}]
+        {'pc': {kind: 'description', value: Description.defined} as Expected<string>},
+        {
+            'breakpoints': {
+                kind: 'comparison', value: (state: Object, value: Array<any>) => {
+                    return value.length === 0;
+                }, message: 'list of breakpoints should be empty'
+            } as Expected<Array<any>>
+        },
+        {'callstack[0].sp': {kind: 'primitive', value: -1} as Expected<number>},
+        {'callstack[0].fp': {kind: 'primitive', value: -1} as Expected<number>}]
 };
 
 debug.test({
@@ -92,5 +95,25 @@ debug.test({
     steps: [DUMP]
 });
 
+const reverse = framework.suite('Test Reverse interface');
+reverse.testee('emulator[:8530]', new EmulatorSpecification(8530));
+
+reverse.test({
+    title: 'Test snapshot',
+    program: 'tests/examples/blink.wast',
+    steps: [{
+        title: 'Test IO snapshot',
+        instruction: {kind: Kind.Request, value: Message.inspect([Inspect.io])},
+        expected: [{
+            'io': {
+                kind: 'comparison', value: (state: State) => state.io?.length === 0
+            }
+        }],
+    },
+    new Invoker('read', [WASM.i32(BigInt(15))], WASM.i32(BigInt(0))),
+    new Invoker('write', [WASM.i32(BigInt(15)), WASM.i32(BigInt(1))], undefined),
+    new Invoker('read', [WASM.i32(BigInt(15))], WASM.i32(BigInt(1)))]
+})
+
 framework.reporter.verbosity(Verbosity.debug);
-framework.analyse([spec, debug]);
+framework.analyse([spec, debug, reverse]);
