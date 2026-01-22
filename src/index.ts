@@ -16,5 +16,6 @@ export * from './framework/scenario/Invoker';
 export * from './testbeds/TestbedSpecification';
 export * from './debug/Breakpoint';
 export * from './reporter/index';
+export * from './debug/WARDuino';
 
 export const latch = Framework.getImplementation();
