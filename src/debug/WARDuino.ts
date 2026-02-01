@@ -12,6 +12,20 @@ export namespace WARDuino {
         tableIndexes: number[]
     }
 
+    export enum Inspect {
+        counter = '01',
+        breakpoints = '02',
+        callstack = '03',
+        globals = '04',
+        table = '05',
+        memory = '06',
+        branching = '07',
+        stack = '08',
+        callbacks = '09',
+        events = '0a',
+        io = '0b'
+    }
+
     export enum Interrupt {
         run = '01',
         halt = '02',
@@ -72,5 +86,6 @@ export namespace WARDuino {
         br_table?: BRTable;
         callbacks?: CallbackMapping[];
         events?: InterruptEvent[];
+        io?: string[];
     }
 }
