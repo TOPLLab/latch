@@ -15,18 +15,18 @@ import {
 
 function describer(verbosity: Verbosity, item: SuiteResult): SuiteDescriber {
     switch (verbosity) {
-    case Verbosity.none:
-        return new SilentDescriber<SuiteResult>(item);
-    case Verbosity.minimal:
-        return new MinimalSuiteDescriber(item);
-    case Verbosity.short:
-        return new ShortSuiteDescriber(item);
-    case Verbosity.normal:
-    case Verbosity.more:
-    case Verbosity.all:
-    case Verbosity.debug:
-    default:
-        return new NormalSuiteDescriber(item);
+        case Verbosity.none:
+            return new SilentDescriber<SuiteResult>(item);
+        case Verbosity.minimal:
+            return new MinimalSuiteDescriber(item);
+        case Verbosity.short:
+            return new ShortSuiteDescriber(item);
+        case Verbosity.normal:
+        case Verbosity.more:
+        case Verbosity.all:
+        case Verbosity.debug:
+        default:
+            return new NormalSuiteDescriber(item);
     }
 }
 

@@ -10,6 +10,7 @@ type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
 export abstract class Platform extends EventEmitter implements Testbed {
     abstract connection: Connection;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     protected requests: [Request<any>, PromiseResolver<any>][];
 
     protected messages: MessageQueue;
@@ -83,6 +84,7 @@ export abstract class Platform extends EventEmitter implements Testbed {
     public sendRequest<R>(map: SourceMap.Mapping, request: Request<R>): Promise<R> {
         return new Promise((resolve, reject) => {
             this.requests.push([request, resolve]);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             this.connection.channel.write(`${request.type}${request.payload?.(map) ?? ''}\n`, (err: any) => {
                 if (err !== null) {
                     reject(err);

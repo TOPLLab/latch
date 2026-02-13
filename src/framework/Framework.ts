@@ -4,16 +4,9 @@ import {TestScenario} from './scenario/TestScenario';
 
 import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 
-import {StyleType} from '../reporter';
-import {styling} from '../reporter/Style';
 import {SuiteResult} from '../reporter/Results';
 import {Reporter} from '../reporter/Reporter';
 import {Outcome} from "../reporter/describers/Describer";
-
-interface DependenceTree {
-    test: TestScenario;
-    children: DependenceTree[];
-}
 
 export interface TesteeOptions {
     disabled?: boolean;

@@ -91,6 +91,7 @@ export class Testee { // TODO unified with testbed interface
     }
 
     public async initialize(program: string, args: string[] = []): Promise<Testee> {
+        // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
             if (this.specification.type === PlatformType.emu2emu) {
                 const spec = (this.specification as OutofPlaceSpecification).proxy;
@@ -141,6 +142,7 @@ export class Testee { // TODO unified with testbed interface
     }
 
     public async describe(description: TestScenario, suiteResult: SuiteResult, runs: number = 1) {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const testee = this;
         const scenarioResult: ScenarioResult = new ScenarioResult(description);
 
@@ -172,7 +174,7 @@ export class Testee { // TODO unified with testbed interface
             try {
                 await timeout<object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 testee.current = description.program;
-            } catch (e) {
+            } catch {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
             }
         }).catch((e: Error | string) => {

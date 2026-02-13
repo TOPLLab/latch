@@ -35,11 +35,11 @@ export class CompilerFactory {
     public pickCompiler(file: string): Compiler {
         const fileType = getFileExtension(file);
         switch (fileType) {
-        case 'wast' :
-        case 'wat' :
-            return this.wat;
-        case 'ts' :
-            return this.asc;
+            case 'wast' :
+            case 'wat' :
+                return this.wat;
+            case 'ts' :
+                return this.asc;
         }
         throw new Error('Unsupported file type');
     }
@@ -167,10 +167,9 @@ export class AsScriptCompiler extends Compiler {
     }
 
     public async map(program: string): Promise<CompileOutput> {
-        const emitter = this;
-        return this.compile(program).then(async function (output: CompileOutput) {
+        return this.compile(program).then(async (output: CompileOutput) => {
             output.map = await new AsScriptMapper(program, path.dirname(output.file)).mapping();
-            emitter.emit(CompilationEvents.sourcemap);
+            this.emit(CompilationEvents.sourcemap);
             return Promise.resolve(output);
         });
     }
@@ -195,7 +194,7 @@ export class AsScriptCompiler extends Compiler {
             }
         });
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _reject) => {
             reader.on('close', () => {
                 resolve(mapping);
             });
@@ -208,12 +207,10 @@ export class AsScriptCompiler extends Compiler {
         //     return Promise.resolve(this.compiled.get(program)!);
         // }
 
-        const wat = new WatCompiler(this.wabt);
-
         // compile AS to Wasm and WAT
-        return new Promise<CompileOutput>(async (resolve, reject) => {
-            const file = `${dir}/upload.wasm`;
-            const command = await this.getCompilationCommand(program, file);
+        const file = `${dir}/upload.wasm`;
+        const command = await this.getCompilationCommand(program, file);
+        return new Promise<CompileOutput>((resolve, reject) => {
             let out: string = '';
             let err: string = '';
 
@@ -236,13 +233,11 @@ export class AsScriptCompiler extends Compiler {
         });
     }
 
-    private getCompilationCommand(program: string, output: string): Promise<string> {
+    private async getCompilationCommand(program: string, output: string): Promise<string> {
         // builds asc command based on the version of asc
-        return new Promise<string>(async (resolve) => {
-            const version: Version = await AsScriptCompiler.retrieveVersion();
-            resolve(`npx asc ${program} --exportTable --disable bulk-memory --sourceMap --debug ` +
-                `${(version.major > 0 || +version.minor >= 20) ? '--outFile' : '--binaryFile'} ${output}`);
-        });
+        const version: Version = await AsScriptCompiler.retrieveVersion();
+        return `npx asc ${program} --exportTable --disable bulk-memory --sourceMap --debug ` +
+            `${(version.major > 0 || +version.minor >= 20) ? '--outFile' : '--binaryFile'} ${output}`;
     }
 
     private static retrieveVersion(): Promise<Version> {
@@ -323,7 +318,8 @@ function parseLines(context: CompileOutput): SourceMap.SourceLine[] {
                 columnEnd: -1,
                 instructions: [{address: parseInt(addr, 16)}]
             });
-        } catch (e) {
+        } catch {
+            // address not found in line, skip
         }
 
     }

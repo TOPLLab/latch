@@ -1,6 +1,5 @@
 import {Suite} from './Framework';
 import {TestScenario} from './scenario/TestScenario';
-import {Test} from 'mocha';
 
 export abstract class Scheduler {
     public abstract readonly identifier: string;
@@ -24,7 +23,7 @@ export class NoScheduler implements Scheduler {
     }
 }
 
-class SimpleScheduler implements Scheduler {
+export class _SimpleScheduler implements Scheduler {
     identifier = 'sort on program';
 
     public sequential(suite: Suite): TestScenario[] {
@@ -54,7 +53,7 @@ export class HybridScheduler implements Scheduler {
         return flatVertical(forest).flat().reverse(); //.flatMap((tree) => flatVertical(tree));
     }
 
-    public parallel(suite: Suite, cores: number): TestScenario[][] {
+    public parallel(suite: Suite, _cores: number): TestScenario[][] {
         const forest: TestScenario[][][] = trees(suite.scenarios);
         return flatVertical(forest)
     }
@@ -177,7 +176,7 @@ function comparator(a: TestScenario, b: TestScenario): number {
 }
 
 // aggregate dependence forest into levels
-function levels(input: TestScenario[]): TestScenario[][] {
+function _levels(input: TestScenario[]): TestScenario[][] {
     // input
     input.sort((a: TestScenario, b: TestScenario) => (a.dependencies ?? []).length - (b.dependencies ?? []).length);
     // output

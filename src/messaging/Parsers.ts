@@ -19,6 +19,7 @@ export function invokeParser(text: string): WASM.Value<Type> | Exception {
     if (exception(text)) {
         return {text: text};
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stack: {value: any, type: any}[] = stateParser(text).stack!;
     if (stack.length == 0) {
         return nothing;

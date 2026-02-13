@@ -6,6 +6,7 @@ export enum PlatformType {
     debug
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ConnectionOptions {
 }
 

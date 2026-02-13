@@ -18,8 +18,7 @@ export interface Ack {
     text: string
 }
 
-export interface Exception extends Ack {
-}
+export type Exception = Ack;
 
 // A request represents a debug message and its parser
 export interface Request<R> {
@@ -64,7 +63,7 @@ export namespace Message {
         parser: (line: string): Ack => {
             try {
                 return ackParser(line, 'STEP');
-            } catch (err) {
+            } catch (_err) {
                 return ackParser(line, 'AT ');
             }
         }

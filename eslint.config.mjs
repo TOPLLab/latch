@@ -12,7 +12,9 @@ export default [
       '@stylistic/js': stylisticJs
     }, rules: {
       '@stylistic/js/indent': ['error', 4, { "SwitchCase": 1 }],
-      '@typescript-eslint/no-wrapper-object-types': 'off'
+      '@typescript-eslint/no-wrapper-object-types': 'off',
+      '@typescript-eslint/no-namespace': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }]
     }
   },
   {files: ["**/*.{js,mjs,cjs,ts}"]},

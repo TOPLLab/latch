@@ -1,6 +1,7 @@
 import {writeFileSync} from 'fs';
 
 export class Archiver {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private readonly information: any;
     public readonly archive: string;
 
@@ -14,7 +15,7 @@ export class Archiver {
     }
 
     public extend(key: string, value: string | number) {
-        if (!this.information.hasOwnProperty(key)) {
+        if (!Object.prototype.hasOwnProperty.call(this.information, key)) {
             this.information[key] = [];
         }
         this.information[key].push(value);
