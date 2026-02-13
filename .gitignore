@@ -55,4 +55,3 @@ out
 
 # c8 Coverage
 coverage
-test[A-Za-z0-9]*/
