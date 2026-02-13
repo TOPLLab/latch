@@ -77,17 +77,17 @@ export class EmulatorConnector extends Uploader {
         this.port = options.port;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     upload(compiled: CompileOutput, listener?: (chunk: any) => void): Promise<SubProcess> {
         return this.connectSocket(compiled.file, listener);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private connectSocket(program: string, listener?: (chunk: any) => void): Promise<SubProcess> {
-        return new Promise((resolve, _reject) => {
+        const that = this;
+
+        return new Promise(function (resolve, _reject) {
             const client = new net.Socket();
-            client.connect(this.port, () => {
-                this.emit(UploaderEvents.connected);
+            client.connect(that.port, () => {
+                that.emit(UploaderEvents.connected);
                 if (listener !== undefined) {
                     client.on('data', listener);
                 }
@@ -109,7 +109,6 @@ export class EmulatorUploader extends Uploader {
         this.args = args;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     upload(compiled: CompileOutput, listener?: (chunk: any) => void): Promise<SubProcess> {
         return this.connectSocket(compiled.file, listener);
     }
@@ -119,16 +118,16 @@ export class EmulatorUploader extends Uploader {
         return spawn(this.interpreter, _args);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private connectSocket(program: string, listener?: (chunk: any) => void): Promise<SubProcess> {
+        const that = this;
         const process = this.startWARDuino(program);
 
-        return new Promise((resolve, reject) => {
+        return new Promise(function (resolve, reject) {
             if (process === undefined) {
                 reject('Failed to start process.');
             }
 
-            this.emit(UploaderEvents.started);
+            that.emit(UploaderEvents.started);
 
             while (process.stdout === undefined) {
                 // wait for stdout to become available
@@ -145,12 +144,12 @@ export class EmulatorUploader extends Uploader {
                         listener(data);
                     }
 
-                    this.emit(UploaderEvents.connecting);
+                    that.emit(UploaderEvents.connecting);
 
                     if (data.includes('Listening')) {
                         const client = new net.Socket();
-                        client.connect(this.port, () => {
-                            this.emit(UploaderEvents.connected);
+                        client.connect(that.port, () => {
+                            that.emit(UploaderEvents.connected);
                             if (listener !== undefined) {
                                 client.on('data', listener);
                             }
@@ -166,11 +165,11 @@ export class EmulatorUploader extends Uploader {
                 });
 
                 reader.on('close', () => {
-                    this.emit(UploaderEvents.failed);
+                    that.emit(UploaderEvents.failed);
                     reject(`Could not connect. Error:  ${error}`);
                 });
             } else {
-                this.emit(UploaderEvents.failed);
+                that.emit(UploaderEvents.failed);
                 reject();
             }
         });
@@ -180,7 +179,6 @@ export class EmulatorUploader extends Uploader {
 export class ArduinoUploader extends Uploader {
     private readonly sdkpath: string;
     private readonly fqbn: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private readonly options: SerialPortOpenOptions<any>;
 
     constructor(sdkpath: string, _args: string[] = [], options: SerialOptions) {
@@ -207,12 +205,13 @@ export class ArduinoUploader extends Uploader {
     }
 
     private stage(program: string): Promise<void> {
+        const that = this;
         return new Promise<void>((resolve, reject) => {
             const compile = exec(`make compile PAUSED=true BINARY=${program}`, {cwd: this.sdkpath});
 
             compile.on('close', (code) => {
                 if (code !== 0) {
-                    this.emit(UploaderEvents.failed);
+                    that.emit(UploaderEvents.failed);
                     reject('staging failed: unable to build Arduino program');
                     return;
                 }
@@ -222,6 +221,7 @@ export class ArduinoUploader extends Uploader {
     }
 
     private flash(): Promise<void> {
+        const that = this;
         return new Promise<void>((resolve, reject) => {
             const command = `make flash PORT=${this.options.path} FQBN=${this.fqbn}`;
 
@@ -229,7 +229,7 @@ export class ArduinoUploader extends Uploader {
 
             upload.on('close', (code) => {
                 if (code !== 0) {
-                    this.emit(UploaderEvents.failed);
+                    that.emit(UploaderEvents.failed);
                     reject(`unable to flash program to ${this.fqbn}`);
                     return;
                 }
@@ -239,17 +239,18 @@ export class ArduinoUploader extends Uploader {
     }
 
     private connect(): Promise<Serial> {
+        const that = this;
         return new Promise<Serial>((resolve, reject) => {
             const channel = new SerialPort(this.options,
                 (error) => {
                     if (error) {
-                        this.emit(UploaderEvents.failed);
+                        that.emit(UploaderEvents.failed);
                         reject(`could not connect to serial port: ${this.options.path}`);
                         return;
                     }
                 }
             );
-            this.emit(UploaderEvents.connected);
+            that.emit(UploaderEvents.connected);
             resolve(new Serial(channel));
         });
     }

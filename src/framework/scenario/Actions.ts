@@ -5,11 +5,10 @@ import {Breakpoint} from '../../debug/Breakpoint';
 import {breakpointHitParser} from '../../messaging/Parsers';
 
 export interface Dictionary {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [index: string]: any;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type Assertable<T extends Object | void> = {[index: string]: any};
 
 export function assertable(obj: Object): Assertable<Object> {

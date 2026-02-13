@@ -167,9 +167,10 @@ export class AsScriptCompiler extends Compiler {
     }
 
     public async map(program: string): Promise<CompileOutput> {
-        return this.compile(program).then(async (output: CompileOutput) => {
+        const emitter = this;
+        return this.compile(program).then(async function (output: CompileOutput) {
             output.map = await new AsScriptMapper(program, path.dirname(output.file)).mapping();
-            this.emit(CompilationEvents.sourcemap);
+            emitter.emit(CompilationEvents.sourcemap);
             return Promise.resolve(output);
         });
     }
@@ -208,9 +209,9 @@ export class AsScriptCompiler extends Compiler {
         // }
 
         // compile AS to Wasm and WAT
-        const file = `${dir}/upload.wasm`;
-        const command = await this.getCompilationCommand(program, file);
-        return new Promise<CompileOutput>((resolve, reject) => {
+        return new Promise<CompileOutput>(async (resolve, reject) => {
+            const file = `${dir}/upload.wasm`;
+            const command = await this.getCompilationCommand(program, file);
             let out: string = '';
             let err: string = '';
 
@@ -233,11 +234,13 @@ export class AsScriptCompiler extends Compiler {
         });
     }
 
-    private async getCompilationCommand(program: string, output: string): Promise<string> {
+    private getCompilationCommand(program: string, output: string): Promise<string> {
         // builds asc command based on the version of asc
-        const version: Version = await AsScriptCompiler.retrieveVersion();
-        return `npx asc ${program} --exportTable --disable bulk-memory --sourceMap --debug ` +
-            `${(version.major > 0 || +version.minor >= 20) ? '--outFile' : '--binaryFile'} ${output}`;
+        return new Promise<string>(async (resolve) => {
+            const version: Version = await AsScriptCompiler.retrieveVersion();
+            resolve(`npx asc ${program} --exportTable --disable bulk-memory --sourceMap --debug ` +
+                `${(version.major > 0 || +version.minor >= 20) ? '--outFile' : '--binaryFile'} ${output}`);
+        });
     }
 
     private static retrieveVersion(): Promise<Version> {

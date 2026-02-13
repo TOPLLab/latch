@@ -24,7 +24,6 @@ export type Expected<T> =
     | { kind: 'behaviour'; value: Behaviour };
 
 export interface Expectation {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: Expected<any>;
 }
 
@@ -35,9 +34,7 @@ export enum Kind {
 
 export type Instruction =
 /** discrimination union */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     | { kind: Kind.Request; value: Request<any> }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     | { kind: Kind.Action; value: Action<any> };
 
 export interface Step {

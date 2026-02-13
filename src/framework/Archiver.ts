@@ -1,7 +1,6 @@
 import {writeFileSync} from 'fs';
 
 export class Archiver {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private readonly information: any;
     public readonly archive: string;
 
