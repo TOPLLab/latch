@@ -23,7 +23,7 @@ export class NoScheduler implements Scheduler {
     }
 }
 
-export class _SimpleScheduler implements Scheduler {
+export class SimpleScheduler implements Scheduler {
     identifier = 'sort on program';
 
     public sequential(suite: Suite): TestScenario[] {
@@ -176,7 +176,7 @@ function comparator(a: TestScenario, b: TestScenario): number {
 }
 
 // aggregate dependence forest into levels
-function _levels(input: TestScenario[]): TestScenario[][] {
+function levels(input: TestScenario[]): TestScenario[][] {
     // input
     input.sort((a: TestScenario, b: TestScenario) => (a.dependencies ?? []).length - (b.dependencies ?? []).length);
     // output
