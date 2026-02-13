@@ -25,16 +25,16 @@ export class TestbedFactory {
         const connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
 
         switch (specification.type) {
-        case PlatformType.arduino:
-            return new Arduino(connection as Serial);
-        case PlatformType.emulator:
-        case PlatformType.emu2emu:
-        case PlatformType.debug:
-            return new Emulator(connection as SubProcess);
-        case PlatformType.emuproxy:
-            return new DummyProxy(connection as SubProcess, specification as ProxySpecification);
-        default:
-            return Promise.reject('Platform not implemented.');
+            case PlatformType.arduino:
+                return new Arduino(connection as Serial);
+            case PlatformType.emulator:
+            case PlatformType.emu2emu:
+            case PlatformType.debug:
+                return new Emulator(connection as SubProcess);
+            case PlatformType.emuproxy:
+                return new DummyProxy(connection as SubProcess, specification as ProxySpecification);
+            default:
+                return Promise.reject('Platform not implemented.');
         }
     }
 }

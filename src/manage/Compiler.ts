@@ -35,11 +35,11 @@ export class CompilerFactory {
     public pickCompiler(file: string): Compiler {
         const fileType = getFileExtension(file);
         switch (fileType) {
-        case 'wast' :
-        case 'wat' :
-            return this.wat;
-        case 'ts' :
-            return this.asc;
+            case 'wast' :
+            case 'wat' :
+                return this.wat;
+            case 'ts' :
+                return this.asc;
         }
         throw new Error('Unsupported file type');
     }
@@ -195,7 +195,7 @@ export class AsScriptCompiler extends Compiler {
             }
         });
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, _reject) => {
             reader.on('close', () => {
                 resolve(mapping);
             });
@@ -207,8 +207,6 @@ export class AsScriptCompiler extends Compiler {
         // if (this.compiled.has(program)) {
         //     return Promise.resolve(this.compiled.get(program)!);
         // }
-
-        const wat = new WatCompiler(this.wabt);
 
         // compile AS to Wasm and WAT
         return new Promise<CompileOutput>(async (resolve, reject) => {
@@ -323,7 +321,8 @@ function parseLines(context: CompileOutput): SourceMap.SourceLine[] {
                 columnEnd: -1,
                 instructions: [{address: parseInt(addr, 16)}]
             });
-        } catch (e) {
+        } catch {
+            // address not found in line, skip
         }
 
     }

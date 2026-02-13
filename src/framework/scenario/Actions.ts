@@ -8,7 +8,7 @@ export interface Dictionary {
     [index: string]: any;
 }
 
-//export type Assertable<T> = T extends Object ? {[index: string]: any} : void;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type Assertable<T extends Object | void> = {[index: string]: any};
 
 export function assertable(obj: Object): Assertable<Object> {
@@ -38,8 +38,8 @@ export function awaitBreakpoint(): Action<Breakpoint> {
                         // on success: remove listener + resolve
                         testee.bed()?.removeListener(TestbedEvents.OnMessage, breakpointListener);
                         resolve(assertable(breakpoint));
-                    } catch (e) {
-
+                    } catch {
+                        // breakpoint not hit yet
                     }
                 }
 

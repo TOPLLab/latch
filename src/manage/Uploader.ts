@@ -35,14 +35,14 @@ export class UploaderFactory {
 
     public pickUploader(specification: TestbedSpecification, args: string[] = []): Uploader {
         switch (specification.type) {
-        case PlatformType.arduino:
-            return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
-        case PlatformType.emulator:
-        case PlatformType.emu2emu:
-        case PlatformType.emuproxy:
-            return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
-        case PlatformType.debug:
-            return new EmulatorConnector(specification.options as SubprocessOptions)
+            case PlatformType.arduino:
+                return new ArduinoUploader(this.arduino, args, specification.options as SerialOptions);
+            case PlatformType.emulator:
+            case PlatformType.emu2emu:
+            case PlatformType.emuproxy:
+                return new EmulatorUploader(this.emulator, args, specification.options as SubprocessOptions);
+            case PlatformType.debug:
+                return new EmulatorConnector(specification.options as SubprocessOptions)
         }
         throw new Error('Unsupported platform type');
     }
@@ -84,7 +84,7 @@ export class EmulatorConnector extends Uploader {
     private connectSocket(program: string, listener?: (chunk: any) => void): Promise<SubProcess> {
         const that = this;
 
-        return new Promise(function (resolve, reject) {
+        return new Promise(function (resolve, _reject) {
             const client = new net.Socket();
             client.connect(that.port, () => {
                 that.emit(UploaderEvents.connected);
@@ -130,6 +130,7 @@ export class EmulatorUploader extends Uploader {
             that.emit(UploaderEvents.started);
 
             while (process.stdout === undefined) {
+                // wait for stdout to become available
             }
 
             if (isReadable(process.stdout)) {
@@ -180,7 +181,7 @@ export class ArduinoUploader extends Uploader {
     private readonly fqbn: string;
     private readonly options: SerialPortOpenOptions<any>;
 
-    constructor(sdkpath: string, args: string[] = [], options: SerialOptions) {
+    constructor(sdkpath: string, _args: string[] = [], options: SerialOptions) {
         super();
         this.sdkpath = sdkpath;
         this.fqbn = options.fqbn;

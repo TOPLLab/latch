@@ -172,7 +172,7 @@ export class Testee { // TODO unified with testbed interface
             try {
                 await timeout<object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 testee.current = description.program;
-            } catch (e) {
+            } catch {
                 await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
             }
         }).catch((e: Error | string) => {

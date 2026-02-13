@@ -14,7 +14,7 @@ export class Archiver {
     }
 
     public extend(key: string, value: string | number) {
-        if (!this.information.hasOwnProperty(key)) {
+        if (!Object.prototype.hasOwnProperty.call(this.information, key)) {
             this.information[key] = [];
         }
         this.information[key].push(value);
