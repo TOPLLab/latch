@@ -1,5 +1,6 @@
-import {Breakpoint} from "../../debug/Breakpoint";
-import {Step} from "./Step";
+import { Breakpoint } from "../../debug/Breakpoint";
+import { CompilerOptions } from "../../manage/Compiler";
+import { Step } from "./Step";
 
 /** A series of scenario to perform on a single instance of the vm */
 export interface TestScenario {
@@ -19,4 +20,6 @@ export interface TestScenario {
     skip?: boolean;
 
     dependencies?: TestScenario[];
+
+    compilerOptions?: CompilerOptions;
 }
