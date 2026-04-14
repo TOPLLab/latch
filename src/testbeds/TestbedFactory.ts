@@ -1,6 +1,6 @@
 import {Testbed} from './Testbed';
 import {ARDUINO, EMULATOR, WABT} from '../util/env';
-import {CompileOutput, CompilerFactory} from '../manage/Compiler';
+import {CompileOutput, CompilerFactory, CompilerOptions} from '../manage/Compiler';
 import {DummyProxy, Emulator} from './Emulator';
 import {UploaderFactory} from '../manage/Uploader';
 import {Connection} from '../bridge/Connection';
@@ -20,8 +20,8 @@ export class TestbedFactory {
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
 
-    public async initialize(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
-        const compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e));
+    public async initialize(specification: TestbedSpecification, program: string, args: string[], compilerOptions?: CompilerOptions): Promise<Testbed> {
+        const compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program, compilerOptions).catch((e) => Promise.reject(e));
         const connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
 
         switch (specification.type) {

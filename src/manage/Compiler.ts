@@ -1,12 +1,12 @@
+import { exec, ExecException } from 'child_process';
+import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import {exec, ExecException} from 'child_process';
-import {SourceMap} from '../sourcemap/SourceMap';
 import * as readline from 'readline';
-import {EventEmitter} from 'events';
-import {find, getFileExtension} from '../util/util';
-import {AsScriptMapper} from '../sourcemap/SourceMapper';
+import { SourceMap } from '../sourcemap/SourceMap';
+import { AsScriptMapper } from '../sourcemap/SourceMapper';
+import { find, getFileExtension } from '../util/util';
 import SourceLine = SourceMap.SourceLine;
 
 enum CompilationEvents {
@@ -45,12 +45,16 @@ export class CompilerFactory {
     }
 }
 
+export interface CompilerOptions {
+    disableBulkMemory?: boolean;
+}
+
 export abstract class Compiler extends EventEmitter {
     // compiles program to WAT
-    abstract compile(program: string): Promise<CompileOutput>;
+    abstract compile(program: string, options?: CompilerOptions): Promise<CompileOutput>;
 
     // generates a sourceMap
-    abstract map(program: string): Promise<CompileOutput>;
+    abstract map(program: string, compilerOptions: CompilerOptions): Promise<CompileOutput>;
 
     protected makeTmpDir(): Promise<string> {
         return new Promise((resolve, reject) => {
@@ -75,17 +79,17 @@ export class WatCompiler extends Compiler {
         this.wabt = wabt.length > 0 ? wabt + "/" : "";
     }
 
-    public async compile(program: string, dir?: string): Promise<CompileOutput> {
+    public async compile(program: string, compilerOptions?: CompilerOptions, dir?: string): Promise<CompileOutput> {
         if (dir) {
-            return this.wasm(program, dir);
+            return this.wasm(program, compilerOptions, dir);
         }
 
         return this.makeTmpDir().then((dir: string) => {
-            return this.wasm(program, dir);
+            return this.wasm(program, compilerOptions, dir);
         });
     }
 
-    private wasm(program: string, dir: string): Promise<CompileOutput> {
+    private wasm(program: string, compilerOptions?: CompilerOptions, dir?: string): Promise<CompileOutput> {
         // do not recompiled previous compilations
         // if (this.compiled.has(program)) {
         //     return Promise.resolve(this.compiled.get(program)!);
@@ -94,7 +98,8 @@ export class WatCompiler extends Compiler {
         // compile WAT to Wasm
         return new Promise<CompileOutput>((resolve, reject) => {
             const file = `${dir}/upload.wasm`;
-            const command = `${this.wabt}wat2wasm --no-canonicalize-leb128s --disable-bulk-memory --debug-names -v -o ${file} ${program}`;
+            const disableBulkMemory = compilerOptions?.disableBulkMemory ?? true;
+            const command = `${this.wabt}wat2wasm --no-canonicalize-leb128s ${disableBulkMemory ? '--disable-bulk-memory' : ''} --debug-names -v -o ${file} ${program}`;
             let out: string = '';
             let err: string = '';
 
@@ -139,8 +144,8 @@ export class WatCompiler extends Compiler {
         });
     }
 
-    public async map(program: string): Promise<CompileOutput> {
-        return this.compile(program).then((output) => {
+    public async map(program: string, compilerOptions: CompilerOptions): Promise<CompileOutput> {
+        return this.compile(program, compilerOptions).then((output) => {
             return this.dump(output);
         });
     }
@@ -160,15 +165,15 @@ export class AsScriptCompiler extends Compiler {
         this.wabt = wabt;
     }
 
-    public async compile(program: string): Promise<CompileOutput> {
+    public async compile(program: string, compilerOptions?: CompilerOptions): Promise<CompileOutput> {
         return this.makeTmpDir().then((dir) => {
-            return this.wasm(program, dir);
+            return this.wasm(program, dir, compilerOptions);
         });
     }
 
-    public async map(program: string): Promise<CompileOutput> {
+    public async map(program: string, compilerOptions?: CompilerOptions): Promise<CompileOutput> {
         const emitter = this;
-        return this.compile(program).then(async function (output: CompileOutput) {
+        return this.compile(program, compilerOptions).then(async function (output: CompileOutput) {
             output.map = await new AsScriptMapper(program, path.dirname(output.file)).mapping();
             emitter.emit(CompilationEvents.sourcemap);
             return Promise.resolve(output);
@@ -202,7 +207,7 @@ export class AsScriptCompiler extends Compiler {
         });
     }
 
-    private async wasm(program: string, dir: string): Promise<CompileOutput> {
+    private async wasm(program: string, dir: string, compilerOptions?: CompilerOptions): Promise<CompileOutput> {
         // do not recompiled previous compilations
         // if (this.compiled.has(program)) {
         //     return Promise.resolve(this.compiled.get(program)!);
@@ -211,7 +216,7 @@ export class AsScriptCompiler extends Compiler {
         // compile AS to Wasm and WAT
         return new Promise<CompileOutput>(async (resolve, reject) => {
             const file = `${dir}/upload.wasm`;
-            const command = await this.getCompilationCommand(program, file);
+            const command = await this.getCompilationCommand(program, file, compilerOptions);
             let out: string = '';
             let err: string = '';
 
@@ -234,11 +239,12 @@ export class AsScriptCompiler extends Compiler {
         });
     }
 
-    private getCompilationCommand(program: string, output: string): Promise<string> {
+    private getCompilationCommand(program: string, output: string, compilerOptions?: CompilerOptions): Promise<string> {
         // builds asc command based on the version of asc
         return new Promise<string>(async (resolve) => {
             const version: Version = await AsScriptCompiler.retrieveVersion();
-            resolve(`npx asc ${program} --exportTable --disable bulk-memory --sourceMap --debug ` +
+            const disableBulkMemory = compilerOptions?.disableBulkMemory ?? true;
+            resolve(`npx asc ${program} --exportTable ${disableBulkMemory ? '--disable bulk-memory' : ''} --sourceMap --debug ` +
                 `${(version.major > 0 || +version.minor >= 20) ? '--outFile' : '--binaryFile'} ${output}`);
         });
     }

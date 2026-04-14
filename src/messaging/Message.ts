@@ -1,12 +1,12 @@
-import {WARDuino} from '../debug/WARDuino';
-import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
-import {Breakpoint} from '../debug/Breakpoint';
-import {WASM} from '../sourcemap/Wasm';
+import { readFileSync } from 'fs';
 import ieee754 from 'ieee754';
-import {SourceMap} from '../sourcemap/SourceMap';
-import {readFileSync} from 'fs';
-import {CompileOutput, CompilerFactory} from '../manage/Compiler';
-import {WABT} from '../util/env';
+import { Breakpoint } from '../debug/Breakpoint';
+import { WARDuino } from '../debug/WARDuino';
+import { CompileOutput, CompilerFactory, CompilerOptions } from '../manage/Compiler';
+import { SourceMap } from '../sourcemap/SourceMap';
+import { WASM } from '../sourcemap/Wasm';
+import { WABT } from '../util/env';
+import { ackParser, breakpointParser, invokeParser, stateParser } from './Parsers';
 import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
@@ -130,8 +130,8 @@ export namespace Message {
         }
     }
 
-    export async function uploadFile(program: string): Promise<Request<Ack>> {
-        const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program);
+    export async function uploadFile(program: string, compilerOptions: CompilerOptions): Promise<Request<Ack>> {
+        const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program, compilerOptions);
         return updateModule(compiled.file);
     }
 

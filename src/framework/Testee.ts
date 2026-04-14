@@ -7,7 +7,7 @@ import {Kind} from './scenario/Step';
 import {SourceMapFactory} from '../sourcemap/SourceMapFactory';
 import {TestScenario} from './scenario/TestScenario';
 import {OutofPlaceSpecification, PlatformType, TestbedSpecification} from '../testbeds/TestbedSpecification';
-import {CompileOutput, CompilerFactory} from '../manage/Compiler';
+import {CompileOutput, CompilerFactory, CompilerOptions} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import {Outcome} from '../reporter/describers/Describer';
 import {WASM} from '../sourcemap/Wasm';
@@ -90,11 +90,11 @@ export class Testee { // TODO unified with testbed interface
         return target == Target.proxy ? this.proxy : this.testbed;
     }
 
-    public async initialize(program: string, args: string[] = []): Promise<Testee> {
+    public async initialize(program: string, args: string[] = [], compilerOptions?: CompilerOptions): Promise<Testee> {
         return new Promise(async (resolve, reject) => {
             if (this.specification.type === PlatformType.emu2emu) {
                 const spec = (this.specification as OutofPlaceSpecification).proxy;
-                const proxy: Testbed | void = await this.connector.initialize(spec, program, args ?? []).catch((e) => {
+                const proxy: Testbed | void = await this.connector.initialize(spec, program, args ?? [], compilerOptions).catch((e) => {
                     reject(e)
                 });
 
@@ -109,14 +109,14 @@ export class Testee { // TODO unified with testbed interface
                 await this.proxy.sendRequest(new SourceMap.Mapping(), Message.proxifyRequest);
                 args = args.concat(['--proxy', `${spec.dummy.port}`]);
 
-                const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args).catch((e) => {
+                const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args, compilerOptions).catch((e) => {
                     reject(e);
                 });
                 if (testbed) {
                     this.testbed = testbed;
                 }
             } else {
-                const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args).catch((e) => {
+                const testbed: Testbed | void = await this.connector.initialize(this.specification, program, args, compilerOptions).catch((e) => {
                     reject(e)
                 });
                 if (testbed) {
@@ -168,12 +168,12 @@ export class Testee { // TODO unified with testbed interface
                 return;
             }
 
-            const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
+            const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program, description.compilerOptions);
             try {
                 await timeout<object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                 testee.current = description.program;
             } catch {
-                await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
+                await testee.initialize(description.program, description.args ?? [], description.compilerOptions).catch((o) => Promise.reject(o));
             }
         }).catch((e: Error | string) => {
             if (typeof e === 'string') {
@@ -184,7 +184,7 @@ export class Testee { // TODO unified with testbed interface
         });
 
         await this.run('Get source mapping', testee.connector.timeout, async function () {
-            map = await testee.mapper.map(description.program);
+            map = await testee.mapper.map(description.program, description.compilerOptions);
         }).catch((e: Error | string) => {
             if (typeof e === 'string') {
                 scenarioResult.error(e);
@@ -231,7 +231,7 @@ export class Testee { // TODO unified with testbed interface
                             (testee, req, map) => timeout<object | void>(`sending instruction ${req.type}`, testee.timeout,
                                 testee.bed(step.target ?? Target.supervisor)!.sendRequest(map, req)),
                             (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
-                                await testee.initialize(description.program, description.args ?? []).catch((o) => {
+                                await testee.initialize(description.program, description.args ?? [], description.compilerOptions).catch((o) => {
                                     return Promise.reject(o)
                                 });
                             }), 1).catch((e: Error) => {
