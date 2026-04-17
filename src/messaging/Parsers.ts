@@ -19,7 +19,7 @@ export function invokeParser(text: string): WASM.Value<Type> | Exception {
     if (exception(text)) {
         return {text: text};
     }
-    const stack: {value: any, type: any}[] = stateParser(text).stack!;
+    const stack: WASM.Value<Type>[] = stateParser(text).stack!;
     if (stack.length == 0) {
         return nothing;
     }
@@ -60,7 +60,7 @@ export function breakpointHitParser(text: string): Breakpoint {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function stacking(objects: {value: any, type: any}[]): WASM.Value<Type>[] {
+function stacking(objects: { value: any, type: any }[]): WASM.Value<Type>[] {
     const stacked: WASM.Value<Type>[] = [];
     for (const object of objects) {
         let value: number = object.value;
