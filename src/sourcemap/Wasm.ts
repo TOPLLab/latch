@@ -3,18 +3,18 @@ import * as leb from "@thi.ng/leb128";
 export namespace WASM {
 
     export enum Float {
-        f32,
-        f64,
+        f32 = 0,
+        f64 = 1,
     }
 
     export enum Integer {
-        i32,
-        i64,
+        i32 = 2,
+        i64 = 3,
     }
 
     export enum Special {
-        nothing,
-        unknown
+        nothing = 4,
+        unknown = 5
     }
 
     export type Type = Float | Integer | Special;
