@@ -74,7 +74,7 @@ export class Framework {
                 const result: SuiteResult = new SuiteResult(suite);
 
                 const first: TestScenario = order[0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? [], first.compilerOptions).catch((e: Error) => result.error(e.message)));
 
                 await this.runSuite(result, testee, order);
                 this.reporter.report(result);
@@ -100,7 +100,7 @@ export class Framework {
                 const result: SuiteResult = new SuiteResult(suite);
 
                 const first: TestScenario = order[0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? [], first.compilerOptions).catch((e: Error) => result.error(e.message)));
 
                 await this.runSuite(result, testee, order);
                 this.reporter.report(result);
@@ -128,7 +128,7 @@ export class Framework {
                 const result: SuiteResult = new SuiteResult(suite);
 
                 const first: TestScenario = order[i][0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? [], first.compilerOptions).catch((e: Error) => result.error(e.message)));
 
                 for (let j = i; j < order.length; j += suite.testees.length) {
                     await this.runSuite(result, testee, order[j]);
