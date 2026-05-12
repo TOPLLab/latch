@@ -30,7 +30,7 @@ export class ShortSuiteDescriber extends SuiteDescriber {
 
         if (this.item.outcome === Outcome.error) {
             report.push('');
-            report.push(' '.repeat(2) + red(this.item.clarification.toString()));
+            report.push(' '.repeat(2) + red(this.item.clarification?.toString() ?? ''));
         }
         return report;
     }
