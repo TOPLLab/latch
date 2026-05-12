@@ -166,7 +166,7 @@ export class EmulatorUploader extends Uploader {
 
                 reader.on('close', () => {
                     that.emit(UploaderEvents.failed);
-                    reject(`Could not connect. Error:  ${error}`);
+                    reject(`Testbed closed unexpectedly.`);
                 });
             } else {
                 that.emit(UploaderEvents.failed);

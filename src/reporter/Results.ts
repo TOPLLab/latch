@@ -48,6 +48,7 @@ abstract class AbstractAggregateResult implements AggregateResult {
     aggregate(outcomes: Result[]) {
         this.subOutcomes = outcomes;
         this.outcome = this.check();
+        if (this.clarification.length === 0) this.clarification = this.subOutcomes.flatMap(outcome => outcome.clarification).join('; ')
     }
 
     outcomes(): Result[] {
