@@ -109,7 +109,7 @@ export class WatCompiler extends Compiler {
             compile.on('close', (code) => {
                 if (code !== 0) {
                     this.emit(CompilationEvents.failed, err);
-                    reject(`Compilation to wasm failed: wat2wasm exited with code ${code}: ${err}`);
+                    reject(`Compilation to wasm failed: wat2wasm exited with code ${code}: ${err.substring(0, 320).trim()}`);
                     return;
                 }
                 this.compiled.set(program, {file: file, out: out, err: err});
@@ -224,7 +224,7 @@ export class AsScriptCompiler extends Compiler {
 
             compile.on('close', (code) => {
                 if (code !== 0) {
-                    reject(`Compilation to wasm failed: ${err}`);
+                    reject(`Compilation to wasm failed: ${err.substring(0, 320).trim()}`);
                     return;
                 }
                 this.compiled.set(program, {file: file, out: out, err: err});
