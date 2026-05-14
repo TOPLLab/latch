@@ -1,5 +1,5 @@
 import {SourceMap} from './SourceMap';
-import {exec, ExecException} from 'child_process';
+import {spawn} from 'child_process';
 import * as fs from 'fs';
 import {MappingItem, SourceMapConsumer} from 'source-map';
 import SourceLine = SourceMap.SourceLine;
@@ -32,27 +32,36 @@ export class WatMapper implements SourceMapper {
             let functions: Closure[];
             let globals: Variable[];
             let imports: Closure[];
+            let stdout = '';
 
-            function handleObjDumpStreams(error: ExecException | null, stdout: string, stderr: string) {
-                if (stderr.match('wasm-objdump')) {
+            const [executable, ...args] = this.getNameDumpCommand();
+            const objDump = spawn(executable, args);
+
+            objDump.stdout.on('data', (data) => stdout += data.toString());
+
+            objDump.stderr.on('data', (data) => {
+                const text: string = data.toString();
+                if (text.match('wasm-objdump')) {
                     reject('Could not find wasm-objdump in the path');
-                } else if (error) {
-                    reject(error.message);
                 }
+            });
 
+            objDump.on('error', (err) => reject(err.message));
+
+            const sourceMap = new SourceMap.Mapping().init(this.lineMapping, [], [], []);
+            objDump.on('close', (code) => {
+                if (code !== 0) {
+                    reject(`wasm-objdump exited with code ${code}`);
+                    return;
+                }
                 try {
                     functions = WatMapper.getFunctionInfos(stdout);
                     globals = WatMapper.getGlobalInfos(stdout);
                     imports = WatMapper.getImportInfos(stdout);
                 } catch (e) {
                     reject(e);
+                    return;
                 }
-            }
-
-            const objDump = exec(this.getNameDumpCommand(), handleObjDumpStreams);
-
-            const sourceMap = new SourceMap.Mapping().init(this.lineMapping, [], [], []);
-            objDump.on('close', () => {
                 sourceMap.functions = functions;
                 sourceMap.globals = globals;
                 sourceMap.imports = imports;
@@ -137,8 +146,8 @@ export class WatMapper implements SourceMapper {
         return globals;
     }
 
-    private getNameDumpCommand(): string {
-        return `${this.wabt}/wasm-objdump -x -m ${this.tmpdir}/upload.wasm`;
+    private getNameDumpCommand(): string[] {
+        return [`${this.wabt}/wasm-objdump`,  '-x', '-m', `${this.tmpdir}/upload.wasm`];
     }
 }
 

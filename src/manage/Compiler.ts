@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import {exec, ExecException} from 'child_process';
+import {exec, ExecException, spawn} from 'child_process';
 import {SourceMap} from '../sourcemap/SourceMap';
 import * as readline from 'readline';
 import {EventEmitter} from 'events';
@@ -94,17 +94,16 @@ export class WatCompiler extends Compiler {
         // compile WAT to Wasm
         return new Promise<CompileOutput>((resolve, reject) => {
             const file = `${dir}/upload.wasm`;
-            const command = `${this.wabt}wat2wasm --no-canonicalize-leb128s --disable-bulk-memory --debug-names -v -o ${file} ${program}`;
+            const command = `${this.wabt}wat2wasm`;
+            const args = ['--no-canonicalize-leb128s', '--disable-bulk-memory', '--debug-names', '-v', '-o', file, program];
             let out: string = '';
             let err: string = '';
 
-            function handle(error: ExecException | null, stdout: string) {
-                out = stdout;
-                err = error?.message ?? '';
-            }
+            const compile = spawn(command, args);
+            this.emit(CompilationEvents.started, `${command} ${args.join(' ')}`);
 
-            const compile = exec(command, handle);
-            this.emit(CompilationEvents.started, command);
+            compile.stdout.on('data', (data) => out += data.toString());
+            compile.stderr.on('data', (data) => err += data.toString());
 
             compile.on('close', (code) => {
                 if (code !== 0) {
@@ -122,24 +121,28 @@ export class WatCompiler extends Compiler {
     public dump(output: CompileOutput): Promise<CompileOutput> {
         // object dump
         return new Promise<CompileOutput>((resolve, reject) => {
-            const command = `${this.wabt}wasm-objdump -x -m ${output.file}`;
+            const executable = `${this.wabt}wasm-objdump`;
+            const args = ['-x', '-m', output.file];
+            let stdout = '';
 
-            const compile = exec(command, (error: ExecException | null, stdout: string) => {
-                output.map = this.parseWasmObjDump(output, stdout.toString());
-                this.emit(CompilationEvents.sourcemap);
-                resolve(output);
-            });
+            const dump = spawn(executable, args);
 
-            compile.on('close', (code) => {
+            dump.stdout.on('data', (data) => stdout += data.toString());
+            dump.on('error', (err) => reject(`wasm-objdump error: ${err.message}`));
+
+            dump.on('close', (code) => {
                 if (code !== 0) {
                     reject(`wasm-objdump exited with code ${code}`);
                     return;
                 }
+                output.map = this.parseWasmObjDump(output, stdout);
+                this.emit(CompilationEvents.sourcemap);
+                resolve(output);
             });
         });
     }
 
-    public async map(program: string): Promise<CompileOutput> {
+    public async map(program: string): Promise<CompileOutput>  {
         return this.compile(program).then((output) => {
             return this.dump(output);
         });
