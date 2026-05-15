@@ -4,7 +4,6 @@ import {Message} from '../../messaging/Message';
 import {Target} from '../Testee';
 import Value = WASM.Value;
 import Type = WASM.Type;
-import nothing = WASM.nothing;
 
 export class Invoker implements Step {
     readonly title: string;
@@ -12,10 +11,10 @@ export class Invoker implements Step {
     readonly expected?: Expectation[];
     readonly target?: Target;
 
-    constructor(func: string, args: Value<Type>[], result: Value<Type> | undefined, target?: Target) {
+    constructor(func: string, args: Value<Type>[], result: Value<Type>, target?: Target) {
         let prefix = '';
         this.instruction = invoke(func, args);
-        this.expected = (result == undefined) ? returns(nothing) : returns(result);
+        this.expected = returns(result);
         if (target !== undefined) {
             this.target = target;
             prefix = `${target === Target.supervisor ? '[supervisor] ' : '[proxy]      '}`
@@ -29,8 +28,5 @@ export function invoke(func: string, args: Value<Type>[]): Instruction {
 }
 
 export function returns(n: Value<Type>): Expectation[] {
-    if (n.type === WASM.Special.nothing) {
-        return [{'value': {kind: 'primitive', value: undefined} as Expected<undefined>}]
-    }
-    return [{'value': {kind: 'primitive', value: n.value} as Expected<number>}]
+    return [{'value': {kind: 'primitive', value: n.value} as Expected<WASM.Type>}]
 }

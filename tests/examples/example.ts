@@ -31,7 +31,7 @@ steps.push(new Invoker('8u_good1', [WASM.i32(BigInt(0))], WASM.i32(BigInt(97))))
 steps.push(new Invoker('8u_good3', [WASM.i32(BigInt(0))], WASM.i32(BigInt(98))));
 
 // ✔ ((invoke "func-unwind-by-br"))
-steps.push(new Invoker('func-unwind-by-br', [], undefined));
+steps.push(new Invoker('func-unwind-by-br', [], WASM.nothing));
 
 spec.test({
     title: `Test with address_0.wast`,
@@ -111,7 +111,7 @@ reverse.test({
         }],
     },
     new Invoker('read', [WASM.i32(BigInt(15))], WASM.i32(BigInt(0))),
-    new Invoker('write', [WASM.i32(BigInt(15)), WASM.i32(BigInt(1))], undefined),
+    new Invoker('write', [WASM.i32(BigInt(15)), WASM.i32(BigInt(1))], WASM.nothing),
     new Invoker('read', [WASM.i32(BigInt(15))], WASM.i32(BigInt(1)))]
 })
 

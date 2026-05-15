@@ -29,13 +29,13 @@ export namespace WASM {
 
     export interface Value<T extends Type> {
         type: T;
-        value: T extends Float ? number : bigint;
+        value: T extends Float ? number : (T extends Special ? string : BigInt);
     }
 
     export type Nothing = Value<Type>
 
     export const nothing: Nothing = {
-        type: Special.nothing, value: 0
+        type: Special.nothing, value: "nothing"
     }
 
     export function i32(n: bigint): WASM.Value<Integer> {
