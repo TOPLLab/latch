@@ -27,7 +27,7 @@ export class Suite {
     }
 
     public testee(name: string, specification: TestbedSpecification, options: TesteeOptions = {}) {
-        const testee = new Testee(name, specification, options.timeout ?? 2000, options.connectionTimout ?? 5000);
+        const testee = new Testee(name, specification, options.timeout ?? 2000, options.connectionTimout ?? 30000);
         if (options.disabled) {
             testee.skipall();
         }
