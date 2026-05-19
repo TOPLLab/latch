@@ -5,7 +5,6 @@ export namespace WARDuino {
     import Frame = WASM.Frame;
     import Table = WASM.Table;
     import Memory = WASM.Memory;
-    import Type = WASM.Type;
 
     export interface CallbackMapping {
         callbackid: string;
@@ -78,9 +77,9 @@ export namespace WARDuino {
         pc_error?: number;
         exception_msg?: string;
         breakpoints?: number[];
-        stack?: Value<Type>[];
+        stack?: Value[];
         callstack?: Frame[];
-        globals?: Value<Type>[];
+        globals?: Value[];
         table?: Table;
         memory?: Memory;
         br_table?: BRTable;
