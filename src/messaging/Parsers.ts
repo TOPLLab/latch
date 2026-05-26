@@ -64,7 +64,7 @@ function stacking(objects: {value: any, type: any}[]): WASM.Value[] {
         let value: number = object.value;
         const type: WASM.Type = WASM.typing.get(object.type.toLowerCase()) ?? WASM.Type.unknown;
         if (type === WASM.Type.f32 || type === WASM.Type.f64) {
-            const buff = Buffer.from(object.value, 'hex');
+            const buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
             value = ieee754.read(buff, 0, false, type === WASM.Type.f32 ? 23 : 52, buff.length);
         }
         stacked.push({value: value, type: type});
