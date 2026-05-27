@@ -33,11 +33,52 @@ steps.push(new Invoker('8u_good3', [WASM.i32(0)], WASM.i32(98)));
 // ✔ ((invoke "func-unwind-by-br"))
 steps.push(new Invoker('func-unwind-by-br', [], undefined));
 
+// ✔ ((invoke "float_exprs_46"))
+steps.push(new Invoker('', [], undefined));
+
+
+
 spec.test({
     title: `Test with address_0.wast`,
     program: 'tests/examples/address.wast',
     dependencies: [],
     steps: steps
+});
+
+
+const floats = framework.suite('Test float parsing'); // must be called first
+floats.testee('emulator[:8130]', new EmulatorSpecification(8130));
+floats.test({
+    title: `Test with float_exprs_46.wast`,
+    program: 'tests/examples/const_160.wast',
+    dependencies: [],
+    steps: [
+        new Invoker('f', [], WASM.f32(8.88178631458362e-16))
+    ]
+});
+
+const threethree = framework.suite('Test float parsing'); // must be called first
+threethree.testee('emulator[:8180]', new EmulatorSpecification(8180));
+threethree.test({
+    title: `Test with float_exprs_46.wast`,
+    program: 'tests/examples/const_133.wast',
+    dependencies: [],
+    steps: [
+        new Invoker('f', [], WASM.f32(-8.881785255792436e-16))
+    ]
+});
+
+
+// ✔ ((invoke "copysign" (f64.const -nan) (f64.const -0x0p+0)) (f64.const -nan))
+const copysign = framework.suite('Test float parsing'); // must be called first
+copysign.testee('emulator[:8190]', new EmulatorSpecification(8190));
+copysign.test({
+    title: `Test copysign`,
+    program: 'tests/examples/f64_bitwise.wast',
+    dependencies: [],
+    steps: [
+        new Invoker('copysign', [WASM.f64(-NaN), WASM.f32(-0)], WASM.f64(-NaN))
+    ]
 });
 
 const debug = framework.suite('Test Debugger interface');
@@ -116,4 +157,4 @@ reverse.test({
 })
 
 framework.reporter.verbosity(Verbosity.debug);
-framework.analyse([spec, debug]);
+framework.analyse([spec, debug, threethree, copysign]);
