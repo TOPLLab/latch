@@ -61,13 +61,24 @@ export function breakpointHitParser(text: string): Breakpoint {
 function stacking(objects: {value: any, type: any}[]): WASM.Value[] {
     const stacked: WASM.Value[] = [];
     for (const object of objects) {
-        let value: number = object.value;
         const type: WASM.Type = WASM.typing.get(object.type.toLowerCase()) ?? WASM.Type.unknown;
-        if (type === WASM.Type.f32 || type === WASM.Type.f64) {
-            const buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
-            value = ieee754.read(buff, 0, false, type === WASM.Type.f32 ? 23 : 52, buff.length);
+        let buff;
+        switch (type) {
+            case WASM.Type.i32:
+            case WASM.Type.i64:
+                stacked.push({value: Number(object.value), type: type});
+                break;
+            case WASM.Type.f32:
+                buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
+                stacked.push({value: ieee754.read(buff, 0, false, 23, buff.length), type: type});
+                break;
+            case WASM.Type.f64:
+                buff = Buffer.from(BigInt(object.value.toString(16)).toString(16), 'hex');
+                stacked.push({value: ieee754.read(buff, 0, false, 52, buff.length), type: type});
+                break;
+            case WASM.Type.unknown:
+                break;
         }
-        stacked.push({value: value, type: type});
     }
     return stacked;
 }
