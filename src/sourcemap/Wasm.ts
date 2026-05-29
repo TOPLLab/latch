@@ -2,7 +2,9 @@ export namespace WASM {
     export enum Type {
         f32,
         f64,
+        u32,
         i32,
+        u64,
         i64,
         nothing,
         unknown
@@ -11,7 +13,9 @@ export namespace WASM {
     export const typing = new Map<string, Type>([
         ['f32', Type.f32],
         ['f64', Type.f64],
+        ['u32', Type.u32],
         ['i32', Type.i32],
+        ['u64', Type.u64],
         ['i64', Type.i64]
     ]);
 
@@ -26,6 +30,10 @@ export namespace WASM {
         type: Type.nothing, value: 0
     }
 
+    export function u32(n: number): WASM.Value {
+        return {value: n, type: Type.u32};
+    }
+
     export function i32(n: number): WASM.Value {
         return {value: n, type: Type.i32};
     }
@@ -36,6 +44,10 @@ export namespace WASM {
 
     export function f64(n: number): WASM.Value {
         return {value: n, type: Type.f64};
+    }
+
+    export function u64(n: number): WASM.Value {
+        return {value: n, type: Type.u64};
     }
 
     export function i64(n: number): WASM.Value {

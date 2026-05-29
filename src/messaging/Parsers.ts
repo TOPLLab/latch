@@ -58,15 +58,27 @@ export function breakpointHitParser(text: string): Breakpoint {
     throw new Error('Could not messaging BREAKPOINT address in ack.');
 }
 
+export function signed(value: number, bits = 32) {
+    let x = BigInt(value);
+    const sign = 1n << BigInt(bits - 1);
+    const mod = 1n << BigInt(bits);
+    return x >= sign ? x - mod : x;
+
+}
+
 function stacking(objects: {value: any, type: any}[]): WASM.Value[] {
     const stacked: WASM.Value[] = [];
     for (const object of objects) {
         const type: WASM.Type = WASM.typing.get(object.type.toLowerCase()) ?? WASM.Type.unknown;
         let buff;
         switch (type) {
+            case WASM.Type.u32:
+            case WASM.Type.u64:
+                stacked.push({value: Number(object.value), type: type});
+                break;
             case WASM.Type.i32:
             case WASM.Type.i64:
-                stacked.push({value: Number(object.value), type: type});
+                stacked.push({value: Number(signed(object.value)), type: type});
                 break;
             case WASM.Type.f32:
                 buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
