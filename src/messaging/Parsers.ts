@@ -3,6 +3,7 @@ import * as ieee754 from 'ieee754';
 import {Ack, Exception} from './Message';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WARDuino} from '../debug/WARDuino';
+import {JSONParse} from 'json-with-bigint';
 import State = WARDuino.State;
 import nothing = WASM.nothing;
 
@@ -11,10 +12,10 @@ export function identityParser(text: string) {
 }
 
 export function stateParser(text: string): State {
-    return JSON.parse(text);
+    return JSONParse(text);
 }
 
-export function invokeParser(text: string): WASM.Value | Exception {
+export function invokeParser(text: string): WASM.Value<bigint | number> | Exception {
     if (exception(text)) {
         return {text: text};
     }
@@ -58,7 +59,7 @@ export function breakpointHitParser(text: string): Breakpoint {
     throw new Error('Could not messaging BREAKPOINT address in ack.');
 }
 
-export function signed(value: number, bits = 32) {
+export function signed(value: bigint, bits = 32) {
     let x = BigInt(value);
     const sign = 1n << BigInt(bits - 1);
     const mod = 1n << BigInt(bits);
@@ -66,27 +67,29 @@ export function signed(value: number, bits = 32) {
 
 }
 
-function stacking(objects: {value: any, type: any}[]): WASM.Value[] {
-    const stacked: WASM.Value[] = [];
+function stacking(objects: {value: bigint, type: any}[]): WASM.Value<bigint | number>[] {
+    const stacked: WASM.Value<bigint | number>[] = [];
     for (const object of objects) {
         const type: WASM.Type = WASM.typing.get(object.type.toLowerCase()) ?? WASM.Type.unknown;
         let buff;
         switch (type) {
             case WASM.Type.u32:
             case WASM.Type.u64:
-                stacked.push({value: Number(object.value), type: type});
+                stacked.push({value: object.value, type: type});
                 break;
             case WASM.Type.i32:
+                stacked.push({value: signed(object.value, 32), type: type});
+                break;
             case WASM.Type.i64:
-                stacked.push({value: Number(signed(object.value)), type: type});
+                stacked.push({value: signed(object.value, 64), type: type});
                 break;
             case WASM.Type.f32:
                 buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
-                stacked.push({value: ieee754.read(buff, 0, false, 23, buff.length), type: type});
+                stacked.push({value: Number(ieee754.read(buff, 0, false, 23, buff.length)), type: type});
                 break;
             case WASM.Type.f64:
-                buff = Buffer.from(BigInt(object.value.toString(16)).toString(16), 'hex');
-                stacked.push({value: ieee754.read(buff, 0, false, 52, buff.length), type: type});
+                buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
+                stacked.push({value: Number(ieee754.read(buff, 0, false, 52, buff.length)), type: type});  // todo fix precision loss
                 break;
             case WASM.Type.unknown:
                 break;

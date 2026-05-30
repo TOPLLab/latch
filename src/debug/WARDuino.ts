@@ -77,9 +77,9 @@ export namespace WARDuino {
         pc_error?: number;
         exception_msg?: string;
         breakpoints?: number[];
-        stack?: Value[];
+        stack?: Value<bigint | number>[];
         callstack?: Frame[];
-        globals?: Value[];
+        globals?: Value<bigint | number>[];
         table?: Table;
         memory?: Memory;
         br_table?: BRTable;

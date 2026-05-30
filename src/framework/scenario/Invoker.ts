@@ -12,7 +12,7 @@ export class Invoker implements Step {
     readonly expected?: Expectation[];
     readonly target?: Target;
 
-    constructor(func: string, args: Value[], result: Value | undefined, target?: Target) {
+    constructor(func: string, args: Value<any>[], result: Value<any> | undefined, target?: Target) {
         let prefix = '';
         this.instruction = invoke(func, args);
         this.expected = (result == undefined) ? returns(nothing) : returns(result);
@@ -24,13 +24,13 @@ export class Invoker implements Step {
     }
 }
 
-export function invoke(func: string, args: Value[]): Instruction {
+export function invoke(func: string, args: Value<any>[]): Instruction {
     return {kind: Kind.Request, value: Message.invoke(func, args)};
 }
 
-export function returns(n: Value): Expectation[] {
+export function returns<T extends bigint | number>(n: Value<T>): Expectation[] {
     if (n.type == Type.nothing) {
         return [{'value': {kind: 'primitive', value: undefined} as Expected<undefined>}]
     }
-    return [{'value': {kind: 'primitive', value: n.value} as Expected<number>}]
+    return [{'value': {kind: 'primitive', value: n.value} as Expected<T>}]
 }

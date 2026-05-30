@@ -19,38 +19,38 @@ export namespace WASM {
         ['i64', Type.i64]
     ]);
 
-    export interface Value {
+    export interface Value<T extends bigint | number>   {
         type: Type;
-        value: number;
+        value: T;
     }
 
-    export interface Nothing extends Value {}
+    export interface Nothing extends Value<number> {}
 
     export const nothing: Nothing = {
         type: Type.nothing, value: 0
     }
 
-    export function u32(n: number): WASM.Value {
+    export function u32(n: bigint): WASM.Value<bigint> {
         return {value: n, type: Type.u32};
     }
 
-    export function i32(n: number): WASM.Value {
+    export function i32(n: bigint): WASM.Value<bigint> {
         return {value: n, type: Type.i32};
     }
 
-    export function f32(n: number): WASM.Value {
+    export function f32(n: number): WASM.Value<number> {
         return {value: n, type: Type.f32};
     }
 
-    export function f64(n: number): WASM.Value {
+    export function f64(n: number): WASM.Value<number> {
         return {value: n, type: Type.f64};
     }
 
-    export function u64(n: number): WASM.Value {
+    export function u64(n: bigint): WASM.Value<bigint> {
         return {value: n, type: Type.u64};
     }
 
-    export function i64(n: number): WASM.Value {
+    export function i64(n: bigint): WASM.Value<bigint> {
         return {value: n, type: Type.i64};
     }
 
@@ -77,7 +77,8 @@ export namespace WASM {
         bytes: Uint8Array;
     }
 
-    export function leb128(a: number): string { // TODO can only handle 32 bit
+    export function leb128(value: bigint | number): string { // TODO can only handle 32 bit
+        let a = Number(value);
         a |= 0;
         const result = [];
         while (true) {
