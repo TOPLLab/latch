@@ -85,11 +85,11 @@ function stacking(objects: {value: bigint, type: any}[]): WASM.Value<bigint | nu
                 break;
             case WASM.Type.f32:
                 buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
-                stacked.push({value: Number(ieee754.read(buff, 0, false, 23, buff.length)), type: type});
+                stacked.push({value: ieee754.read(buff, 0, false, 23, buff.length), type: type});
                 break;
             case WASM.Type.f64:
-                buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
-                stacked.push({value: Number(ieee754.read(buff, 0, false, 52, buff.length)), type: type});  // todo fix precision loss
+                buff = Buffer.from(BigInt(object.value.toString(16)).toString(16), 'hex');
+                stacked.push({value: ieee754.read(buff, 0, false, 52, buff.length), type: type});
                 break;
             case WASM.Type.unknown:
                 break;
