@@ -11,13 +11,13 @@ const artifacts = `${__dirname}/../../../tests/artifacts`;
  * Check LEB 128 encoding
  */
 test('[leb128] : test encoding', t => {
-    t.is(WASM.leb128(0), '00');
-    t.is(WASM.leb128(1), '01');
-    t.is(WASM.leb128(8), '08');
-    t.is(WASM.leb128(32), '20');
-    t.is(WASM.leb128(64), 'C000');
-    t.is(WASM.leb128(128), '8001');
-    t.is(WASM.leb128(1202), 'B209');
+    t.is(WASM.leb128(0n), '00');
+    t.is(WASM.leb128(1n), '01');
+    t.is(WASM.leb128(8n), '08');
+    t.is(WASM.leb128(32n), '20');
+    t.is(WASM.leb128(64n), 'C000');
+    t.is(WASM.leb128(128n), '8001');
+    t.is(WASM.leb128(1202n), 'B209');
 });
 
 test('[extractLineInfo] : test against artifacts (1)', async t => {

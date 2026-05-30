@@ -3,6 +3,7 @@ import {StepOutcome} from '../reporter/Results';
 import {getValue} from './Testee';
 import {Outcome} from '../reporter/describers/Describer';
 import {bold} from 'ansi-colors';
+import {JSONStringify} from "json-with-bigint";
 
 // decorator for Step class
 export class Verifier {
@@ -32,7 +33,7 @@ export class Verifier {
                         result = this.expectBehaviour(value, getValue(previous, field), entry.value);
                     }
                 } catch {
-                    return this.error(`Failure: ${JSON.stringify(actual)} state does not contain '${field}'.`);
+                    return this.error(`Failure: ${JSONStringify(actual)} state does not contain '${field}'.`);
                 }
 
                 if (result.outcome !== Outcome.succeeded) {
@@ -124,5 +125,5 @@ export class Verifier {
 
 /* eslint @typescript-eslint/no-explicit-any: off */
 function deepEqual(a: any, b: any): boolean {
-    return a === b || (isNaN(a) && isNaN(b));
+    return a === b || (isNaN(Number(a)) && isNaN(Number(b)));
 }

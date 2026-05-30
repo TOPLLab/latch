@@ -136,7 +136,7 @@ export namespace Message {
     export function updateModule(wasm: string): Request<Ack> {
         function payload(binary: Buffer): string {
             const w = new Uint8Array(binary);
-            const sizeHex: string = WASM.leb128(w.length);
+            const sizeHex: string = WASM.leb128(BigInt(w.length));
             const sizeBuffer = Buffer.allocUnsafe(4);
             sizeBuffer.writeUint32BE(w.length);
             const wasmHex = Buffer.from(w).toString('hex');
@@ -162,7 +162,7 @@ export namespace Message {
         }
     }
 
-    export function invoke(func: string, args: Value[]): Request<WASM.Value | Exception> {
+    export function invoke(func: string, args: Value<bigint | number>[]): Request<WASM.Value<bigint | number> | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
             if (fidx === undefined) {
@@ -171,14 +171,14 @@ export namespace Message {
             return fidx!;
         }
 
-        function convert(args: Value[]) {
+        function convert(args: Value<bigint | number>[]) {
             let payload: string = '';
-            args.forEach((arg: Value) => {
+            args.forEach((arg: Value<bigint | number>) => {
                 if (arg.type === Type.i32 || arg.type === Type.i64) {
                     payload += WASM.leb128(arg.value);
                 } else {
                     const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    write(buff, arg.value, 0, true, arg.type === Type.f32 ? 23 : 52, buff.length);
+                    write(buff, Number(arg.value), 0, true, arg.type === Type.f32 ? 23 : 52, buff.length);  // todo fix precision loss
                     payload += buff.toString('hex');
                 }
             });
@@ -187,7 +187,7 @@ export namespace Message {
 
         return {
             type: Interrupt.invoke,
-            payload: (map: SourceMap.Mapping) => `${WASM.leb128(fidx(map, func))}${convert(args)}`,
+            payload: (map: SourceMap.Mapping) => `${WASM.leb128(BigInt(fidx(map, func)))}${convert(args)}`,
             parser: invokeParser
         }
     }

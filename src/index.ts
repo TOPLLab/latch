@@ -6,7 +6,6 @@ export * from './util/env';
 export * from './framework/scenario/Actions';
 export * from './framework/Testee';
 export * from './framework/Framework';
-export * from './messaging/Parsers';
 export * from './messaging/Message';
 export * from './framework/Scheduler';
 export * from './sourcemap/Wasm';
