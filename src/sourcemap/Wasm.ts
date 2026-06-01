@@ -1,57 +1,82 @@
 export namespace WASM {
-    export enum Type {
-        f32,
-        f64,
-        u32,
-        i32,
-        u64,
-        i64,
-        nothing,
-        unknown
+    export enum Float {
+        f32 = 'f32',
+        f64 = 'f64'
     }
+
+    export enum Integer {
+        u32 = 'u32',
+        i32 = 'i32',
+        u64 = 'u64',
+        i64 = 'i64'
+    }
+
+    export enum Special {
+        nothing = 'nothing',
+        nan = 'nan',
+        infinity = 'infinity',
+        unknown = 'unknown'
+    }
+
+    export type Type = Float | Integer | Special;
 
     export const typing = new Map<string, Type>([
-        ['f32', Type.f32],
-        ['f64', Type.f64],
-        ['u32', Type.u32],
-        ['i32', Type.i32],
-        ['u64', Type.u64],
-        ['i64', Type.i64]
+        ['f32', Float.f32],
+        ['f64', Float.f64],
+        ['u32', Integer.u32],
+        ['i32', Integer.i32],
+        ['u64', Integer.u64],
+        ['i64', Integer.i64]
     ]);
 
-    export interface Value<T extends bigint | number>   {
-        type: Type;
-        value: T;
+    export interface Value<T extends Type>   {
+        type: T;
+        value: T extends Integer ? bigint : number;
     }
 
-    export interface Nothing extends Value<number> {}
+    export function equals<T extends Type>(a: Value<T>, b: Value<T>): boolean {
+        switch (a.type) {
+            case Special.nan:
+                return b.type === Special.nan;
+            case Special.infinity:
+                return b.type === Special.infinity;
+            case Special.nothing:
+                return b.type === Special.nothing;
+            case Special.unknown:
+                return b.type === Special.unknown;
+            default:
+                return a.type === b.type && a.value === b.value;
+        }
+    }
+
+    export interface Nothing extends Value<Special> {}
 
     export const nothing: Nothing = {
-        type: Type.nothing, value: 0
+        type: Special.nothing, value: 0
     }
 
-    export function u32(n: bigint): WASM.Value<bigint> {
-        return {value: n, type: Type.u32};
+    export function u32(n: bigint): WASM.Value<Integer> {
+        return {value: n, type: Integer.u32};
     }
 
-    export function i32(n: bigint): WASM.Value<bigint> {
-        return {value: n, type: Type.i32};
+    export function i32(n: bigint): WASM.Value<Integer> {
+        return {value: n, type: Integer.i32};
     }
 
-    export function f32(n: number): WASM.Value<number> {
-        return {value: n, type: Type.f32};
+    export function f32(n: number): WASM.Value<Float> {
+        return {value: n, type: Float.f32};
     }
 
-    export function f64(n: number): WASM.Value<number> {
-        return {value: n, type: Type.f64};
+    export function f64(n: number): WASM.Value<Float> {
+        return {value: n, type: Float.f64};
     }
 
-    export function u64(n: bigint): WASM.Value<bigint> {
-        return {value: n, type: Type.u64};
+    export function u64(n: bigint): WASM.Value<Integer> {
+        return {value: n, type: Integer.u64};
     }
 
-    export function i64(n: bigint): WASM.Value<bigint> {
-        return {value: n, type: Type.i64};
+    export function i64(n: bigint): WASM.Value<Integer> {
+        return {value: n, type: Integer.i64};
     }
 
     export interface Frame {
