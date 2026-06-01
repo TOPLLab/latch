@@ -25,10 +25,10 @@ spec.testee('emulator[:8100]', new EmulatorSpecification(8100));
 const steps: Step[] = [];
 
 // ✔ ((invoke "8u_good1" (i32.const 0)) (i32.const 97))
-steps.push(new Invoker('8u_good1', [WASM.i32(0)], WASM.i32(97)));
+steps.push(new Invoker('8u_good1', [WASM.i32(0n)], WASM.i32(97n)));
 
 // ✔ ((invoke "8u_good3" (i32.const 0)) (i32.const 98))
-steps.push(new Invoker('8u_good3', [WASM.i32(0)], WASM.i32(98)));
+steps.push(new Invoker('8u_good3', [WASM.i32(0n)], WASM.i32(98n)));
 
 // ✔ ((invoke "func-unwind-by-br"))
 steps.push(new Invoker('func-unwind-by-br', [], undefined));
@@ -151,9 +151,9 @@ reverse.test({
             }
         }],
     },
-    new Invoker('read', [WASM.i32(15)], WASM.i32(0)),
-    new Invoker('write', [WASM.i32(15), WASM.i32(1)], undefined),
-    new Invoker('read', [WASM.i32(15)], WASM.i32(1))]
+    new Invoker('read', [WASM.i32(15n)], WASM.i32(0n)),
+    new Invoker('write', [WASM.i32(15n), WASM.i32(1n)], undefined),
+    new Invoker('read', [WASM.i32(15n)], WASM.i32(1n))]
 })
 
 framework.reporter.verbosity(Verbosity.debug);
