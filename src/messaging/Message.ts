@@ -28,6 +28,8 @@ export interface Request<R> {
 
 export namespace Message {
     import Inspect = WARDuino.Inspect;
+    import Integer = WASM.Integer;
+    import Float = WASM.Float;
     export const run: Request<Ack> = {
         type: Interrupt.run,
         parser: (line: string) => {
@@ -162,7 +164,7 @@ export namespace Message {
         }
     }
 
-    export function invoke(func: string, args: Value<bigint | number>[]): Request<WASM.Value<bigint | number> | Exception> {
+    export function invoke(func: string, args: Value<Type>[]): Request<WASM.Value<Type> | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
             if (fidx === undefined) {
@@ -171,15 +173,15 @@ export namespace Message {
             return fidx!;
         }
 
-        function convert(args: Value<bigint | number>[]) {
+        function convert(args: Value<Type>[]) {
             let payload: string = '';
-            args.forEach((arg: Value<bigint | number>) => {
-                if (arg.type === Type.i32 || arg.type === Type.i64) {
-                    payload += WASM.leb128(arg.value);
-                } else {
-                    const buff = Buffer.alloc(arg.type === Type.f32 ? 4 : 8);
-                    write(buff, Number(arg.value), 0, true, arg.type === Type.f32 ? 23 : 52, buff.length);  // todo fix precision loss
+            args.forEach((arg: Value<Type>) => {
+                if (arg.type === Float.f32 || arg.type === Float.f64) {
+                    const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
+                    write(buff, Number(arg.value), 0, true, arg.type === Float.f32 ? 23 : 52, buff.length);  // todo fix precision loss
                     payload += buff.toString('hex');
+                } else {
+                    payload += WASM.leb128(arg.value);
                 }
             });
             return payload;
