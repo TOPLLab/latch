@@ -1,4 +1,4 @@
-import {Testbed} from './Testbed';
+import {Testbed, TestbedEvents} from './Testbed';
 import {ARDUINO, EMULATOR, WABT} from '../util/env';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {DummyProxy, Emulator} from './Emulator';
@@ -13,28 +13,36 @@ export class TestbedFactory {
     public readonly timeout: number;
     private readonly compilerFactory: CompilerFactory;
     private readonly uploaderFactory: UploaderFactory;
+    private readonly listener?: (chunk: Buffer) => void;
 
-    constructor(timeout: number) {
+    constructor(timeout: number, listener?: (chunk: Buffer) => void) {
         this.timeout = timeout;
+        this.listener = listener;
         this.compilerFactory = new CompilerFactory(WABT);
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
 
     public async initialize(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
         const compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e));
-        const connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
+        const connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled, this.listener).catch((e) => Promise.reject(e));
 
+        let testbed: Testbed;
         switch (specification.type) {
             case PlatformType.arduino:
-                return new Arduino(connection as Serial);
+                testbed = new Arduino(connection as Serial);
+                break;
             case PlatformType.emulator:
             case PlatformType.emu2emu:
             case PlatformType.debug:
-                return new Emulator(connection as SubProcess);
+                testbed = new Emulator(connection as SubProcess);
+                break;
             case PlatformType.emuproxy:
-                return new DummyProxy(connection as SubProcess, specification as ProxySpecification);
+                testbed = new DummyProxy(connection as SubProcess, specification as ProxySpecification);
+                break;
             default:
                 return Promise.reject('Platform not implemented.');
         }
+        testbed.on(TestbedEvents.Send, (message: string) => this.listener?.(Buffer.from(message)));
+        return testbed;
     }
 }

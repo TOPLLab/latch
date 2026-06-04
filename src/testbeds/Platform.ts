@@ -81,10 +81,12 @@ export abstract class Platform extends EventEmitter implements Testbed {
 
     // send request over duplex channel
     public sendRequest<R>(map: SourceMap.Mapping, request: Request<R>): Promise<R> {
+        const message = `${request.type}${request.payload?.(map) ?? ''}\n`;
+        this.emit(TestbedEvents.Send, message);
         return new Promise((resolve, reject) => {
             this.requests.push([request, resolve]);
-            this.connection.channel.write(`${request.type}${request.payload?.(map) ?? ''}\n`, (err: any) => {
-                if (err !== null) {
+            this.connection.channel.write(message, (err: Error | null | undefined) => {
+                if (err !== null && err !== undefined) {
                     reject(err);
                 }
             });
