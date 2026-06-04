@@ -1,7 +1,9 @@
 import test from 'ava';
-import {signed, stateParser} from "../../src/messaging/Parsers";
-import {WARDuino} from "../../src";
+import {invokeParser, signed, stateParser} from "../../src/messaging/Parsers";
+import {Exception, WARDuino} from "../../src";
+import {WASM} from "../../src/sourcemap/Wasm";
 import State = WARDuino.State;
+import Type = WASM.Type;
 
 /**
  * Check unsigned 32-bit integer to signed conversion
@@ -54,3 +56,16 @@ test('[state parser] : 64-bit integer precision', t => {
         t.true(equality(state.stack?.[0].value, value));
     }
 });
+
+test('[invoke parser] : i64 signed conversion', t => {
+    const result: WASM.Value<Type> | Exception = invokeParser('{"stack": [{"idx":0,"type":"i64","value":18446744073709551615}]}\n');
+
+    if ('text' in result) { // check if exception
+        t.fail(`Expected parsed value, got exception: ${result.text}`);
+        return;
+    }
+
+    t.is(result.type, WASM.Integer.i64);
+    t.is(result.value, -1n);
+});
+

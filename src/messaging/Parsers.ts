@@ -68,8 +68,10 @@ export function signed(value: bigint, bits = 32) {
 }
 
 function extractType(object: {value: bigint | number, type: any}): Type {
-    if (isNaN(<number>object.value)) return WASM.Special.nan;
-    if (<number>object.value === Infinity) return WASM.Special.infinity;
+    if (typeof object.value === 'number') {
+        if (Number.isNaN(object.value)) return WASM.Special.nan;
+        if (object.value === Infinity) return WASM.Special.infinity;
+    }
     return WASM.typing.get(object.type.toLowerCase()) ?? WASM.Special.unknown;
 }
 
