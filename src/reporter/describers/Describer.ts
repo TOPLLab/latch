@@ -35,6 +35,8 @@ export class StepDescriber extends Describer<StepOutcome> {
             case Outcome.uncommenced:
             case Outcome.skipped:
                 return [`${style.colors.skipped(style.labels.skipped)} ${this.item.name}`];
+            case Outcome.timedout:
+                return [`${style.colors.skipped(style.labels.timeout)} ${this.item.name}`];
             case Outcome.error:
             case Outcome.failed:
             default:

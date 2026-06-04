@@ -20,6 +20,7 @@ interface Labels {
 
     success: string;
     skipped: string;
+    timeout: string;
     failure: string;
     error: string;
 }
@@ -68,6 +69,7 @@ export class Plain implements Style {
         suiteSkipped: ' SKIPPED ',
         success: ' PASS ',
         skipped: ' SKIP ',
+        timeout: ' TIMEOUT ',
         failure: ' FAIL ',
         error: ' ERROR '
     }
