@@ -50,7 +50,7 @@ export class UploaderFactory {
 
 
 export abstract class Uploader extends EventEmitter {
-    abstract upload(compiled: CompileOutput, listener?: (chunk: any) => void): Promise<Connection>;
+    abstract upload(compiled: CompileOutput, listener?: (chunk: Buffer) => void): Promise<Connection>;
 
     protected removeTmpDir(tmpdir: string): Promise<void> {
         return new Promise((resolve, reject) => {
