@@ -14,6 +14,7 @@ import {WASM} from '../sourcemap/Wasm';
 import {DummyProxy} from '../testbeds/Emulator';
 import {ScenarioResult, Skipped, StepOutcome, SuiteResult} from '../reporter/Results';
 import {Verifier} from './Verifier';
+import {stringify} from "../util/util";
 
 export function timeout<T>(label: string, time: number, promise: Promise<T>): Promise<T> {
     if (time === 0) {
@@ -211,9 +212,10 @@ export class Testee { // TODO unified with testbed interface
             }
 
             for (const step of description.steps ?? []) {
+                const verifier: Verifier = new Verifier(step);
+
                 /** Perform the step and check if expectations were met */
                 await this.step(step.title, testee.timeout, async function () {
-                    const verifier: Verifier = new Verifier(step);
                     if (testee.bed(step.target ?? Target.supervisor) === undefined) {
                         testee.states.set(description.title, verifier.error('Cannot run test: no debugger connection.'));
                         return;
@@ -246,6 +248,10 @@ export class Testee { // TODO unified with testbed interface
                         previous = actual;
                     }
 
+                    testee.states.set(description.title, result);
+                    scenarioResult.add(result);
+                }).catch((error: Error | string) => {
+                    const result = verifier.error(stringify(error));
                     testee.states.set(description.title, result);
                     scenarioResult.add(result);
                 });

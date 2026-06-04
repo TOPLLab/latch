@@ -45,9 +45,7 @@ export class Verifier {
     }
 
     public error(clarification: string): StepOutcome {
-        const result: StepOutcome = new StepOutcome(this.step);
-        result.update(Outcome.succeeded);
-        return result.update(Outcome.error, clarification);
+        return new StepOutcome(this.step).update(clarification.includes('timeout') ? Outcome.timedout : Outcome.error, clarification);
     }
 
     private expectPrimitive<T>(actual: T, expected: T): StepOutcome {

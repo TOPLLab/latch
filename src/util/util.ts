@@ -13,3 +13,7 @@ export function find(regex: RegExp, input: string) {
     }
     return match[1];
 }
+
+export function stringify(chunk: Error | string): string {
+    return chunk instanceof Error ? chunk.message : chunk;
+}
