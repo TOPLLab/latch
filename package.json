@@ -14,7 +14,7 @@
     "bin"
   ],
   "scripts": {
-    "clean": "rm -rf dist out",
+    "clean": "rm -rf dist out tsconfig.build.tsbuildinfo",
     "build": "tsc --project tsconfig.build.json",
     "build:tests": "tsc --outDir out --project tsconfig.tests.json",
     "watch": "tsc -watch -p ./",
