@@ -8,7 +8,8 @@ export enum TestbedEvents {
     OnMessage = 'message',
     OnBreakpointHit = 'breakpoint',
     OnPushEvent = 'push',
-    Ready = 'ready'
+    Ready = 'ready',
+    Send = 'send'
 }
 
 export declare interface Testbed extends EventEmitter {
@@ -25,4 +26,8 @@ export declare interface Testbed extends EventEmitter {
     on(event: TestbedEvents.OnBreakpointHit, listener: (message: Breakpoint) => void): this;
 
     on(event: TestbedEvents.OnPushEvent, listener: (data: string) => void): this;
+
+    on(event: TestbedEvents.Ready, listener: (data: string) => void): this;
+
+    on(event: TestbedEvents.Send, listener: (data: string) => void): this;
 }
