@@ -234,9 +234,9 @@ export class Testee { // TODO unified with testbed interface
                                 await testee.initialize(description.program, description.args ?? []).catch((o) => {
                                     return Promise.reject(o)
                                 });
-                            }), 1).catch((e: Error) => {
+                            }), 1).catch((e: string) => {
                             const result = new StepOutcome(step);
-                            testee.states.set(description.title, result.update((e.message.includes('timeout')) ? Outcome.timedout : Outcome.error, e.message));
+                            testee.states.set(description.title, result.update((e.includes('timeout')) ? Outcome.timedout : Outcome.error, e));
                         });
                     }
 
