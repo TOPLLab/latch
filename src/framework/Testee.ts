@@ -81,9 +81,9 @@ export class Testee { // TODO unified with testbed interface
         this.name = name;
         this.specification = specification;
         this.timeout = timeout;
-        this.connector = new TestbedFactory(connectionTimeout);
         this.mapper = new SourceMapFactory();
         this.framework = Framework.getImplementation();
+        this.connector = new TestbedFactory(connectionTimeout, (chunk: Buffer) => this.framework.reporter.debug(chunk.toString()));
     }
 
     public bed(target: Target = Target.supervisor): Testbed | void {

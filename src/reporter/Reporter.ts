@@ -138,4 +138,10 @@ export class Reporter {
     error(text: string) {
         this.output += `error: ${text}\n`;
     }
+
+    debug(text: string) {
+        if (this.verboseness === Verbosity.debug) {
+            console.debug(text);
+        }
+    }
 }

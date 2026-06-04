@@ -13,16 +13,18 @@ export class TestbedFactory {
     public readonly timeout: number;
     private readonly compilerFactory: CompilerFactory;
     private readonly uploaderFactory: UploaderFactory;
+    private readonly listener?: (chunk: Buffer) => void;
 
-    constructor(timeout: number) {
+    constructor(timeout: number, listener?: (chunk: Buffer) => void) {
         this.timeout = timeout;
+        this.listener = listener;
         this.compilerFactory = new CompilerFactory(WABT);
         this.uploaderFactory = new UploaderFactory(EMULATOR, ARDUINO);
     }
 
     public async initialize(specification: TestbedSpecification, program: string, args: string[]): Promise<Testbed> {
         const compiled: CompileOutput = await this.compilerFactory.pickCompiler(program).compile(program).catch((e) => Promise.reject(e));
-        const connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled).catch((e) => Promise.reject(e));
+        const connection: Connection = await this.uploaderFactory.pickUploader(specification, args).upload(compiled, this.listener).catch((e) => Promise.reject(e));
 
         switch (specification.type) {
             case PlatformType.arduino:

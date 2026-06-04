@@ -50,7 +50,7 @@ export class UploaderFactory {
 
 
 export abstract class Uploader extends EventEmitter {
-    abstract upload(compiled: CompileOutput): Promise<Connection>;
+    abstract upload(compiled: CompileOutput, listener?: (chunk: any) => void): Promise<Connection>;
 
     protected removeTmpDir(tmpdir: string): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -109,7 +109,7 @@ export class EmulatorUploader extends Uploader {
         this.args = args;
     }
 
-    upload(compiled: CompileOutput, listener?: (chunk: any) => void): Promise<SubProcess> {
+    upload(compiled: CompileOutput, listener?: (chunk: Buffer) => void): Promise<SubProcess> {
         return this.connectSocket(compiled.file, listener);
     }
 
@@ -118,7 +118,7 @@ export class EmulatorUploader extends Uploader {
         return spawn(this.interpreter, _args);
     }
 
-    private connectSocket(program: string, listener?: (chunk: any) => void): Promise<SubProcess> {
+    private connectSocket(program: string, listener?: (chunk: Buffer) => void): Promise<SubProcess> {
         const that = this;
         const process = this.startWARDuino(program);
 
@@ -139,7 +139,7 @@ export class EmulatorUploader extends Uploader {
                 const reader = new ReadlineParser();
                 process.stdout.pipe(reader);
 
-                reader.on('data', (data) => {
+                reader.on('data', (data: Buffer) => {
                     if (listener !== undefined) {
                         listener(data);
                     }
