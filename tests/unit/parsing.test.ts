@@ -57,15 +57,20 @@ test('[state parser] : 64-bit integer precision', t => {
     }
 });
 
-test('[invoke parser] : i64 signed conversion', t => {
+test('[invoke parser] : 64-bit signed conversion', t => {
+    const values = [[1n, 1n], [127n, 127n], [2147483648n, 2147483648n], [4294967294n, 4294967294n], [18446744073709551615n, -1n], [18446744073709551489n, -127n]];
+
     const result: WASM.Value<Type> | Exception = invokeParser('{"stack": [{"idx":0,"type":"i64","value":18446744073709551615}]}\n');
 
-    if ('text' in result) { // check if exception
-        t.fail(`Expected parsed value, got exception: ${result.text}`);
-        return;
+    for (const [value, expected] of values) {
+        const result: WASM.Value<Type> | Exception = invokeParser(`{\"stack\": [{\"idx\":0,\"type\":\"i64\",\"value\":${value}}]}\n`);
+
+        if ('text' in result) { // check if exception
+            t.fail(`Expected parsed value, got exception: ${result.text}`);
+            return;
+        }
+
+        t.is(result.type, WASM.Integer.i64);
+        t.is(result.value, expected);
     }
-
-    t.is(result.type, WASM.Integer.i64);
-    t.is(result.value, -1n);
 });
-
