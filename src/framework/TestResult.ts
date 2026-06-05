@@ -1,4 +1,4 @@
-import {v4 as randomUUID} from 'uuid';
+import {randomUUID} from "node:crypto";
 
 export enum Status {
     FAILED = 'failed',
@@ -26,8 +26,8 @@ export interface TestResult {
 
 export const testResult = (): TestResult => {
     return {
-        uuid: randomUUID(),
-        historyId: randomUUID(),
+        uuid: randomUUID().toString(),
+        historyId: randomUUID().toString(),
         status: undefined,
         stage: Stage.PENDING,
     };

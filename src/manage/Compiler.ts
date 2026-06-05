@@ -175,33 +175,6 @@ export class AsScriptCompiler extends Compiler {
         });
     }
 
-    private lineInformation(program: string, output: CompileOutput, wat: SourceMap.Mapping): Promise<SourceMap.SourceLine[]> {
-        const reader = readline.createInterface({input: fs.createReadStream(`${path.dirname(output.file)}/upload.wast`)});
-        const mapping: SourceMap.SourceLine[] = [];
-
-        const counter = ((i = 0) => () => ++i)();
-
-        reader.on('line', (line: string, cursor = counter() + 1) => {
-            if (line.includes(';;@') && line.includes(program)) {
-                const entry: SourceMap.SourceLine | undefined = wat.lines.find((info) => info.line === cursor);
-                if (entry) {
-                    mapping.push({
-                        line: +line.split(':')[1],
-                        columnStart: +line.split(':')[2],
-                        columnEnd: -1,
-                        instructions: entry.instructions
-                    });
-                }
-            }
-        });
-
-        return new Promise((resolve, _reject) => {
-            reader.on('close', () => {
-                resolve(mapping);
-            });
-        });
-    }
-
     private async wasm(program: string, dir: string): Promise<CompileOutput> {
         // do not recompiled previous compilations
         // if (this.compiled.has(program)) {
