@@ -29,7 +29,7 @@ export namespace WASM {
         ['i64', Integer.i64]
     ]);
 
-    export interface Value<T extends Type>   {
+    export interface Value<T extends Type> {
         type: T;
         value: T extends Integer ? bigint : number;
     }
@@ -49,11 +49,20 @@ export namespace WASM {
         }
     }
 
-    export interface Nothing extends Value<Special> {}
+    export interface Nothing extends Value<Special> {
+    }
 
     export const nothing: Nothing = {
         type: Special.nothing, value: 0
     }
+
+    export const nan: WASM.Value<Special> = {value: NaN, type: Special.nan};
+
+    export const negnan: WASM.Value<Special> = {value: -NaN, type: Special.nan};
+
+    export const infinity: WASM.Value<Special> = {value: Infinity, type: Special.infinity};
+
+    export const neginfinity: WASM.Value<Special> = {value: -Infinity, type: Special.infinity};
 
     export function u32(n: bigint): WASM.Value<Integer> {
         return {value: n, type: Integer.u32};
@@ -63,12 +72,14 @@ export namespace WASM {
         return {value: n, type: Integer.i32};
     }
 
-    export function f32(n: number): WASM.Value<Float> {
-        return {value: n, type: Float.f32};
+    const determineType: (n: number) => WASM.Type = (n: number) => n === Infinity || n === -Infinity ? Special.infinity : (isNaN(n) ? Special.nan : Float.f64);
+
+    export function f32(n: number): WASM.Value<Type> {
+        return {value: n, type:  determineType(n)};
     }
 
-    export function f64(n: number): WASM.Value<Float> {
-        return {value: n, type: Float.f64};
+    export function f64(n: number): WASM.Value<Type> {
+        return {value: n, type: determineType(n)};
     }
 
     export function u64(n: bigint): WASM.Value<Integer> {

@@ -11,6 +11,7 @@ import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
 import Type = WASM.Type;
+import Special = WASM.Special;
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -28,7 +29,6 @@ export interface Request<R> {
 
 export namespace Message {
     import Inspect = WARDuino.Inspect;
-    import Integer = WASM.Integer;
     import Float = WASM.Float;
     export const run: Request<Ack> = {
         type: Interrupt.run,
@@ -176,7 +176,7 @@ export namespace Message {
         function convert(args: Value<Type>[]) {
             let payload: string = '';
             args.forEach((arg: Value<Type>) => {
-                if (arg.type === Float.f32 || arg.type === Float.f64) {
+                if (arg.type === Float.f32 || arg.type === Float.f64 || arg.type === Special.nan || arg.type === Special.infinity) {
                     const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
                     write(buff, Number(arg.value), 0, true, arg.type === Float.f32 ? 23 : 52, buff.length);  // todo fix precision loss
                     payload += buff.toString('hex');
