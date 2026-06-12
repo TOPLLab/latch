@@ -7,6 +7,7 @@ import Type = WASM.Type;
 import nothing = WASM.nothing;
 import Special = WASM.Special;
 import Float = WASM.Float;
+import WasmInt = WASM.WasmInt;
 
 export class Invoker implements Step {
     readonly title: string;
@@ -34,6 +35,6 @@ export function returns<T extends Type>(n: Value<T>): Expectation[] {
     if (n.type == Special.nothing) {
         return [{'value': {kind: 'primitive', value: undefined} as Expected<undefined>}]
     }
-    type R = T extends Float ? number : bigint;
+    type R = T extends Float ? number : WasmInt;
     return [{'value': {kind: 'primitive', value: n.value} as Expected<R>}]
 }

@@ -123,5 +123,5 @@ export class Verifier {
 
 /* eslint @typescript-eslint/no-explicit-any: off */
 function deepEqual(a: any, b: any): boolean {
-    return a === b || (isNaN(Number(a)) && isNaN(Number(b)));
+    return a === b || (isNaN(Number(a)) && isNaN(Number(b))) || a.equals(b);
 }

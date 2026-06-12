@@ -1,5 +1,4 @@
 import {WASM} from '../sourcemap/Wasm';
-import * as ieee754 from 'ieee754';
 import {Ack, Exception} from './Message';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WARDuino} from '../debug/WARDuino';
@@ -7,6 +6,9 @@ import {JSONParse} from 'json-with-bigint';
 import State = WARDuino.State;
 import nothing = WASM.nothing;
 import Type = WASM.Type;
+import WasmInt = WASM.WasmInt;
+import ieee754 from "ieee754";
+
 export function identityParser(text: string) {
     return stripEnd(text);
 }
@@ -19,7 +21,7 @@ export function invokeParser(text: string): WASM.Value<Type> | Exception {
     if (exception(text)) {
         return {text: text};
     }
-    const stack: {value: any, type: any}[] = stateParser(text).stack!;
+    const stack: { value: any, type: any }[] = stateParser(text).stack!;
     if (stack.length == 0) {
         return nothing;
     }
@@ -67,42 +69,38 @@ export function signed(value: bigint, bits = 32) {
 
 }
 
-function extractType(object: {value: bigint | number, type: any}): Type {
-    if (typeof object.value === 'number') {
-        if (Number.isNaN(object.value)) return WASM.Special.nan;
-        if (object.value === Infinity) return WASM.Special.infinity;
-    }
+function extractType(object: { value: string, type: any }): Type {
     return WASM.typing.get(object.type.toLowerCase()) ?? WASM.Special.unknown;
 }
 
-function stacking(objects: {value: bigint | number, type: any}[]): WASM.Value<Type>[] {
+function stacking(objects: { value: string, type: any }[]): WASM.Value<Type>[] {
     const stacked: WASM.Value<Type>[] = [];
     for (const object of objects) {
         const type: WASM.Type = extractType(object);
         let buff;
         switch (type) {
-            case WASM.Special.nan:
-                stacked.push({value: NaN, type: type});
-                break;
-            case WASM.Special.infinity:
-                stacked.push({value: Infinity, type: type});
-                break;
             case WASM.Integer.u32:
             case WASM.Integer.u64:
-                stacked.push({value: object.value, type: type});
+                stacked.push({
+                    value: isNaN(Number(object.value)) ? WasmInt.nan()
+                        : object.value === 'inf' ? WasmInt.infinity()
+                            : object.value === '-inf' ? WasmInt.infinity(false)
+                                : WasmInt.finite(BigInt(object.value)),
+                    type: type
+                });
                 break;
             case WASM.Integer.i32:
-                stacked.push({value: signed(BigInt(object.value), 32), type: type});
+                stacked.push({value: WasmInt.finite(signed(BigInt(object.value), 32)), type: type});
                 break;
             case WASM.Integer.i64:
-                stacked.push({value: signed(BigInt(object.value), 64), type: type});
+                stacked.push({value: WasmInt.finite(signed(BigInt(object.value), 64)), type: type});
                 break;
             case WASM.Float.f32:
-                buff = Buffer.from(Number(object.value.toString(16)).toString(16), 'hex');
+                buff = Buffer.from(Number(object.value).toString(16), 'hex');
                 stacked.push({value: ieee754.read(buff, 0, false, 23, buff.length), type: type});
                 break;
             case WASM.Float.f64:
-                buff = Buffer.from(BigInt(object.value.toString(16)).toString(16), 'hex');
+                buff = Buffer.from(BigInt(object.value).toString(16), 'hex');
                 stacked.push({value: ieee754.read(buff, 0, false, 52, buff.length), type: type});
                 break;
             case WASM.Special.unknown:

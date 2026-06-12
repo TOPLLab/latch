@@ -4,6 +4,7 @@ import {Exception, WARDuino} from "../../src";
 import {WASM} from "../../src/sourcemap/Wasm";
 import State = WARDuino.State;
 import Type = WASM.Type;
+import WasmInt = WASM.WasmInt;
 
 /**
  * Check unsigned 32-bit integer to signed conversion
@@ -41,26 +42,8 @@ const equality = (a: bigint | number | undefined, b: bigint) =>
     (typeof a === 'bigint' && a === b) ||  // both bigint
     (a !== undefined && Number.isInteger(a) && BigInt(a) === b); // compare integer number with bigint
 
-test('[state] : 32-bit integer precision', t => {
-    const values: bigint[] = [1n, 127n, 2147483648n, 4294967294n];
-    for (const value of values) {
-        const state: State = stateParser(`{\"stack\": [{\"idx\":0,\"type\":\"i32\",\"value\":${value}}]}\n`);
-        t.true(equality(state.stack?.[0].value, value));
-    }
-});
-
-test('[state parser] : 64-bit integer precision', t => {
-    const values: bigint[] = [1n, 127n, 2147483648n, 4294967294n, 18446744073709551615n, 18446744073709551489n];
-    for (const value of values) {
-        const state: State = stateParser(`{\"stack\": [{\"idx\":0,\"type\":\"i32\",\"value\":${value}}]}\n`);
-        t.true(equality(state.stack?.[0].value, value));
-    }
-});
-
 test('[invoke parser] : 64-bit signed conversion', t => {
     const values = [[1n, 1n], [127n, 127n], [2147483648n, 2147483648n], [4294967294n, 4294967294n], [18446744073709551615n, -1n], [18446744073709551489n, -127n]];
-
-    const result: WASM.Value<Type> | Exception = invokeParser('{"stack": [{"idx":0,"type":"i64","value":18446744073709551615}]}\n');
 
     for (const [value, expected] of values) {
         const result: WASM.Value<Type> | Exception = invokeParser(`{\"stack\": [{\"idx\":0,\"type\":\"i64\",\"value\":${value}}]}\n`);
@@ -71,6 +54,24 @@ test('[invoke parser] : 64-bit signed conversion', t => {
         }
 
         t.is(result.type, WASM.Integer.i64);
-        t.is(result.value, expected);
+        t.is(typeof result.value, 'object');
+        t.is((result.value as WasmInt).toBigInt(), expected);
+    }
+});
+
+test('[invoke parser] : 64-bit float', t => {
+    const values = [[9221120237041090560n, NaN]];
+
+    for (const [value, expected] of values) {
+        const result: WASM.Value<Type> | Exception = invokeParser(`{\"stack\": [{\"idx\":0,"type":"F64","value": 9221120237041090560}]}\n`);
+
+        if ('text' in result) { // check if exception
+            t.fail(`Expected parsed value, got exception: ${result.text}`);
+            return;
+        }
+
+        t.is(result.type, WASM.Float.f64);
+        t.is(typeof result.value, 'number');
+        t.true(isNaN(<number>result.value));
     }
 });

@@ -30,6 +30,7 @@ export interface Request<R> {
 export namespace Message {
     import Inspect = WARDuino.Inspect;
     import Float = WASM.Float;
+    import isFloat = WASM.isFloat;
     export const run: Request<Ack> = {
         type: Interrupt.run,
         parser: (line: string) => {
@@ -176,12 +177,12 @@ export namespace Message {
         function convert(args: Value<Type>[]) {
             let payload: string = '';
             args.forEach((arg: Value<Type>) => {
-                if (arg.type === Float.f32 || arg.type === Float.f64 || arg.type === Special.nan || arg.type === Special.infinity) {
-                    const buff = Buffer.alloc(4);
-                    write(buff, Number(arg.value), 0, true, 23, buff.length);  // todo fix precision loss
+                if (isFloat(arg.type)) {
+                    const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
+                    write(buff, Number(arg.value), 0, true, arg.type === Float.f32 ? 23 : 52, buff.length);  // todo fix precision loss
                     payload += buff.toString('hex');
                 } else {
-                    payload += WASM.leb128(arg.value);
+                    payload += WASM.leb128(<number>arg.value);
                 }
             });
             return payload;
