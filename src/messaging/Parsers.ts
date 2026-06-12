@@ -7,6 +7,7 @@ import State = WARDuino.State;
 import nothing = WASM.nothing;
 import Type = WASM.Type;
 import WasmInt = WASM.WasmInt;
+import ieee754 from "ieee754";
 
 export function identityParser(text: string) {
     return stripEnd(text);
@@ -76,6 +77,7 @@ function stacking(objects: { value: string, type: any }[]): WASM.Value<Type>[] {
     const stacked: WASM.Value<Type>[] = [];
     for (const object of objects) {
         const type: WASM.Type = extractType(object);
+        let buff;
         switch (type) {
             case WASM.Integer.u32:
             case WASM.Integer.u64:
@@ -94,8 +96,12 @@ function stacking(objects: { value: string, type: any }[]): WASM.Value<Type>[] {
                 stacked.push({value: WasmInt.finite(signed(BigInt(object.value), 64)), type: type});
                 break;
             case WASM.Float.f32:
+                buff = Buffer.from(Number(object.value).toString(16), 'hex');
+                stacked.push({value: ieee754.read(buff, 0, false, 23, buff.length), type: type});
+                break;
             case WASM.Float.f64:
-                stacked.push({value: object.value === 'inf' ? Infinity : object.value === '-inf' ? -Infinity : Number(object.value), type: type});
+                buff = Buffer.from(BigInt(object.value).toString(16), 'hex');
+                stacked.push({value: ieee754.read(buff, 0, false, 52, buff.length), type: type});
                 break;
             case WASM.Special.unknown:
                 break;
