@@ -1,0 +1,4 @@
+default: capture
+
+capture:
+    vhs demo.tape
