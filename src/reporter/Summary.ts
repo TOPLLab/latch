@@ -1,5 +1,5 @@
 import {SuiteResult} from './Results';
-import {Outcome} from './describers/Describer';
+import {Outcome} from './Outcome';
 import {ReporterSnapshot} from './ReporterState';
 
 export interface SummaryTotals {

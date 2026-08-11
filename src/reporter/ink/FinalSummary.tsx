@@ -1,10 +1,11 @@
 import {Box, Text} from 'ink';
 import {ReporterSnapshot} from '../ReporterState';
 import {summarizeSnapshot} from '../Summary';
-import {Outcome} from '../describers/Describer';
+import {Outcome} from '../Outcome';
 import {Verbosity} from '../index';
 import {alignRight, pad} from './format';
 import {StatusBadge} from './StatusBadge';
+import {StepClarification} from './StepClarification';
 import {Tree, TreeNode} from './Tree';
 import {preservesFullHistory, showsActionDetails} from './verbosity';
 
@@ -63,7 +64,7 @@ export function FinalSummary({snapshot, archive, verbosity}: Props) {
                                     <Text>
                                         <StatusBadge outcome={step.outcome}/>
                                         <Text> {step.name}</Text>
-                                        {step.clarification ? <Text color="red"> {step.clarification}</Text> : null}
+                                        {step.clarification || step.actual !== undefined ? <StepClarification step={step}/> : null}
                                     </Text>
                                 )
                             }))

@@ -1,8 +1,9 @@
 import {Box, Text} from 'ink';
 import {ReporterRunState} from '../ReporterState';
 import {Verbosity} from '../index';
-import {Outcome} from '../describers/Describer';
+import {Outcome} from '../Outcome';
 import {StatusBadge} from './StatusBadge';
+import {StepClarification} from './StepClarification';
 import {duration, pad, plural} from './format';
 import {Tree, TreeNode} from './Tree';
 import {preservesFullHistory, showsActionDetails} from './verbosity';
@@ -45,7 +46,7 @@ export function SuiteView({run, active, verbosity}: Props) {
                         <Text>
                             <StatusBadge outcome={step.outcome}/>
                             <Text> {step.name}</Text>
-                            {step.clarification ? <Text color="red"> {step.clarification}</Text> : null}
+                            {step.clarification || step.actual !== undefined ? <StepClarification step={step}/> : null}
                         </Text>
                     )
                 }))

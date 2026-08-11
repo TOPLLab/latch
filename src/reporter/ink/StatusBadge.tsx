@@ -1,5 +1,5 @@
 import {Text} from 'ink';
-import {Outcome} from '../describers/Describer';
+import {Outcome} from '../Outcome';
 
 interface Props {
     outcome: Outcome;

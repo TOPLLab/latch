@@ -1,7 +1,7 @@
 import {Archiver} from '../framework/Archiver';
 import {SuiteResult} from './Results';
 import {summarize} from './Summary';
-import {Outcome} from './describers/Describer';
+import {Outcome} from './Outcome';
 
 export class ArchiveWriter {
     private readonly archiver: Archiver;

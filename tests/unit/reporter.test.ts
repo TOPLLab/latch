@@ -14,7 +14,7 @@ import {Reporter, SuiteRun} from '../../src/reporter/Reporter';
 import {ReporterState} from '../../src/reporter/ReporterState';
 import {ScenarioResult, StepOutcome, SuiteResult} from '../../src/reporter/Results';
 import {summarize} from '../../src/reporter/Summary';
-import {Outcome} from '../../src/reporter/describers/Describer';
+import {Outcome} from '../../src/reporter/Outcome';
 import {Verbosity} from '../../src/reporter';
 
 const step = (title: string): Step => ({

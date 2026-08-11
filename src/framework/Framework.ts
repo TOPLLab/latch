@@ -6,7 +6,7 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 
 import {SuiteResult} from '../reporter/Results';
 import {Reporter} from '../reporter/Reporter';
-import {Outcome} from "../reporter/describers/Describer";
+import {Outcome} from "../reporter/Outcome";
 import {InkReporter} from '../reporter/ink/InkReporter';
 
 export interface TesteeOptions {
