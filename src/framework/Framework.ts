@@ -6,7 +6,8 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 
 import {SuiteResult} from '../reporter/Results';
 import {Reporter} from '../reporter/Reporter';
-import {Outcome} from "../reporter/describers/Describer";
+import {Outcome} from "../reporter/Outcome";
+import {InkReporter} from '../reporter/ink/InkReporter';
 
 export interface TesteeOptions {
     disabled?: boolean;
@@ -51,7 +52,7 @@ export class Framework {
 
     private scheduled: Suite[] = [];
 
-    public readonly reporter: Reporter = new Reporter();
+    public readonly reporter: Reporter = new InkReporter();
 
     private constructor() {
     }
@@ -65,95 +66,147 @@ export class Framework {
     }
 
     public async sequential(suites: Suite[]) {
-        this.scheduled.concat(suites);
-        this.reporter.general();
+        this.scheduled = this.scheduled.concat(suites);
+        this.reporter.start();
         const t0 = performance.now();
-        for (const suite of suites) {
-            for (const testee of suite.testees) {
-                const order: TestScenario[] = suite.scheduler.sequential(suite);
-                const result: SuiteResult = new SuiteResult(suite);
-
-                const first: TestScenario = order[0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
-
-                await this.runSuite(result, testee, order);
-                this.reporter.report(result);
+        try {
+            let executionIndex = 0;
+            for (const suite of suites) {
+                for (const testee of suite.testees) {
+                    const order: TestScenario[] = suite.scheduler.sequential(suite);
+                    await this.executeSuite(suite, testee, order, ++executionIndex);
+                }
             }
-        }
-        const t1 = performance.now();
-        this.reporter.results(t1 - t0);
 
-        await Promise.all(suites.map(suite => suite.testees.map(async (testee: Testee) => {
-            await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
-        })))
+            await this.shutdown(suites);
+        } finally {
+            const t1 = performance.now();
+            this.reporter.finish(t1 - t0);
+            await this.reporter.close();
+        }
     }
 
     public async run(suites: Suite[]): Promise<boolean> {
         let success: boolean = true;
 
-        this.scheduled.concat(suites);
-        this.reporter.general();
+        this.scheduled = this.scheduled.concat(suites);
+        this.reporter.start();
         const t0 = performance.now();
-        await Promise.all(suites.map(async (suite: Suite) => {
-            await Promise.all(suite.testees.map(async (testee: Testee) => {
-                const order: TestScenario[] = suite.scheduler.sequential(suite);
-                const result: SuiteResult = new SuiteResult(suite);
-
-                const first: TestScenario = order[0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
-
-                await this.runSuite(result, testee, order);
-                this.reporter.report(result);
-                success = success && result.outcome === Outcome.succeeded;
+        try {
+            let executionIndex = 0;
+            await Promise.all(suites.map(async (suite: Suite) => {
+                await Promise.all(suite.testees.map(async (testee: Testee) => {
+                    const order: TestScenario[] = suite.scheduler.sequential(suite);
+                    const result = await this.executeSuite(suite, testee, order, ++executionIndex);
+                    success = success && result.outcome === Outcome.succeeded;
+                }))
             }))
-        }))
-        const t1 = performance.now();
-        this.reporter.results(t1 - t0);
 
-        await Promise.all(suites.map(suite => suite.testees.map(async (testee: Testee) => {
-            await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
-        })))
+            await this.shutdown(suites);
 
-        return success;
+            return success;
+        } finally {
+            const t1 = performance.now();
+            this.reporter.finish(t1 - t0);
+            await this.reporter.close();
+        }
     }
 
     public async parallel(suites: Suite[]) {
-        this.scheduled.concat(suites);
-        this.reporter.general();
+        this.scheduled = this.scheduled.concat(suites);
+        this.reporter.start();
         const t0 = performance.now();
-        await Promise.all(suites.map(async (suite: Suite) => {
-            const order: TestScenario[][] = suite.scheduler.parallel(suite, suite.testees.length);
-            await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
-                // console.log(`scheduling on ${testee.name}`)
-                const result: SuiteResult = new SuiteResult(suite);
+        try {
+            let executionIndex = 0;
+            await Promise.all(suites.map(async (suite: Suite) => {
+                const order: TestScenario[][] = suite.scheduler.parallel(suite, suite.testees.length);
+                await Promise.all(suite.testees.map(async (testee: Testee, i: number) => {
+                    const result: SuiteResult = new SuiteResult(suite);
+                    const runId = this.runId(suite, testee, ++executionIndex);
 
-                const first: TestScenario = order[i][0];
-                await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+                    this.reporter.suiteStarted({
+                        id: runId,
+                        suite: result,
+                        suiteTitle: suite.title,
+                        testeeName: testee.name,
+                        executionIndex,
+                        startedAt: Date.now(),
+                        plannedScenarios: order.flat().length,
+                        plannedActions: order.flat().flatMap((scenario) => scenario.steps ?? []).length
+                    });
 
-                for (let j = i; j < order.length; j += suite.testees.length) {
-                    await this.runSuite(result, testee, order[j]);
-                }
-                this.reporter.report(result);
+                    try {
+                        const first: TestScenario = order[i][0];
+                        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+
+                        for (let j = i; j < order.length; j += suite.testees.length) {
+                            await this.runSuite(result, testee, order[j], runId);
+                        }
+                    } catch (e) {
+                        result.error(e instanceof Error ? e.message : `${e}`);
+                    } finally {
+                        this.reporter.suiteFinished(runId, result);
+                    }
+                }))
+
+                await Promise.all(suite.testees.map(async (testee: Testee) => {
+                    await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+                }))
             }))
-
-            await Promise.all(suite.testees.map(async (testee: Testee) => {
-                await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
-            }))
-        }))
-
-        const t1 = performance.now();
-        this.reporter.results(t1 - t0);
+        } finally {
+            const t1 = performance.now();
+            this.reporter.finish(t1 - t0);
+            await this.reporter.close();
+        }
     }
 
-    private async runSuite(result: SuiteResult, testee: Testee, order: TestScenario[]) {
+    private async runSuite(result: SuiteResult, testee: Testee, order: TestScenario[], runId: string) {
         for (const test of order) {
-            await testee.describe(test, result, this.runs);
+            await testee.describe(test, result, runId, this.runs);
         }
     }
 
     public analyse(suite: Suite[], runs: number = 1) {
         this.runs = runs;
         this.run(suite).then((success: boolean) => process.exit(success ? 0 : 1));
+    }
+
+    private async executeSuite(suite: Suite, testee: Testee, order: TestScenario[], executionIndex: number): Promise<SuiteResult> {
+        const result: SuiteResult = new SuiteResult(suite);
+        const runId = this.runId(suite, testee, executionIndex);
+
+        this.reporter.suiteStarted({
+            id: runId,
+            suite: result,
+            suiteTitle: suite.title,
+            testeeName: testee.name,
+            executionIndex,
+            startedAt: Date.now(),
+            plannedScenarios: order.length,
+            plannedActions: order.flatMap((scenario) => scenario.steps ?? []).length
+        });
+
+        try {
+            const first: TestScenario = order[0];
+            await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+            await this.runSuite(result, testee, order, runId);
+        } catch (e) {
+            result.error(e instanceof Error ? e.message : `${e}`);
+        } finally {
+            this.reporter.suiteFinished(runId, result);
+        }
+
+        return result;
+    }
+
+    private async shutdown(suites: Suite[]) {
+        await Promise.all(suites.flatMap(suite => suite.testees.map(async (testee: Testee) => {
+            await timeout<Object | void>('Shutdown testbed', testee.timeout, testee.shutdown());
+        })));
+    }
+
+    private runId(suite: Suite, testee: Testee, executionIndex: number): string {
+        return `${suite.title}:${testee.name}:${executionIndex}`;
     }
 
     public static getImplementation() {

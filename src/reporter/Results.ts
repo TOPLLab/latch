@@ -1,11 +1,12 @@
 import {Step} from '../framework/scenario/Step';
-import {Outcome} from './describers/Describer';
+import {Outcome} from './Outcome';
 import {TestScenario} from '../framework/scenario/TestScenario';
 import {Suite} from '../framework/Framework';
 
 export interface Result {
     outcome: Outcome;
     clarification: string;
+    actual?: string;
 
     readonly name: string;
     readonly checks: number;
@@ -73,7 +74,7 @@ abstract class AbstractAggregateResult implements AggregateResult {
     }
 
     private failing(): boolean {
-        return this.subOutcomes.some((outcome) => outcome.outcome === Outcome.failed || outcome.outcome === Outcome.timedout);
+        return this.subOutcomes.some((outcome) => outcome.outcome === Outcome.failed || outcome.outcome === Outcome.timedout || outcome.outcome === Outcome.error);
     }
 }
 
@@ -140,6 +141,7 @@ export class SuiteResult extends AbstractAggregateResult {
 export class StepOutcome implements Result {
     outcome: Outcome;
     clarification: string;
+    actual?: string;
     readonly name: string;
     readonly testbed?: string;
     readonly checks: number;

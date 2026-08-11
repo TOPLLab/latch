@@ -1,8 +1,7 @@
 import {Behaviour, Description, Step} from './scenario/Step';
 import {StepOutcome} from '../reporter/Results';
 import {getValue} from './Testee';
-import {Outcome} from '../reporter/describers/Describer';
-import {bold} from 'ansi-colors';
+import {Outcome} from '../reporter/Outcome';
 import {JSONStringify} from "json-with-bigint";
 
 // decorator for Step class
@@ -61,7 +60,8 @@ export class Verifier {
         if (deepEqual(actual, expected)) {
             result.update(Outcome.succeeded);
         } else {
-            result.update(Outcome.failed, `Expected ${bold(`${expected}`)} got ${bold(`${actual}`)}`);
+            result.update(Outcome.failed, `Expected ${expected} got`);
+            result.actual = `${actual}`;
         }
         return result;
     }
