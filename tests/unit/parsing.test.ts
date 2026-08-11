@@ -1,8 +1,10 @@
 import test from 'ava';
-import {invokeParser, signed, stateParser} from "../../src/messaging/Parsers";
+import {invokeParser, signed} from "../../src/messaging/Parsers";
 import {Exception, WARDuino} from "../../src";
 import {WASM} from "../../src/sourcemap/Wasm";
-import State = WARDuino.State;
+import {Verifier} from "../../src/framework/Verifier";
+import {Expected, Kind, Step} from "../../src/framework/scenario/Step";
+import {Outcome} from "../../src/reporter/describers/Describer";
 import Type = WASM.Type;
 import WasmInt = WASM.WasmInt;
 
@@ -74,4 +76,57 @@ test('[invoke parser] : 64-bit float', t => {
         t.is(typeof result.value, 'number');
         t.true(isNaN(<number>result.value));
     }
+});
+
+test('[invoke parser] : f32 hex bit pattern with alpha digits', t => {
+    const result: WASM.Value<Type> | Exception = invokeParser(`{\"stack\": [{\"idx\":0,\"type\":\"F32\",\"value\":\"a6800001\"}]}\n`);
+
+    if ('text' in result) {
+        t.fail(`Expected parsed value, got exception: ${result.text}`);
+        return;
+    }
+
+    t.is(result.type, WASM.Float.f32);
+    t.is(result.value, -8.881785255792436e-16);
+});
+
+test('[invoke parser] : f32 decimal bit pattern whose hex has only digits', t => {
+    const result: WASM.Value<Type> | Exception = invokeParser(`{\"stack\": [{\"idx\":0,\"type\":\"F32\",\"value\":\"645922818\"}]}\n`);
+
+    if ('text' in result) {
+        t.fail(`Expected parsed value, got exception: ${result.text}`);
+        return;
+    }
+
+    t.is(result.type, WASM.Float.f32);
+    t.is(result.value, 8.88178631458362e-16);
+});
+
+test('[invoke parser] : f32 decimal bit pattern with alpha hex equivalent', t => {
+    const result: WASM.Value<Type> | Exception = invokeParser(`{\"stack\": [{\"idx\":0,\"type\":\"F32\",\"value\":\"2793406465\"}]}\n`);
+
+    if ('text' in result) {
+        t.fail(`Expected parsed value, got exception: ${result.text}`);
+        return;
+    }
+
+    t.is(result.type, WASM.Float.f32);
+    t.is(result.value, -8.881785255792436e-16);
+});
+
+test('[verifier] : numeric mismatch is reported as failure, not missing field', t => {
+    const step: Step = {
+        title: 'CHECK: numeric mismatch',
+        instruction: {
+            kind: Kind.Request,
+            value: {type: WARDuino.Interrupt.invoke, payload: () => '', parser: invokeParser}
+        },
+        expected: [{'value': {kind: 'primitive', value: -8.881785255792436e-16} as Expected<number>}]
+    };
+
+    const result = new Verifier(step).verify({value: 0, type: 'f32'});
+
+    t.is(result.outcome, Outcome.failed);
+    t.false(result.clarification.includes(`state does not contain 'value'`));
+    t.true(result.clarification.includes('Expected'));
 });

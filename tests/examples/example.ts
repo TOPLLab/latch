@@ -156,5 +156,5 @@ reverse.test({
     new Invoker('read', [WASM.i32(15n)], WASM.i32(1n))]
 })
 
-framework.reporter.verbosity(Verbosity.debug);
+framework.reporter.verbosity(Verbosity.normal);
 framework.analyse([spec, debug, threethree, copysign]);

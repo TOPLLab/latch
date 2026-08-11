@@ -77,7 +77,7 @@ function stacking(objects: { value: string, type: any }[]): WASM.Value<Type>[] {
     const stacked: WASM.Value<Type>[] = [];
     for (const object of objects) {
         const type: WASM.Type = extractType(object);
-        let buff;
+        let buff: Buffer;
         switch (type) {
             case WASM.Integer.u32:
             case WASM.Integer.u64:
@@ -96,11 +96,11 @@ function stacking(objects: { value: string, type: any }[]): WASM.Value<Type>[] {
                 stacked.push({value: WasmInt.finite(signed(BigInt(object.value), 64)), type: type});
                 break;
             case WASM.Float.f32:
-                buff = Buffer.from(Number(object.value).toString(16), 'hex');
+                buff = floatBitsBuffer(object.value, 4);
                 stacked.push({value: ieee754.read(buff, 0, false, 23, buff.length), type: type});
                 break;
             case WASM.Float.f64:
-                buff = Buffer.from(BigInt(object.value).toString(16), 'hex');
+                buff = floatBitsBuffer(object.value, 8);
                 stacked.push({value: ieee754.read(buff, 0, false, 52, buff.length), type: type});
                 break;
             case WASM.Special.unknown:
@@ -108,6 +108,18 @@ function stacking(objects: { value: string, type: any }[]): WASM.Value<Type>[] {
         }
     }
     return stacked;
+}
+
+function floatBitsBuffer(value: string | number | bigint, bytes: number): Buffer {
+    const raw = value.toString().trim();
+    const hex = /^[0-9]+$/.test(raw)
+        ? BigInt(raw).toString(16)
+        : raw.replace(/^0x/i, '');
+    const length = bytes * 2;
+    if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length > length) {
+        throw Error(`Invalid ${bytes * 8}-bit float bit pattern: ${value}`);
+    }
+    return Buffer.from(hex.padStart(length, '0'), 'hex');
 }
 
 
