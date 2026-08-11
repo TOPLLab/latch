@@ -83,8 +83,9 @@ export class InkReporter implements Reporter {
 
         this.rerender();
         await this.flushInk();
+        const closed = this.instance.waitUntilExit();
         this.instance.unmount();
-        await this.instance.waitUntilExit();
+        await closed;
         await this.flushInk();
     }
 

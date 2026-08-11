@@ -146,6 +146,19 @@ test('InkReporter exposes verbosity-only reporter configuration', t => {
     t.true(new InkReporter(Verbosity.normal) instanceof InkReporter);
 });
 
+test('InkReporter close resolves after unmounting', async t => {
+    const reporter = new InkReporter(Verbosity.normal);
+
+    reporter.start();
+
+    const closed = await Promise.race([
+        reporter.close().then(() => true),
+        new Promise<boolean>(resolve => setTimeout(() => resolve(false), 250))
+    ]);
+
+    t.true(closed);
+});
+
 test('Ink App applies running verbosity levels', t => {
     const activeSuite = suiteResult('active-suite');
     const activeScenario = new ScenarioResult(scenario('active-scenario'));
