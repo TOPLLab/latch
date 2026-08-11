@@ -17,23 +17,31 @@ export class Verifier {
         let result = new StepOutcome(this.step).update(Outcome.succeeded);
         for (const expectation of this.step.expected ?? []) {
             for (const [field, entry] of Object.entries(expectation)) {
+                let value;
                 try {
-                    const value = getValue(actual, field);
-
-                    if (entry.kind === 'primitive') {
-                        result = this.expectPrimitive(value, entry.value);
-                    } else if (entry.kind === 'description') {
-                        result = this.expectDescription(value, entry.value);
-                    } else if (entry.kind === 'comparison') {
-                        result = this.expectComparison(actual, value, entry.value, entry.message);
-                    } else if (entry.kind === 'behaviour') {
-                        if (previous === undefined) {
-                            return this.error('Invalid test: no [previous] to compare behaviour to.');
-                        }
-                        result = this.expectBehaviour(value, getValue(previous, field), entry.value);
-                    }
+                    value = getValue(actual, field);
                 } catch {
                     return this.error(`Failure: ${JSONStringify(actual)} state does not contain '${field}'.`);
+                }
+
+                if (entry.kind === 'primitive') {
+                    result = this.expectPrimitive(value, entry.value);
+                } else if (entry.kind === 'description') {
+                    result = this.expectDescription(value, entry.value);
+                } else if (entry.kind === 'comparison') {
+                    result = this.expectComparison(actual, value, entry.value, entry.message);
+                } else if (entry.kind === 'behaviour') {
+                    if (previous === undefined) {
+                        return this.error('Invalid test: no [previous] to compare behaviour to.');
+                    }
+
+                    let previousValue;
+                    try {
+                        previousValue = getValue(previous, field);
+                    } catch {
+                        return this.error(`Failure: ${JSONStringify(previous)} previous state does not contain '${field}'.`);
+                    }
+                    result = this.expectBehaviour(value, previousValue, entry.value);
                 }
 
                 if (result.outcome !== Outcome.succeeded) {
@@ -123,5 +131,9 @@ export class Verifier {
 
 /* eslint @typescript-eslint/no-explicit-any: off */
 function deepEqual(a: any, b: any): boolean {
-    return a === b || (isNaN(Number(a)) && isNaN(Number(b))) || a.equals(b);
+    if (typeof a === 'number' && typeof b === 'number') {
+        return Object.is(a, b);
+    }
+
+    return a === b || (a !== undefined && a !== null && typeof a.equals === 'function' && a.equals(b));
 }
