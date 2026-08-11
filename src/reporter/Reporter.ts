@@ -1,5 +1,5 @@
 import {ScenarioResult, StepOutcome, SuiteResult} from './Results';
-import {StyleType, Verbosity} from './index';
+import {Verbosity} from './index';
 
 export interface SuiteRun {
     id: string;
@@ -34,10 +34,6 @@ export interface Reporter {
     finish(durationMs: number): void;
 
     close(): Promise<void>;
-
-    style(type: StyleType): void;
-
-    styling(): StyleType;
 
     verbosity(level: Verbosity): void;
 }

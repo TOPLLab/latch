@@ -1,8 +1,3 @@
-export enum StyleType {
-    plain,
-    github
-}
-
 export enum Verbosity {
     none,
     minimal,
@@ -14,4 +9,4 @@ export enum Verbosity {
 }
 
 export * from './Reporter';
-export * from './ReporterFactory';
+export * from './ink/InkReporter';

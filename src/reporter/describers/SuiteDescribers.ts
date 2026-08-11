@@ -1,20 +1,22 @@
-import {Outcome, Describer} from './Describer';
+import {Outcome, Describer, plainReporting} from './Describer';
 import {SuiteResult} from '../Results';
-import {Style} from '../Style';
 import {red} from 'ansi-colors';
 import {NormalScenarioDescriber} from './ScenarioDescribers';
 
-const table: (style: Style) => Map<Outcome, string> =
-    (style: Style) => new Map([
+const table = () => {
+    const style = plainReporting();
+    return new Map([
         [Outcome.error, style.colors.error(style.labels.error)],
         [Outcome.succeeded, style.colors.success(style.labels.suiteSuccess)],
         [Outcome.failed, style.colors.failure(style.labels.failure)],
         [Outcome.skipped, style.colors.skipped(style.labels.suiteSkipped)]]);
+};
 
 export abstract class SuiteDescriber extends Describer<SuiteResult> {}
 
 export class MinimalSuiteDescriber extends SuiteDescriber {
-    describe(style: Style): string[] {
+    describe(): string[] {
+        const style = plainReporting();
         const report: string[] = [];
         const status = (this.item.outcome === Outcome.error ? style.colors.error(style.labels.error) :
             (this.item.outcome === Outcome.succeeded ? style.colors.success(style.labels.suiteSuccess) : style.colors.failure(style.labels.failure)));
@@ -24,9 +26,9 @@ export class MinimalSuiteDescriber extends SuiteDescriber {
 }
 
 export class ShortSuiteDescriber extends SuiteDescriber {
-    describe(style: Style): string[] {
+    describe(): string[] {
         let report: string[] = [];
-        report = report.concat(this.overview(style));
+        report = report.concat(this.overview());
 
         if (this.item.outcome === Outcome.error) {
             report.push('');
@@ -35,9 +37,10 @@ export class ShortSuiteDescriber extends SuiteDescriber {
         return report;
     }
 
-    protected overview(style: Style): string[] {
+    protected overview(): string[] {
+        const style = plainReporting();
         const overview: string[] = [];
-        const status = table(style).get(this.item.outcome) ?? style.colors.skipped(style.labels.suiteSkipped);
+        const status = table().get(this.item.outcome) ?? style.colors.skipped(style.labels.suiteSkipped);
         overview.push(style.colors.highlight(style.bullet) + style.colors.highlight('suite.') + ` ${style.emph(this.item.name)}`);
         if (this.item.testbed) {
             overview.push(' '.repeat(2) + style.emph('testbed') + ' '.repeat(5) + this.item.testbed);
@@ -50,14 +53,14 @@ export class ShortSuiteDescriber extends SuiteDescriber {
 }
 
 export class NormalSuiteDescriber extends ShortSuiteDescriber {
-    describe(style: Style): string[] {
+    describe(): string[] {
 
         let report: string[] = [];
-        report = report.concat(this.overview(style));
+        report = report.concat(this.overview());
         report.push('');
 
         this.item.outcomes().forEach((scenario, index) => {
-            report = report.concat(new NormalScenarioDescriber(scenario, `(#${index + 1})`).describe(style));
+            report = report.concat(new NormalScenarioDescriber(scenario, `(#${index + 1})`).describe());
             report.push('');
         });
 

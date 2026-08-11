@@ -4,29 +4,18 @@ import {ArchiveWriter} from '../ArchiveWriter';
 import {Reporter, SuiteRun} from '../Reporter';
 import {ReporterState} from '../ReporterState';
 import {ScenarioResult, StepOutcome, SuiteResult} from '../Results';
-import {StyleType, Verbosity} from '../index';
+import {Verbosity} from '../index';
 import {App} from './App';
 
 export class InkReporter implements Reporter {
     private readonly state = new ReporterState();
     private readonly archiveWriter: ArchiveWriter;
     private instance?: Instance;
-    private styleType: StyleType;
     private verbosityLevel: Verbosity;
 
-    constructor(style: StyleType = StyleType.plain, verbosity: Verbosity = Verbosity.normal, archiveWriter: ArchiveWriter = new ArchiveWriter()) {
-        this.styleType = style;
+    constructor(verbosity: Verbosity = Verbosity.normal, archiveWriter: ArchiveWriter = new ArchiveWriter()) {
         this.verbosityLevel = verbosity;
         this.archiveWriter = archiveWriter;
-    }
-
-    style(type: StyleType) {
-        this.styleType = type;
-        this.rerender();
-    }
-
-    styling(): StyleType {
-        return this.styleType;
     }
 
     verbosity(level: Verbosity) {

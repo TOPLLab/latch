@@ -1,10 +1,36 @@
 import {Result, StepOutcome} from '../Results';
-import {Style} from '../Style';
+import {blue, bold, green, inverse, red, yellow} from 'ansi-colors';
+
+const plain = {
+    bullet: '● ',
+    emph: (s: string) => bold(s),
+    colors: {
+        highlight: (s: string) => bold(blue(s)),
+        success: (s: string) => inverse(bold(green(s))),
+        skipped: (s: string) => inverse(bold(yellow(s))),
+        failure: (s: string) => inverse(bold(red(s))),
+        failureMessage: (s: string) => red(s),
+        error: (s: string) => inverse(bold(red(s)))
+    },
+    labels: {
+        suiteSuccess: ' PASSED ',
+        suiteSkipped: ' SKIPPED ',
+        success: ' PASS ',
+        skipped: ' SKIP ',
+        timeout: ' TIMEOUT ',
+        failure: ' FAIL ',
+        error: ' ERROR '
+    }
+};
+
+export function plainReporting() {
+    return plain;
+}
 
 export interface Describable<R extends Result> {
     readonly item: R;
 
-    describe(style: Style): string[];
+    describe(): string[];
 }
 
 export abstract class Describer<R extends Result> implements Describable<R> {
@@ -14,7 +40,7 @@ export abstract class Describer<R extends Result> implements Describable<R> {
         this.item = item;
     }
 
-    abstract describe(style: Style): string[];
+    abstract describe(): string[];
 }
 
 export class SilentDescriber<R extends Result> extends Describer<R> {
@@ -28,19 +54,19 @@ export class StepDescriber extends Describer<StepOutcome> {
         super(outcome);
     }
 
-    describe(style: Style): string[] {
+    describe(): string[] {
         switch (this.item.outcome) {
             case Outcome.succeeded:
-                return [`${style.colors.success(style.labels.success)} ${this.item.name}`];
+                return [`${plain.colors.success(plain.labels.success)} ${this.item.name}`];
             case Outcome.uncommenced:
             case Outcome.skipped:
-                return [`${style.colors.skipped(style.labels.skipped)} ${this.item.name}`];
+                return [`${plain.colors.skipped(plain.labels.skipped)} ${this.item.name}`];
             case Outcome.timedout:
-                return [`${style.colors.failure(style.labels.timeout)} ${this.item.name}`];
+                return [`${plain.colors.failure(plain.labels.timeout)} ${this.item.name}`];
             case Outcome.error:
             case Outcome.failed:
             default:
-                return [`${style.colors.failure(style.labels.failure)} ${this.item.name}\n        ${style.colors.failureMessage(this.item.outcome + this.item.clarification)}`];
+                return [`${plain.colors.failure(plain.labels.failure)} ${this.item.name}\n        ${plain.colors.failureMessage(this.item.outcome + this.item.clarification)}`];
         }
     }
 }
@@ -55,4 +81,3 @@ export enum Outcome {
 }
 
 // const r Result = expect(e: Expected) <-- replaces the function in Testee todo
-

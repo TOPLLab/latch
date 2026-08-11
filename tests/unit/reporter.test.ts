@@ -8,17 +8,14 @@ import {Framework, Suite} from '../../src/framework/Framework';
 import {TestScenario} from '../../src/framework/scenario/TestScenario';
 import {Kind, Step} from '../../src/framework/scenario/Step';
 import {ArchiveWriter} from '../../src/reporter/ArchiveWriter';
-import {AutoReporter} from '../../src/reporter/AutoReporter';
 import {InkReporter} from '../../src/reporter/ink/InkReporter';
 import {App} from '../../src/reporter/ink/App';
-import {PlainReporter} from '../../src/reporter/PlainReporter';
 import {Reporter, SuiteRun} from '../../src/reporter/Reporter';
-import {ReporterFactory, ReporterSelection} from '../../src/reporter/ReporterFactory';
 import {ReporterState} from '../../src/reporter/ReporterState';
 import {ScenarioResult, StepOutcome, SuiteResult} from '../../src/reporter/Results';
 import {summarize} from '../../src/reporter/Summary';
 import {Outcome} from '../../src/reporter/describers/Describer';
-import {StyleType, Verbosity} from '../../src/reporter';
+import {Verbosity} from '../../src/reporter';
 
 const step = (title: string): Step => ({
     title,
@@ -48,6 +45,9 @@ const run = (id: string, suite: SuiteResult, index = 1): SuiteRun => ({
     executionIndex: index,
     startedAt: Date.now()
 });
+
+const plainFrame = (frame: string): string =>
+    frame.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, '');
 
 test('Summary totals count suites, scenarios, and actions once', t => {
     const first = step('first');
@@ -142,23 +142,8 @@ test('ReporterState keeps active step visible before scenario and suite completi
     t.is(state.snapshot().completedRuns[0].suite, suite);
 });
 
-test.serial('ReporterFactory falls back to plain reporter for non-TTY stdout and GitHub style', t => {
-    const descriptor = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
-    Object.defineProperty(process.stdout, 'isTTY', {value: false, configurable: true});
-
-    try {
-        t.true(ReporterFactory.create(StyleType.plain, Verbosity.normal, ReporterSelection.auto) instanceof PlainReporter);
-
-        Object.defineProperty(process.stdout, 'isTTY', {value: true, configurable: true});
-        t.true(ReporterFactory.create(StyleType.github, Verbosity.normal, ReporterSelection.auto) instanceof PlainReporter);
-        t.true(ReporterFactory.create(StyleType.plain, Verbosity.normal, ReporterSelection.ink) instanceof InkReporter);
-    } finally {
-        if (descriptor) {
-            Object.defineProperty(process.stdout, 'isTTY', descriptor);
-        } else {
-            delete (process.stdout as unknown as {isTTY?: boolean}).isTTY;
-        }
-    }
+test('InkReporter exposes verbosity-only reporter configuration', t => {
+    t.true(new InkReporter(Verbosity.normal) instanceof InkReporter);
 });
 
 test('Ink App applies running verbosity levels', t => {
@@ -181,17 +166,17 @@ test('Ink App applies running verbosity levels', t => {
     state.suiteStarted(run('completed', completedSuite, 2));
     state.suiteFinished('completed', completedSuite);
 
-    const normal = render(React.createElement(App, {
+    const normal = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.normal
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
-    const more = render(React.createElement(App, {
+    const more = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.more
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
     t.true(normal.includes('active-suite'));
     t.true(normal.includes('active-scenario'));
@@ -224,7 +209,7 @@ test('Ink App renders compact final summary at the bottom', t => {
         verbosity: Verbosity.normal
     }));
 
-    const frame = app.lastFrame() ?? '';
+    const frame = plainFrame(app.lastFrame() ?? '');
     t.true(frame.includes('PASS 1 suites passed · 1 scenarios · 10 actions · 12ms'));
     t.true(frame.includes('PASS completed-suite'));
     t.regex(frame, /PASS completed-suite\s+1\/1\s+testee-2/);
@@ -251,17 +236,17 @@ test('Ink App shows failed scenarios under suite rows for normal final verbosity
     state.suiteFinished('completed', completedSuite);
     state.finish(12);
 
-    const normal = render(React.createElement(App, {
+    const normal = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.normal
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
-    const minimal = render(React.createElement(App, {
+    const minimal = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.minimal
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
     t.true(normal.includes('FAIL completed-suite'));
     t.true(normal.includes('└─ failed-scenario'));
@@ -286,17 +271,17 @@ test('Ink App expands failed actions for more and full history for all final ver
     state.suiteFinished('completed', completedSuite);
     state.finish(12);
 
-    const more = render(React.createElement(App, {
+    const more = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.more
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
-    const all = render(React.createElement(App, {
+    const all = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.all
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
     t.true(more.includes('└─ failed-scenario'));
     t.true(more.includes('└─ FAIL failed-step'));
@@ -326,11 +311,11 @@ test('Ink App debug final verbosity is all plus framework and log details', t =>
     state.suiteFinished('completed', completedSuite);
     state.finish(12);
 
-    const debug = render(React.createElement(App, {
+    const debug = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.debug
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
     t.true(debug.includes('Latch'));
     t.true(debug.includes('archive suite.log'));
@@ -349,17 +334,17 @@ test('Ink App respects debug verbosity for logs', t => {
     state.log('debug', 'debug-only');
     state.log('info', 'info-visible');
 
-    const normal = render(React.createElement(App, {
+    const normal = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.normal
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
-    const debug = render(React.createElement(App, {
+    const debug = plainFrame(render(React.createElement(App, {
         snapshot: state.snapshot(),
         archive: 'suite.log',
         verbosity: Verbosity.debug
-    })).lastFrame() ?? '';
+    })).lastFrame() ?? '');
 
     t.false(normal.includes('debug-only'));
     t.true(normal.includes('info-visible'));
@@ -395,10 +380,6 @@ test.serial('Framework.analyse waits for reporter cleanup before process exit', 
             await new Promise(resolve => setTimeout(resolve, 5));
             closed = true;
         },
-        style() {},
-        styling() {
-            return StyleType.plain;
-        },
         verbosity() {}
     };
 
@@ -414,7 +395,7 @@ test.serial('Framework.analyse waits for reporter cleanup before process exit', 
         t.true(exitedAfterClose);
         t.is(exitCode, 0);
     } finally {
-        framework.reporter = originalReporter ?? new AutoReporter();
+        framework.reporter = originalReporter ?? new InkReporter();
         process.exit = originalExit;
     }
 });

@@ -7,7 +7,7 @@ import {TestbedSpecification} from '../testbeds/TestbedSpecification';
 import {SuiteResult} from '../reporter/Results';
 import {Reporter} from '../reporter/Reporter';
 import {Outcome} from "../reporter/describers/Describer";
-import {AutoReporter} from '../reporter/AutoReporter';
+import {InkReporter} from '../reporter/ink/InkReporter';
 
 export interface TesteeOptions {
     disabled?: boolean;
@@ -52,7 +52,7 @@ export class Framework {
 
     private scheduled: Suite[] = [];
 
-    public readonly reporter: Reporter = new AutoReporter();
+    public readonly reporter: Reporter = new InkReporter();
 
     private constructor() {
     }
