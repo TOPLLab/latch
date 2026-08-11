@@ -1,12 +1,10 @@
 import test from 'ava';
 import {invokeParser, signed} from "../../src/messaging/Parsers";
-import {Exception, WARDuino} from "../../src";
-import {WASM} from "../../src/sourcemap/Wasm";
+import {Exception, Expected, Kind, Step, WARDuino, WASM} from "../../src";
 import {Verifier} from "../../src/framework/Verifier";
-import {Expected, Kind, Step} from "../../src/framework/scenario/Step";
-import {Outcome} from "../../src/reporter/describers/Describer";
 import Type = WASM.Type;
 import WasmInt = WASM.WasmInt;
+import {Outcome} from "../../src/reporter/Outcome";
 
 /**
  * Check unsigned 32-bit integer to signed conversion
