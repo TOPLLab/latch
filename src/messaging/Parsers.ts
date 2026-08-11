@@ -62,7 +62,7 @@ export function breakpointHitParser(text: string): Breakpoint {
 }
 
 export function signed(value: bigint, bits = 32) {
-    let x = value;
+    const x = value;
     const sign = 1n << BigInt(bits - 1);
     const mod = 1n << BigInt(bits);
     return x >= sign ? x - mod : x;

@@ -6,7 +6,7 @@ import {Reporter, SuiteRun} from './Reporter';
 import {ScenarioResult, StepOutcome, SuiteResult} from './Results';
 import {Style, styling as styleMap} from './Style';
 import {summarize} from './Summary';
-import {Outcome, SilentDescriber} from './describers/Describer';
+import {SilentDescriber} from './describers/Describer';
 import {
     MinimalSuiteDescriber,
     NormalSuiteDescriber,
