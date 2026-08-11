@@ -141,122 +141,172 @@ export class Testee { // TODO unified with testbed interface
         return timeout<object | void>(name, limit, fn());
     }
 
-    public async describe(description: TestScenario, suiteResult: SuiteResult, runs: number = 1) {
+    public async describe(description: TestScenario, suiteResult: SuiteResult, runId: string, runs: number = 1) {
         const testee = this;
         const scenarioResult: ScenarioResult = new ScenarioResult(description);
+        const reporter = this.framework.reporter;
+        let addedToSuite = false;
+
+        const addScenario = () => {
+            if (!addedToSuite) {
+                suiteResult.add(scenarioResult);
+                addedToSuite = true;
+            }
+        };
+
+        const addStep = (result: StepOutcome) => {
+            scenarioResult.add(result);
+            reporter.stepFinished(runId, scenarioResult, result);
+        };
+        const scenarioHasError = () => scenarioResult.outcome === Outcome.error;
+
+        reporter.scenarioStarted(runId, scenarioResult);
 
         if (description.skip) {
+            scenarioResult.update(Outcome.skipped, 'Skipped by scenario configuration');
+            addScenario();
+            reporter.scenarioFinished(runId, scenarioResult);
             return;
         }
 
-        // call(this.formatTitle(description.title), function () {
-        let map: SourceMap.Mapping = new SourceMap.Mapping();
+        try {
+            // call(this.formatTitle(description.title), function () {
+            let map: SourceMap.Mapping = new SourceMap.Mapping();
 
-        /** Each test requires some housekeeping before and after */
-        await this.run('Check for failing dependencies', testee.timeout, async function () {
-            const failedDependencies: TestScenario[] = testee.failedDependencies(description);
-            if (failedDependencies.length > 0) {
-                testee.states.set(description.title, new Skipped('Skipping', 'Test has failing dependencies'));
-                throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
-            }
-        }).catch((e: Error) => {
-            scenarioResult.error(e.message);
-        });
+            /** Each test requires some housekeeping before and after */
+            await this.run('Check for failing dependencies', testee.timeout, async function () {
+                const failedDependencies: TestScenario[] = testee.failedDependencies(description);
+                if (failedDependencies.length > 0) {
+                    testee.states.set(description.title, new Skipped('Skipping', 'Test has failing dependencies'));
+                    throw new Error(`Skipped: failed dependent tests: ${failedDependencies.map(dependence => dependence.title)}`);
+                }
+            }).catch((e: Error) => {
+                scenarioResult.error(e.message);
+            });
 
-        await this.run('Compile and upload program', testee.connector.timeout, async function () {
-            if (testee.current === description.program) {
-                await testee.reset(testee.testbed);
+            if (scenarioHasError()) {
+                addScenario();
                 return;
             }
 
-            const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
-            try {
-                await timeout<object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
-                testee.current = description.program;
-            } catch {
-                await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
-            }
-        }).catch((e: Error | string) => {
-            if (typeof e === 'string') {
-                scenarioResult.error(e);
-            } else {
-                scenarioResult.error(e.toString());
-            }
-        });
-
-        await this.run('Get source mapping', testee.connector.timeout, async function () {
-            map = await testee.mapper.map(description.program);
-        }).catch((e: Error | string) => {
-            if (typeof e === 'string') {
-                scenarioResult.error(e);
-            } else {
-                scenarioResult.error(e.toString());
-            }
-        });
-
-        if (scenarioResult.outcome === Outcome.error) {
-            suiteResult.add(scenarioResult);
-            return;
-        }
-
-        /** Each test is made of one or more scenario */
-
-        let previous: any = undefined;
-        for (let i = 0; i < runs; i++) {
-            if (0 < i) {
-                await this.run('resetting before retry', testee.timeout, async function () {
+            await this.run('Compile and upload program', testee.connector.timeout, async function () {
+                if (testee.current === description.program) {
                     await testee.reset(testee.testbed);
-                }).catch((e: Error) => {
+                    return;
+                }
+
+                const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(description.program).compile(description.program);
+                try {
+                    await timeout<object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
+                    testee.current = description.program;
+                } catch {
+                    await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
+                }
+            }).catch((e: Error | string) => {
+                if (typeof e === 'string') {
+                    scenarioResult.error(e);
+                } else {
                     scenarioResult.error(e.toString());
-                });
+                }
+            });
+
+            if (scenarioHasError()) {
+                addScenario();
+                return;
             }
 
-            for (const step of description.steps ?? []) {
-                const verifier: Verifier = new Verifier(step);
+            await this.run('Get source mapping', testee.connector.timeout, async function () {
+                map = await testee.mapper.map(description.program);
+            }).catch((e: Error | string) => {
+                if (typeof e === 'string') {
+                    scenarioResult.error(e);
+                } else {
+                    scenarioResult.error(e.toString());
+                }
+            });
 
-                /** Perform the step and check if expectations were met */
-                await this.step(step.title, testee.timeout, async function () {
-                    if (testee.bed(step.target ?? Target.supervisor) === undefined) {
-                        testee.states.set(description.title, verifier.error('Cannot run test: no debugger connection.'));
-                        return;
-                    }
+            if (scenarioHasError()) {
+                addScenario();
+                return;
+            }
 
-                    let actual: object | void;
-                    if (step.instruction.kind === Kind.Action) {
-                        actual = await timeout<object | void>(`performing action . ${step.title}`, testee.timeout,
-                            step.instruction.value.act(testee)).catch((err) => {
-                            testee.states.set(description.title, verifier.error(err));
+            /** Each test is made of one or more scenario */
+
+            let previous: any = undefined;
+            for (let i = 0; i < runs; i++) {
+                if (0 < i) {
+                    await this.run('resetting before retry', testee.timeout, async function () {
+                        await testee.reset(testee.testbed);
+                    }).catch((e: Error) => {
+                        scenarioResult.error(e.toString());
+                    });
+                }
+
+                for (const step of description.steps ?? []) {
+                    const verifier: Verifier = new Verifier(step);
+                    let stepRecorded = false;
+                    const recordStep = (result: StepOutcome) => {
+                        if (!stepRecorded) {
+                            stepRecorded = true;
+                            addStep(result);
+                        }
+                    };
+
+                    /** Perform the step and check if expectations were met */
+                    await this.step(step.title, testee.timeout, async function () {
+                        if (testee.bed(step.target ?? Target.supervisor) === undefined) {
+                            const result = verifier.error('Cannot run test: no debugger connection.');
+                            testee.states.set(description.title, result);
+                            recordStep(result);
                             return;
-                        });
-                    } else {
-                        actual = await testee.recoverable(testee, step.instruction.value, map,
-                            (testee, req, map) => timeout<object | void>(`sending instruction ${req.type}`, testee.timeout,
-                                testee.bed(step.target ?? Target.supervisor)!.sendRequest(map, req)),
-                            (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
-                                await testee.initialize(description.program, description.args ?? []).catch((o) => {
-                                    return Promise.reject(o)
-                                });
-                            }), 1).catch((e: string) => {
-                            const result = new StepOutcome(step);
-                            testee.states.set(description.title, result.update((e.includes('timeout')) ? Outcome.timedout : Outcome.error, e));
-                        });
-                    }
+                        }
 
-                    const result = verifier.verify(actual, previous);
+                        let actual: object | void;
+                        if (step.instruction.kind === Kind.Action) {
+                            actual = await timeout<object | void>(`performing action . ${step.title}`, testee.timeout,
+                                step.instruction.value.act(testee)).catch((err) => {
+                                const result = verifier.error(stringify(err));
+                                testee.states.set(description.title, result);
+                                recordStep(result);
+                                return;
+                            });
+                        } else {
+                            actual = await testee.recoverable(testee, step.instruction.value, map,
+                                (testee, req, map) => timeout<object | void>(`sending instruction ${req.type}`, testee.timeout,
+                                    testee.bed(step.target ?? Target.supervisor)!.sendRequest(map, req)),
+                                (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
+                                    await testee.initialize(description.program, description.args ?? []).catch((o) => {
+                                        return Promise.reject(o)
+                                    });
+                                }), 1).catch((e: string) => {
+                                const result = new StepOutcome(step);
+                                testee.states.set(description.title, result.update((e.includes('timeout')) ? Outcome.timedout : Outcome.error, e));
+                                recordStep(result);
+                            });
+                        }
 
-                    if (actual !== undefined) {
-                        previous = actual;
-                    }
+                        if (stepRecorded) {
+                            return;
+                        }
 
-                    testee.states.set(description.title, result);
-                    scenarioResult.add(result);
-                }).catch((error: Error | string) => {
-                    const result = verifier.error(stringify(error));
-                    testee.states.set(description.title, result);
-                    scenarioResult.add(result);
-                });
+                        const result = verifier.verify(actual, previous);
+
+                        if (actual !== undefined) {
+                            previous = actual;
+                        }
+
+                        testee.states.set(description.title, result);
+                        recordStep(result);
+                    }).catch((error: Error | string) => {
+                        const result = verifier.error(stringify(error));
+                        testee.states.set(description.title, result);
+                        recordStep(result);
+                    });
+                }
             }
-            suiteResult.add(scenarioResult);
+            addScenario();
+        } finally {
+            reporter.scenarioFinished(runId, scenarioResult);
         }
     }
 

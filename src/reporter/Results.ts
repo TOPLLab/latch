@@ -73,7 +73,7 @@ abstract class AbstractAggregateResult implements AggregateResult {
     }
 
     private failing(): boolean {
-        return this.subOutcomes.some((outcome) => outcome.outcome === Outcome.failed || outcome.outcome === Outcome.timedout);
+        return this.subOutcomes.some((outcome) => outcome.outcome === Outcome.failed || outcome.outcome === Outcome.timedout || outcome.outcome === Outcome.error);
     }
 }
 

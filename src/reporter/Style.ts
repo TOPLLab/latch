@@ -29,6 +29,7 @@ interface Labels {
 export function styling(type: StyleType): Style {
     switch (type) {
         case StyleType.github:
+            return new GitHub();
         case StyleType.plain:
         default:
             return new Plain();

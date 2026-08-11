@@ -12,3 +12,6 @@ export enum Verbosity {
     all,
     debug
 }
+
+export * from './Reporter';
+export * from './ReporterFactory';

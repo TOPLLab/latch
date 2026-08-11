@@ -9,6 +9,7 @@
         "rootDir": ".",
         "sourceMap": true,
         "strict": true,
+        "jsx": "react-jsx",
         "allowSyntheticDefaultImports": true,
         "resolveJsonModule": true,
         "importHelpers": true,
