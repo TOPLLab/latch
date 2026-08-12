@@ -2,18 +2,17 @@
   <img src="assets/latch-logo.svg" width="150" height="150" />
   <h1>Latch</h1>
 
-Latch is a TypeScript testing framework for running large-scale unit and integration tests on constrained systems.
-
   <a href="https://doi.org/10.1016/j.scico.2024.103157"><img src="https://img.shields.io/badge/DOI-10.1016%2Fj.scico.2024.103157-blue.svg"></a>
   <a href="https://github.com/TOPLLab/latch/actions/workflows/test.yml"><img src="https://github.com/TOPLLab/latch/actions/workflows/test.yml/badge.svg"></a>
   <a href="https://github.com/TOPLLab/latch/actions/workflows/test.yml"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/tolauwae/615b7906cd71effb447c4b08673d2cb6/raw/latch-coverage.json"></a>
-
 
 <span>
     <a href="https://topllab.github.io/WARDuino/guide/latch.html">Documentation</a>
     <span> · </span>
     <a href="https://github.com/TOPLLab/WARDuino/actions/workflows/test.yml">Live example</a>  
 </span>
+
+Latch is a TypeScript testing framework for running large-scale unit and integration tests on constrained systems.
 
 </div>
 
@@ -27,7 +26,6 @@ Latch is a TypeScript testing framework for running large-scale unit and integra
 git clone https://github.com/TOPLLab/latch.git
 cd latch
 npm install
-npm run build
 npm run test:example
 ```
 
