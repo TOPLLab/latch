@@ -10,6 +10,7 @@ import {Kind, Step} from '../../src/framework/scenario/Step';
 import {ArchiveWriter} from '../../src/reporter/ArchiveWriter';
 import {InkReporter} from '../../src/reporter/ink/InkReporter';
 import {App} from '../../src/reporter/ink/App';
+import {RunHeader} from '../../src/reporter/ink/RunHeader';
 import {Reporter, SuiteRun} from '../../src/reporter/Reporter';
 import {ReporterState} from '../../src/reporter/ReporterState';
 import {ScenarioResult, StepOutcome, SuiteResult} from '../../src/reporter/Results';
@@ -146,6 +147,12 @@ test('InkReporter exposes verbosity-only reporter configuration', t => {
     t.true(new InkReporter(Verbosity.normal) instanceof InkReporter);
 });
 
+test('Run header keeps metadata next to the Latch title', t => {
+    const frame = plainFrame(render(React.createElement(RunHeader, {archive: 'suite.log'})).lastFrame() ?? '');
+
+    t.regex(frame, /^Latch v[\d.]+ · archive suite\.log(?:\n|$)/);
+});
+
 test('InkReporter close resolves after unmounting', async t => {
     const reporter = new InkReporter(Verbosity.normal);
 
@@ -162,7 +169,7 @@ test('InkReporter close resolves after unmounting', async t => {
 test('Ink App applies running verbosity levels', t => {
     const activeSuite = suiteResult('active-suite');
     const activeScenario = new ScenarioResult(scenario('active-scenario'));
-    const activeStep = new StepOutcome(step('active-step')).update(Outcome.succeeded);
+    const activeStep = new StepOutcome(step('active-step')).update(Outcome.succeeded, 'actual output');
     activeScenario.add(activeStep);
 
     const completedSuite = suiteResult('completed-suite');
@@ -192,14 +199,78 @@ test('Ink App applies running verbosity levels', t => {
     })).lastFrame() ?? '');
 
     t.true(normal.includes('active-suite'));
-    t.true(normal.includes('active-scenario'));
-    t.false(normal.includes('active-step'));
+    t.regex(normal, /1 active-scenario · PASS active-step/);
+    t.false(normal.includes('actual output'));
     t.true(normal.includes('completed-suite'));
     t.false(normal.includes('Expected 1 got 2'));
     t.true(normal.includes('Progress'));
 
     t.true(more.includes('active-step'));
     t.true(more.includes('Expected 1 got 2'));
+});
+
+test('Ink App shows compact active failures before progress at normal verbosity', t => {
+    const suite = suiteResult('active-suite');
+    const failedScenario = new ScenarioResult(scenario('failed-scenario'));
+    const failedStep = new StepOutcome(step('failed-step')).update(Outcome.failed, 'Expected 1 got 2');
+    failedScenario.add(failedStep);
+    const activeScenario = new ScenarioResult(scenario('active-scenario'));
+    const activeStep = new StepOutcome(step('active-step')).update(Outcome.succeeded);
+    activeScenario.add(activeStep);
+
+    const state = new ReporterState();
+    state.start();
+    state.suiteStarted({...run('active', suite), plannedScenarios: 2});
+    state.scenarioStarted('active', failedScenario);
+    state.stepFinished('active', failedScenario, failedStep);
+    state.scenarioFinished('active', failedScenario);
+    state.scenarioStarted('active', activeScenario);
+    state.stepFinished('active', activeScenario, activeStep);
+
+    const frame = plainFrame(render(React.createElement(App, {
+        snapshot: state.snapshot(),
+        archive: 'suite.log',
+        verbosity: Verbosity.normal
+    })).lastFrame() ?? '');
+
+    t.true(frame.includes('FAIL active-suite (1/2)'));
+    t.true(frame.includes('TEST failed-scenario · failed-step'));
+    t.false(frame.includes('Expected 1 got 2'));
+    t.true(frame.indexOf('Failures') < frame.indexOf('FAIL active-suite'));
+    t.true(frame.indexOf('TEST failed-scenario · failed-step') < frame.indexOf('Progress'));
+});
+
+test('Suite views show RUN while active and terminal outcomes after completion', t => {
+    const cases: Array<[Outcome, string]> = [
+        [Outcome.succeeded, 'PASS'],
+        [Outcome.failed, 'FAIL'],
+        [Outcome.error, 'ERROR'],
+        [Outcome.skipped, 'SKIP']
+    ];
+
+    for (const [outcome, badge] of cases) {
+        const suite = suiteResult(`suite-${badge}`).update(outcome);
+        const state = new ReporterState();
+        state.start();
+        state.suiteStarted(run(`run-${badge}`, suite));
+
+        const active = plainFrame(render(React.createElement(App, {
+            snapshot: state.snapshot(),
+            archive: 'suite.log',
+            verbosity: Verbosity.normal
+        })).lastFrame() ?? '');
+
+        t.true(active.includes(`RUN suite-${badge}`));
+
+        state.suiteFinished(`run-${badge}`, suite);
+        const completed = plainFrame(render(React.createElement(App, {
+            snapshot: state.snapshot(),
+            archive: 'suite.log',
+            verbosity: Verbosity.normal
+        })).lastFrame() ?? '');
+
+        t.true(completed.includes(`${badge} suite-${badge}`));
+    }
 });
 
 test('Ink App renders compact final summary at the bottom', t => {

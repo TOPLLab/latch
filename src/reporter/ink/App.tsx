@@ -7,6 +7,7 @@ import {SuiteList} from './SuiteList';
 import {LogPanel} from './LogPanel';
 import {FinalSummary} from './FinalSummary';
 import {showsDebugDetails} from './verbosity';
+import {ActiveFailures} from './ActiveFailures';
 
 interface Props {
     snapshot: ReporterSnapshot;
@@ -29,6 +30,7 @@ export function App({snapshot, archive, verbosity}: Props) {
         <Box flexDirection="column">
             <RunHeader archive={archive}/>
             <SuiteList snapshot={snapshot} verbosity={verbosity}/>
+            {verbosity === Verbosity.normal ? <ActiveFailures snapshot={snapshot}/> : null}
             <ProgressSummary snapshot={snapshot}/>
             <LogPanel logs={snapshot.logs} verbosity={verbosity}/>
         </Box>

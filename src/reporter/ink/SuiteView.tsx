@@ -16,9 +16,11 @@ interface Props {
 
 export function SuiteView({run, active, verbosity}: Props) {
     const scenarios = active ? run.scenarios : run.suite.outcomes();
+    const status = active ? Outcome.uncommenced : run.suite.outcome;
     const showFailureDetails = !active && run.suite.outcome !== Outcome.succeeded;
-    const failedScenarios = scenarios.filter((scenario) => scenario.outcome === Outcome.failed || scenario.outcome === Outcome.error);
+    const failedScenarios = scenarios.filter((scenario) => scenario.outcome === Outcome.failed || scenario.outcome === Outcome.error || scenario.outcome === Outcome.timedout);
     const currentScenario = run.activeScenario ?? scenarios[scenarios.length - 1];
+    const currentAction = currentScenario?.outcomes().slice(-1)[0];
     const visibleScenarios = active
         ? (showsActionDetails(verbosity) ? scenarios : (currentScenario ? [currentScenario] : []))
         : (preservesFullHistory(verbosity) ? scenarios : (showFailureDetails && verbosity >= Verbosity.normal ? failedScenarios : []));
@@ -26,7 +28,13 @@ export function SuiteView({run, active, verbosity}: Props) {
     const completed = !active && run.suite.outcome === Outcome.succeeded && verbosity <= Verbosity.normal;
     const scenarioProgress = `${scenarios.filter((scenario) => scenario.outcome === Outcome.succeeded).length}/${run.plannedScenarios ?? scenarios.length}`;
     const scenarioTrees = visibleScenarios.map((scenario): TreeNode => ({
-        label: <Text>{scenario.name}{scenario.outcomes().length > 0 ? <Text color="gray"> {scenario.outcomes().length}{active && scenario === run.activeScenario ? '' : `/${scenario.outcomes().length}`}</Text> : null}</Text>,
+        label: active && verbosity === Verbosity.normal && scenario === currentScenario ? (
+            <Text>
+                {scenario.outcomes().length > 0 ? <Text color="gray">{scenario.outcomes().length} </Text> : null}
+                <Text>{scenario.name}</Text>
+                {currentAction ? <><Text color="gray"> · </Text><StatusBadge outcome={currentAction.outcome}/><Text> {currentAction.name}</Text></> : null}
+            </Text>
+        ) : <Text>{scenario.name}{scenario.outcomes().length > 0 ? <Text color="gray"> {scenario.outcomes().length}{active && scenario === run.activeScenario ? '' : `/${scenario.outcomes().length}`}</Text> : null}</Text>,
         children: scenario.outcome === Outcome.error && scenario.clarification
             ? [{label: <Text color="red">{scenario.clarification}</Text>}]
             : scenario.outcomes()
@@ -36,7 +44,7 @@ export function SuiteView({run, active, verbosity}: Props) {
                     }
 
                     if (active) {
-                        return showsActionDetails(verbosity) && scenario === currentScenario;
+                        return scenario === currentScenario && showsActionDetails(verbosity);
                     }
 
                     return showsActionDetails(verbosity) && (step.outcome === Outcome.failed || step.outcome === Outcome.error || step.outcome === Outcome.timedout);
@@ -55,7 +63,7 @@ export function SuiteView({run, active, verbosity}: Props) {
     return (
         <Box flexDirection="column">
             <Text>
-                <StatusBadge outcome={run.suite.outcome}/>
+                <StatusBadge outcome={status}/>
                 <Text> {pad(run.suiteTitle, 28)}</Text>
                 {completed ? (
                     <Text color="gray">{pad(scenarioProgress, 6)}{run.testeeName} · {plural(actions.length, 'action')} · {duration(run)}ms</Text>
@@ -64,10 +72,10 @@ export function SuiteView({run, active, verbosity}: Props) {
                 )}
             </Text>
             {scenarioTrees.map((node, index) => active ? (
-                <Box key={`${run.id}-scenario-${index}`} flexDirection="column" marginLeft={2}>
+                <Box key={`${run.id}-scenario-${index}`} flexDirection="column" marginLeft={4}>
                     <Text>{node.label}</Text>
                     {node.children?.map((child, childIndex) => (
-                        <Box key={`${run.id}-scenario-${index}-step-${childIndex}`} marginLeft={2}>
+                        <Box key={`${run.id}-scenario-${index}-step-${childIndex}`} marginLeft={4}>
                             <Text>{child.label}</Text>
                         </Box>
                     ))}

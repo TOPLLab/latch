@@ -7,9 +7,9 @@ interface Props {
 
 export function RunHeader({archive}: Props) {
     return (
-        <Box flexDirection="column" marginBottom={1}>
+        <Box flexDirection="row" marginBottom={1}>
             <Text bold>Latch</Text>
-            <Text color="gray">v{version} · archive {archive}</Text>
+            <Text color="gray"> v{version} · archive {archive}</Text>
         </Box>
     );
 }

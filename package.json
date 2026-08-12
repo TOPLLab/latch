@@ -1,7 +1,22 @@
 {
   "name": "latch",
-  "description": "A testing language for constraint environments",
+  "description": "A testing framework for constrained environments",
   "version": "0.6.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TOPLLab/latch.git"
+  },
+  "homepage": "https://topllab.github.io/WARDuino/guide/latch.html",
+  "bugs": {
+    "url": "https://github.com/TOPLLab/latch/issues"
+  },
+  "keywords": [
+    "testing",
+    "webassembly",
+    "wasm",
+    "embedded",
+    "hardware"
+  ],
   "exports": {
     "types": "./dist/types/index.d.ts",
     "require": "./dist/index.js"
@@ -18,7 +33,9 @@
     "build:tests": "tsc --outDir out --project tsconfig.tests.json",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src/**/* --config .eslint.config.mjs",
+    "format": "eslint src/**/* --config .eslint.config.mjs --fix",
     "test:prebuild": "npm run build && npm run build:tests",
+    "test": "npm run test:all",
     "test:all": "npm run test:prebuild && npm run test:ava",
     "test:ava": "ava",
     "test:example": "npx ts-node ./tests/examples/example.ts",
