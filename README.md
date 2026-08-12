@@ -39,7 +39,7 @@ examples in `tests/examples/`. Useful commands are:
 ```bash
 npm run build          # Compile the package
 npm run test:all       # Build and run all tests
-npm run test:example   # Run example (requires recursive submodules)
+npm run test:example   # Run example (example.ts requires recursive submodules)
 ```
 
 The repository uses a recursive WARDuino/WABT test fixture for hardware and
