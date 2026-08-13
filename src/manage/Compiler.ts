@@ -25,10 +25,12 @@ export interface CompileOutput {
 
 export class CompilerFactory {
     private readonly wat: WatCompiler;
+    private readonly wasm: WasmCompiler;
     private readonly asc: AsScriptCompiler;
 
     constructor(wabt: string) {
         this.wat = new WatCompiler(wabt);
+        this.wasm = new WasmCompiler(wabt);
         this.asc = new AsScriptCompiler(wabt);
     }
 
@@ -38,6 +40,8 @@ export class CompilerFactory {
             case 'wast' :
             case 'wat' :
                 return this.wat;
+            case 'wasm' :
+                return this.wasm;
             case 'ts' :
                 return this.asc;
         }
@@ -147,6 +151,13 @@ export class WatCompiler extends Compiler {
 
     private parseWasmObjDump(context: CompileOutput, input: string): SourceMap.Mapping {
         return new SourceMap.Mapping().init(parseLines(context), parseExport(input), [], []);
+    }
+}
+
+/** A precompiled WebAssembly module can be uploaded without recompilation. */
+export class WasmCompiler extends WatCompiler {
+    public compile(program: string, _dir?: string): Promise<CompileOutput> {
+        return Promise.resolve({file: program});
     }
 }
 

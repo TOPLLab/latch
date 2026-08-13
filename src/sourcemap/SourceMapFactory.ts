@@ -20,6 +20,11 @@ export class SourceMapFactory {
             case 'wat' :
                 compiled = await this.compilerFactory.pickCompiler(source).compile(source);
                 return new WatMapper(compiled.out ?? '', tmpdir ?? path.dirname(compiled.file), WABT).mapping();
+            case 'wasm' :
+                // Precompiled modules do not carry a WAT source mapping. The
+                // module can still be executed; requests that need source
+                // locations simply have no mapping to resolve against.
+                return new SourceMap.Mapping();
             case 'ts' :
                 return new AsScriptMapper(source ?? '', tmpdir ?? path.dirname(source)).mapping();
         }
