@@ -178,16 +178,15 @@ export namespace WASM {
         bytes: Uint8Array;
     }
 
-    export function leb128(value: bigint | number): string { // TODO can only handle 32 bit
-        let a = Number(value);
-        a |= 0;
+    export function leb128(value: bigint | number): string {
+        let a = BigInt(value);
         const result = [];
         while (true) {
-            const byte_ = a & 0x7f;
-            a >>= 7;
+            const byte_ = Number(a & 0x7fn);
+            a >>= 7n;
             if (
-                (a === 0 && (byte_ & 0x40) === 0) ||
-                (a === -1 && (byte_ & 0x40) !== 0)
+                (a === 0n && (byte_ & 0x40) === 0) ||
+                (a === -1n && (byte_ & 0x40) !== 0)
             ) {
                 result.push(byte_.toString(16).padStart(2, '0'));
                 return result.join('').toUpperCase();

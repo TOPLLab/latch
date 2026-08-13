@@ -18,6 +18,7 @@ test('[leb128] : test encoding', t => {
     t.is(WASM.leb128(64n), 'C000');
     t.is(WASM.leb128(128n), '8001');
     t.is(WASM.leb128(1202n), 'B209');
+    t.is(WASM.leb128(9223372036854775807n), 'FFFFFFFFFFFFFFFFFF00');
 });
 
 test('[extractLineInfo] : test against artifacts (1)', async t => {

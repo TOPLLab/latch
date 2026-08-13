@@ -181,8 +181,10 @@ export namespace Message {
                     const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
                     write(buff, Number(arg.value), 0, true, arg.type === Float.f32 ? 23 : 52, buff.length);  // todo fix precision loss
                     payload += buff.toString('hex');
+                } else if (WASM.isInteger(arg.type)) {
+                    payload += WASM.leb128((arg.value as WASM.WasmInt).toBigInt());
                 } else {
-                    payload += WASM.leb128(<number>arg.value);
+                    throw Error(`Cannot invoke a function with a ${arg.type} argument.`);
                 }
             });
             return payload;
