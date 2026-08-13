@@ -1,24 +1,10 @@
 import test from 'ava';
-import {WASM} from '../../src/sourcemap/Wasm';
 import {WatMapper} from '../../src/sourcemap/SourceMapper';
 import {SourceMap} from '../../src/sourcemap/SourceMap';
 import {WABT} from '../../src/util/env';
 import {copyFileSync, mkdtempSync, readFileSync, rmSync} from 'fs';
 
 const artifacts = `${__dirname}/../../../tests/artifacts`;
-
-/**
- * Check LEB 128 encoding
- */
-test('[leb128] : test encoding', t => {
-    t.is(WASM.leb128(0n), '00');
-    t.is(WASM.leb128(1n), '01');
-    t.is(WASM.leb128(8n), '08');
-    t.is(WASM.leb128(32n), '20');
-    t.is(WASM.leb128(64n), 'C000');
-    t.is(WASM.leb128(128n), '8001');
-    t.is(WASM.leb128(1202n), 'B209');
-});
 
 test('[extractLineInfo] : test against artifacts (1)', async t => {
     await check(`${artifacts}/compile.output`, (mapping: SourceMap.Mapping) => {

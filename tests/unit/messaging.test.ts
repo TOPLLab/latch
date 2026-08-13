@@ -1,7 +1,25 @@
 import test from 'ava';
 import {MessageQueue} from '../../src/messaging/MessageQueue';
+import {Message} from '../../src/messaging/Message';
+import {WASM} from '../../src/sourcemap/Wasm';
+import {SourceMap} from '../../src/sourcemap/SourceMap';
 
 const alphanumerical = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.split('');
+
+test('[Message.invoke] : encode 64-bit integer arguments without precision loss', t => {
+    const mapping = new SourceMap.Mapping().init([], [{
+        index: 0,
+        name: 'rem_s',
+        arguments: [],
+        locals: []
+    }], [], []);
+    const request = Message.invoke('rem_s', [
+        WASM.i64(-9223372036854775808n),
+        WASM.i64(-1n)
+    ]);
+
+    t.is(request.payload!(mapping), '008080808080808080807f7f');
+});
 
 test('[MessageQueue] : test EOM detection', t => {
     const fuzzer = fuzzy(alphanumerical);
