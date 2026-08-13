@@ -11,7 +11,7 @@ type PromiseRejector = (reason?: unknown) => void;
 export abstract class Platform extends EventEmitter implements Testbed {
     abstract connection: Connection;
 
-    protected requests: [Request<any>, PromiseResolver<any>, PromiseRejector][];
+    protected requests: [Request<unknown>, PromiseResolver<unknown>, PromiseRejector][];
 
     protected messages: MessageQueue;
 
@@ -97,7 +97,8 @@ export abstract class Platform extends EventEmitter implements Testbed {
         const message = `${request.type}${request.payload?.(map) ?? ''}\n`;
         this.emit(TestbedEvents.Send, message);
         return new Promise((resolve, reject) => {
-            const pending: [Request<any>, PromiseResolver<any>, PromiseRejector] = [request, resolve, reject];
+            const resolver: PromiseResolver<unknown> = value => resolve(value as R);
+            const pending: [Request<unknown>, PromiseResolver<unknown>, PromiseRejector] = [request as Request<unknown>, resolver, reject];
             this.requests.push(pending);
             this.connection.channel.write(message, (err: Error | null | undefined) => {
                 if (err !== null && err !== undefined) {
