@@ -45,15 +45,18 @@ export class DummyProxy extends Emulator {
 
         this.dummy.on('connection', (connection) => {
             this.supervisor = connection;
+            connection.on('error', (error: Error) => this.failPending(error));
             connection.on('data', (data) => {
                 this.connection.channel.write(data.toString());
             });
             this.emit(TestbedEvents.Ready);
         });
+        this.dummy.on('error', (error: Error) => this.failPending(error));
         this.dummy.listen(specification.dummy.port);
     }
 
     protected listen(): void {
+        this.listenForErrors();
         this.connection.channel.on('data', (data: Buffer) => {
             if (this.waitingForMessages()) {
                 this.messages.push(data.toString());
