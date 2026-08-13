@@ -7,6 +7,7 @@ import {SourceMap} from '../sourcemap/SourceMap';
 import {readFileSync} from 'fs';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
+import {encodeSLEB128, encodeULEB128} from '@thi.ng/leb128';
 import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
@@ -139,7 +140,7 @@ export namespace Message {
     export function updateModule(wasm: string): Request<Ack> {
         function payload(binary: Buffer): string {
             const w = new Uint8Array(binary);
-            const sizeHex: string = WASM.leb128(BigInt(w.length));
+            const sizeHex = Buffer.from(encodeULEB128(w.length)).toString('hex');
             const sizeBuffer = Buffer.allocUnsafe(4);
             sizeBuffer.writeUint32BE(w.length);
             const wasmHex = Buffer.from(w).toString('hex');
@@ -181,8 +182,10 @@ export namespace Message {
                     const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
                     write(buff, Number(arg.value), 0, true, arg.type === Float.f32 ? 23 : 52, buff.length);  // todo fix precision loss
                     payload += buff.toString('hex');
-                } else if (WASM.isInteger(arg.type)) {
-                    payload += WASM.leb128((arg.value as WASM.WasmInt).toBigInt());
+                } else if (arg.type === WASM.Integer.i32 || arg.type === WASM.Integer.i64) {
+                    payload += Buffer.from(encodeSLEB128((arg.value as WASM.WasmInt).toBigInt())).toString('hex');
+                } else if (arg.type === WASM.Integer.u32 || arg.type === WASM.Integer.u64) {
+                    payload += Buffer.from(encodeULEB128((arg.value as WASM.WasmInt).toBigInt())).toString('hex');
                 } else {
                     throw Error(`Cannot invoke a function with a ${arg.type} argument.`);
                 }
@@ -192,7 +195,7 @@ export namespace Message {
 
         return {
             type: Interrupt.invoke,
-            payload: (map: SourceMap.Mapping) => `${WASM.leb128(BigInt(fidx(map, func)))}${convert(args)}`,
+            payload: (map: SourceMap.Mapping) => `${Buffer.from(encodeULEB128(fidx(map, func))).toString('hex')}${convert(args)}`,
             parser: invokeParser
         }
     }
