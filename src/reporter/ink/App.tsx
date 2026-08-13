@@ -19,7 +19,7 @@ export function App({snapshot, archive, verbosity}: Props) {
     if (snapshot.finished) {
         return (
             <Box flexDirection="column">
-                {showsDebugDetails(verbosity) ? <RunHeader archive={archive}/> : null}
+                <RunHeader archive={archive}/>
                 <FinalSummary snapshot={snapshot} archive={archive} verbosity={verbosity}/>
                 {showsDebugDetails(verbosity) ? <LogPanel logs={snapshot.logs} verbosity={verbosity}/> : null}
             </Box>

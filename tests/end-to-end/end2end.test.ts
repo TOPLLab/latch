@@ -43,7 +43,7 @@ r3.tests(scenarios);
 
 const spec: Suite = framework.suite('End-to-end tests: WebAssembly specification suite');
 
-spec.testee('emulator [:8530]', new EmulatorSpecification(8520));
+spec.testee('emulator [:8520]', new EmulatorSpecification(8520));
 
 const specDirectory = path.resolve(__dirname, 'spec');
 const specScenarios: TestScenario[] = fs.readdirSync(specDirectory)
@@ -73,5 +73,5 @@ const specScenarios: TestScenario[] = fs.readdirSync(specDirectory)
 
 spec.tests(specScenarios);
 
-framework.reporter.verbosity(Verbosity.more);
+framework.reporter.verbosity(Verbosity.normal);
 framework.analyse([r3, spec]);

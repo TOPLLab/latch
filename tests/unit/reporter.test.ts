@@ -209,6 +209,28 @@ test('Ink App applies running verbosity levels', t => {
     t.true(more.includes('Expected 1 got 2'));
 });
 
+test('Ink App separates completed suites from active suites', t => {
+    const completedSuite = suiteResult('completed-suite');
+    const completedScenario = new ScenarioResult(scenario('completed-scenario'));
+    completedScenario.add(new StepOutcome(step('completed-step')).update(Outcome.succeeded));
+    completedSuite.add(completedScenario);
+
+    const activeSuite = suiteResult('active-suite');
+    const state = new ReporterState();
+    state.start();
+    state.suiteStarted(run('completed', completedSuite));
+    state.suiteFinished('completed', completedSuite);
+    state.suiteStarted(run('active', activeSuite, 2));
+
+    const frame = plainFrame(render(React.createElement(App, {
+        snapshot: state.snapshot(),
+        archive: 'suite.log',
+        verbosity: Verbosity.normal
+    })).lastFrame() ?? '');
+
+    t.regex(frame, /PASS completed-suite[\s\S]*\n\n[\s\S]*RUN active-suite/);
+});
+
 test('Ink App shows compact active failures before progress at normal verbosity', t => {
     const suite = suiteResult('active-suite');
     const failedScenario = new ScenarioResult(scenario('failed-scenario'));
@@ -328,6 +350,7 @@ test('Ink App renders compact final summary at the bottom', t => {
     }));
 
     const frame = plainFrame(app.lastFrame() ?? '');
+    t.regex(frame, /^Latch v[\d.]+ · archive suite\.log(?:\n|$)/);
     t.true(frame.includes('PASS 1 suites passed · 1 scenarios · 10 actions · 12ms'));
     t.true(frame.includes('PASS completed-suite'));
     t.regex(frame, /PASS completed-suite\s+1\/1\s+testee-2/);
