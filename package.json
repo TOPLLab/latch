@@ -42,7 +42,7 @@
     "test:all": "npm run test:prebuild && npm run test:ava && npm run test:integration && npm run test:end-to-end",
     "test:ava": "ava",
     "test:integration": "npx ts-node ./tests/integration/precision.ts",
-    "test:end-to-end": "npx ts-node ./tests/end-to-end/r3/r3.test.ts",
+    "test:end-to-end": "npx ts-node ./tests/end-to-end/end2end.test.ts",
     "test:example": "npx ts-node ./tests/examples/example.ts",
     "coverage:test:ava": "c8 --src src/ --all ava"
   },
