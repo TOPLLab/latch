@@ -39,8 +39,8 @@ export function ActiveFailures({snapshot}: Props) {
                         <Text> {run.suiteTitle}</Text>
                         <Text color="gray"> ({scenarios.length}/{run.plannedScenarios ?? run.scenarios.length})</Text>
                     </Text>
-                    {failureRows(scenarios).map(({scenario, step}) => (
-                        <Box key={`${run.id}-failure-${scenario.name}-${step?.name ?? 'scenario'}`} marginLeft={5}>
+                    {failureRows(scenarios).map(({scenario, step}, index) => (
+                        <Box key={`${run.id}-failure-${index}`} marginLeft={5}>
                             <Text>
                                 <Text color="gray">TEST</Text>
                                 <Text> {scenario.name}</Text>

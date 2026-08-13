@@ -240,6 +240,40 @@ test('Ink App shows compact active failures before progress at normal verbosity'
     t.true(frame.indexOf('TEST failed-scenario · failed-step') < frame.indexOf('Progress'));
 });
 
+test('Ink App assigns unique keys to identical active failures', t => {
+    const suite = suiteResult('active-suite');
+    const firstScenario = new ScenarioResult(scenario('duplicate-scenario'));
+    const secondScenario = new ScenarioResult(scenario('duplicate-scenario'));
+    const firstStep = new StepOutcome(step('duplicate-step')).update(Outcome.failed);
+    const secondStep = new StepOutcome(step('duplicate-step')).update(Outcome.failed);
+    firstScenario.add(firstStep);
+    secondScenario.add(secondStep);
+
+    const state = new ReporterState();
+    state.start();
+    state.suiteStarted({...run('active', suite), plannedScenarios: 2});
+    state.scenarioStarted('active', firstScenario);
+    state.stepFinished('active', firstScenario, firstStep);
+    state.scenarioFinished('active', firstScenario);
+    state.scenarioStarted('active', secondScenario);
+    state.stepFinished('active', secondScenario, secondStep);
+
+    const originalError = console.error;
+    const errors: unknown[][] = [];
+    console.error = (...args: unknown[]) => errors.push(args);
+    try {
+        render(React.createElement(App, {
+            snapshot: state.snapshot(),
+            archive: 'suite.log',
+            verbosity: Verbosity.normal
+        }));
+    } finally {
+        console.error = originalError;
+    }
+
+    t.false(errors.some(([message]) => `${message}`.includes('same key')));
+});
+
 test('Suite views show RUN while active and terminal outcomes after completion', t => {
     const cases: Array<[Outcome, string]> = [
         [Outcome.succeeded, 'PASS'],

@@ -6,11 +6,12 @@ import {Connection} from '../bridge/Connection';
 import {SourceMap} from '../sourcemap/SourceMap';
 
 type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
+type PromiseRejector = (reason?: unknown) => void;
 
 export abstract class Platform extends EventEmitter implements Testbed {
     abstract connection: Connection;
 
-    protected requests: [Request<any>, PromiseResolver<any>][];
+    protected requests: [Request<unknown>, PromiseResolver<unknown>, PromiseRejector][];
 
     protected messages: MessageQueue;
 
@@ -32,6 +33,11 @@ export abstract class Platform extends EventEmitter implements Testbed {
             this.messages.push(data.toString());
             this.process();
         });
+        this.listenForErrors();
+    }
+
+    protected listenForErrors(): void {
+        this.connection.channel.on('error', (error: Error) => this.failPending(error));
     }
 
     // listen on duplex channel
@@ -53,6 +59,13 @@ export abstract class Platform extends EventEmitter implements Testbed {
 
                 this.requests.splice(index, 1);  // delete resolved request
             }
+        }
+    }
+
+    protected failPending(error: Error): void {
+        const pending = this.requests.splice(0);
+        for (const [, , reject] of pending) {
+            reject(error);
         }
     }
 
@@ -84,10 +97,16 @@ export abstract class Platform extends EventEmitter implements Testbed {
         const message = `${request.type}${request.payload?.(map) ?? ''}\n`;
         this.emit(TestbedEvents.Send, message);
         return new Promise((resolve, reject) => {
-            this.requests.push([request, resolve]);
+            const resolver: PromiseResolver<unknown> = value => resolve(value as R);
+            const pending: [Request<unknown>, PromiseResolver<unknown>, PromiseRejector] = [request as Request<unknown>, resolver, reject];
+            this.requests.push(pending);
             this.connection.channel.write(message, (err: Error | null | undefined) => {
                 if (err !== null && err !== undefined) {
-                    reject(err);
+                    const index = this.requests.indexOf(pending);
+                    if (index !== -1) {
+                        this.requests.splice(index, 1);
+                        reject(err);
+                    }
                 }
             });
         });

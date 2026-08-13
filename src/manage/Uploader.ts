@@ -84,8 +84,9 @@ export class EmulatorConnector extends Uploader {
     private connectSocket(program: string, listener?: (chunk: any) => void): Promise<SubProcess> {
         const that = this;
 
-        return new Promise(function (resolve, _reject) {
+        return new Promise(function (resolve, reject) {
             const client = new net.Socket();
+            client.once('error', reject);
             client.connect(that.port, () => {
                 that.emit(UploaderEvents.connected);
                 if (listener !== undefined) {
@@ -148,6 +149,7 @@ export class EmulatorUploader extends Uploader {
 
                     if (data.includes('Listening')) {
                         const client = new net.Socket();
+                        client.once('error', reject);
                         client.connect(that.port, () => {
                             that.emit(UploaderEvents.connected);
                             if (listener !== undefined) {
