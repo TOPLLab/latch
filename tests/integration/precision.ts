@@ -12,16 +12,15 @@ const precision = framework.suite('Test i64 precision');
 
 precision.testee('emulator[:8100]', new EmulatorSpecification(8100));
 
-const maxI64 = 9223372036854775807n;
-
 precision.test({
-    title: 'Preserve i64 precision outside the JavaScript safe integer range',
+    title: 'i64 rem_s returns zero for INT64_MIN modulo -1',
     program: 'tests/integration/precision.wast',
     dependencies: [],
     steps: [
-        new Invoker('i64_get_max', [], WASM.i64(maxI64)),
-        new Invoker('i64_eq_max', [WASM.i64(maxI64)], WASM.i32(1n)),
-        new Invoker('i64_eq_max_wrong', [WASM.i64(maxI64)], WASM.i32(0n))
+        new Invoker('rem_s', [
+            WASM.i64(-9223372036854775808n),
+            WASM.i64(-1n)
+        ], WASM.i64(0n))
     ]
 });
 
