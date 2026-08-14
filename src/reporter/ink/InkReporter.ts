@@ -12,6 +12,8 @@ export class InkReporter implements Reporter {
     private readonly archiveWriter: ArchiveWriter;
     private instance?: Instance;
     private verbosityLevel: Verbosity;
+    private readonly testbedMetadata = new Map<string, Promise<string>>();
+    private metadataRevision = 0;
 
     constructor(verbosity: Verbosity = Verbosity.normal, archiveWriter: ArchiveWriter = new ArchiveWriter()) {
         this.verbosityLevel = verbosity;
@@ -24,6 +26,8 @@ export class InkReporter implements Reporter {
     }
 
     start() {
+        this.testbedMetadata.clear();
+        this.metadataRevision = 0;
         this.state.start();
         this.instance = render(this.element(), {patchConsole: true});
     }
@@ -70,6 +74,12 @@ export class InkReporter implements Reporter {
         }
     }
 
+    metadata(runId: string, metadata: Promise<string>) {
+        this.testbedMetadata.set(runId, metadata);
+        this.metadataRevision++;
+        this.rerender();
+    }
+
     finish(durationMs: number) {
         this.state.finish(durationMs);
         this.archiveWriter.write(durationMs, this.state.suites());
@@ -97,7 +107,9 @@ export class InkReporter implements Reporter {
         return React.createElement(App, {
             snapshot: this.state.snapshot(),
             archive: this.archiveWriter.archive,
-            verbosity: this.verbosityLevel
+            verbosity: this.verbosityLevel,
+            metadata: Array.from(this.testbedMetadata.values()),
+            metadataRevision: this.metadataRevision
         });
     }
 

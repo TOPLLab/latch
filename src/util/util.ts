@@ -1,3 +1,6 @@
+import {promisify} from "node:util";
+import {execFile} from "node:child_process";
+
 export function getFileExtension(file: string): string {
     const result = /(?:\.([^.]+))?$/.exec(file)
     if (result === null || result.length < 1 || result[1] === undefined) {
@@ -17,3 +20,5 @@ export function find(regex: RegExp, input: string) {
 export function stringify(chunk: Error | string): string {
     return chunk instanceof Error ? chunk.message : chunk;
 }
+
+export const execFileAsync = promisify(execFile);

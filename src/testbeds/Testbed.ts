@@ -12,6 +12,12 @@ export enum TestbedEvents {
     Send = 'send'
 }
 
+export enum Meta {
+    Name = 'name', // platform name
+    Version = 'version', // platform version
+    Architecture = 'architecture', // platform architecture
+}
+
 export declare interface Testbed extends EventEmitter {
     readonly name: string;
 
@@ -30,4 +36,6 @@ export declare interface Testbed extends EventEmitter {
     on(event: TestbedEvents.Ready, listener: (data: string) => void): this;
 
     on(event: TestbedEvents.Send, listener: (data: string) => void): this;
+
+    meta(): Promise<string>;
 }

@@ -138,6 +138,7 @@ export class Framework {
                     try {
                         const first: TestScenario = order[i][0];
                         await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+                        this.reportMetadata(runId, testee);
 
                         for (let j = i; j < order.length; j += suite.testees.length) {
                             await this.runSuite(result, testee, order[j], runId);
@@ -189,6 +190,7 @@ export class Framework {
         try {
             const first: TestScenario = order[0];
             await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+            this.reportMetadata(runId, testee);
             await this.runSuite(result, testee, order, runId);
         } catch (e) {
             result.error(e instanceof Error ? e.message : `${e}`);
@@ -207,6 +209,13 @@ export class Framework {
 
     private runId(suite: Suite, testee: Testee, executionIndex: number): string {
         return `${suite.title}:${testee.name}:${executionIndex}`;
+    }
+
+    private reportMetadata(runId: string, testee: Testee): void {
+        const testbed = testee.bed();
+        if (testbed !== undefined) {
+            this.reporter.metadata?.(runId, testbed.meta());
+        }
     }
 
     public static getImplementation() {

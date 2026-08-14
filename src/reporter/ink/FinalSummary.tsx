@@ -11,11 +11,10 @@ import {preservesFullHistory, showsActionDetails} from './verbosity';
 
 interface Props {
     snapshot: ReporterSnapshot;
-    archive: string;
     verbosity: Verbosity;
 }
 
-export function FinalSummary({snapshot, archive, verbosity}: Props) {
+export function FinalSummary({snapshot, verbosity}: Props) {
     if (!snapshot.finished) {
         return null;
     }
@@ -90,8 +89,6 @@ export function FinalSummary({snapshot, archive, verbosity}: Props) {
             <Text><Text bold>Suites</Text>     {alignRight(`${summary.suites.passing}`, firstCountWidth)} passed · {summary.suites.failing} failed</Text>
             <Text><Text bold>Scenarios</Text>  {alignRight(`${summary.scenarios.passing}`, firstCountWidth)} passed · {summary.scenarios.failing} failed · {summary.scenarios.errors} errors · {summary.scenarios.skipped} skipped</Text>
             <Text><Text bold>Actions</Text>    {alignRight(`${summary.actions.passing}`, firstCountWidth)} passed · {summary.actions.failing} failed · {summary.actions.errors} errors · {summary.actions.timeouts} timeouts</Text>
-            <Text> </Text>
-            <Text><Text bold>Archive</Text>  {archive}</Text>
         </Box>
     );
 }

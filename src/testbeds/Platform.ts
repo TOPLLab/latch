@@ -27,6 +27,10 @@ export abstract class Platform extends EventEmitter implements Testbed {
         this.messages = new MessageQueue('\n');
     }
 
+    meta(): Promise<string> {
+        throw new Error("Method not implemented.");
+    }
+
     // listen on duplex channel
     protected listen(): void {
         this.connection.channel.on('data', (data: Buffer) => {

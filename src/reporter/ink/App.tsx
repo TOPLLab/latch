@@ -1,7 +1,7 @@
 import {Box} from 'ink';
 import {ReporterSnapshot} from '../ReporterState';
 import {Verbosity} from '../index';
-import {RunHeader} from './RunHeader';
+import {Header} from './Header';
 import {ProgressSummary} from './ProgressSummary';
 import {SuiteList} from './SuiteList';
 import {LogPanel} from './LogPanel';
@@ -13,14 +13,16 @@ interface Props {
     snapshot: ReporterSnapshot;
     archive: string;
     verbosity: Verbosity;
+    metadata?: Promise<string>[];
+    metadataRevision?: number;
 }
 
-export function App({snapshot, archive, verbosity}: Props) {
+export function App({snapshot, archive, verbosity, metadata, metadataRevision}: Props) {
     if (snapshot.finished) {
         return (
             <Box flexDirection="column">
-                <RunHeader archive={archive}/>
-                <FinalSummary snapshot={snapshot} archive={archive} verbosity={verbosity}/>
+                <Header archive={archive} metadata={metadata} metadataRevision={metadataRevision}/>
+                <FinalSummary snapshot={snapshot} verbosity={verbosity}/>
                 {showsDebugDetails(verbosity) ? <LogPanel logs={snapshot.logs} verbosity={verbosity}/> : null}
             </Box>
         );
@@ -28,7 +30,7 @@ export function App({snapshot, archive, verbosity}: Props) {
 
     return (
         <Box flexDirection="column">
-            <RunHeader archive={archive}/>
+            <Header archive={archive} metadata={metadata} metadataRevision={metadataRevision}/>
             <SuiteList snapshot={snapshot} verbosity={verbosity}/>
             {verbosity === Verbosity.normal ? <ActiveFailures snapshot={snapshot}/> : null}
             <ProgressSummary snapshot={snapshot}/>
