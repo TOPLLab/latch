@@ -74,4 +74,4 @@ const specScenarios: TestScenario[] = fs.readdirSync(specDirectory)
 spec.tests(specScenarios);
 
 framework.reporter.verbosity(Verbosity.normal);
-framework.analyse([r3, spec]);
+framework.sequential([r3, spec]).then(success => process.exit(success ? 0 : 1));

@@ -65,7 +65,9 @@ export class Framework {
         return this.scheduled;
     }
 
-    public async sequential(suites: Suite[]) {
+    public async sequential(suites: Suite[]): Promise<boolean> {
+        let success: boolean = true;
+
         this.scheduled = this.scheduled.concat(suites);
         this.reporter.start();
         const t0 = performance.now();
@@ -74,11 +76,14 @@ export class Framework {
             for (const suite of suites) {
                 for (const testee of suite.testees) {
                     const order: TestScenario[] = suite.scheduler.sequential(suite);
-                    await this.executeSuite(suite, testee, order, ++executionIndex);
+                    const result = await this.executeSuite(suite, testee, order, ++executionIndex);
+                    success = success && result.outcome === Outcome.succeeded;
                 }
             }
 
             await this.shutdown(suites);
+
+            return success;
         } finally {
             const t1 = performance.now();
             await this.reporter.finish(t1 - t0);
