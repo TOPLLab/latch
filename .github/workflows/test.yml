@@ -46,7 +46,7 @@ jobs:
       - name: Build WARDuino CLI
         uses: ./.github/actions/build-warduino
         with:
-          version: 0.8.1
+          version: nanopb
 
       - name: Upload built tools
         uses: actions/upload-artifact@v4
