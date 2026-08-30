@@ -11,7 +11,9 @@ import {
     NotificationType,
     OperationResult
 } from '../../src/protocol/vendor/debug';
-import {WARDuino} from '../../src/debug/WARDuino';
+import {WARDuino} from "../../src/debug/WARDuino";
+import {Testee} from "../../src/framework/Testee";
+import {EmulatorSpecification} from "../../src/testbeds/TestbedSpecification";
 
 class TestChannel extends Duplex {
     readonly sent: Buffer[] = [];
@@ -42,6 +44,23 @@ class TestPlatform extends Platform {
 }
 
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
+
+test("[testee] successful void requests are not retried", async t => {
+    const testee = new Testee("test", new EmulatorSpecification(0), 0, 0);
+    const recoverable = (testee as unknown as {recoverable: (...args: any[]) => Promise<unknown>}).recoverable;
+    let attempts = 0;
+    let recoveries = 0;
+
+    const result = await recoverable(
+        testee, Message.run, new SourceMap.Mapping(),
+        async () => { attempts++; },
+        async () => { recoveries++; }, 1
+    );
+
+    t.is(result, undefined);
+    t.is(attempts, 1);
+    t.is(recoveries, 0);
+});
 
 // file is currently excluded from tests
 

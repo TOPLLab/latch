@@ -2,7 +2,8 @@ import {WARDuino} from '../debug/WARDuino';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
 import {SourceMap} from '../sourcemap/SourceMap';
-import {readFileSync} from 'fs';
+import {readFileSync} from "fs";
+import {remoteFunctionResultParser} from "./Parsers";
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import WasmValue = WASM.Value;
@@ -22,7 +23,6 @@ import {
     NotificationType,
     OperationResult,
     RemoteFunctionCall,
-    RemoteFunctionResult,
     Snapshot,
     Value as ProtocolValue
 } from '../protocol/vendor/debug';
@@ -54,7 +54,7 @@ export const notificationParsers = {
     [NotificationType.NOTIFICATION_MALFORMED]: emptyNotification,
     [NotificationType.NOTIFICATION_UNKNOWN_COMMAND]: emptyNotification,
     [NotificationType.NOTIFICATION_OPERATION_RESULT]: OperationResult.decode,
-    [NotificationType.NOTIFICATION_REMOTE_FUNCTION_RESULT]: RemoteFunctionResult.decode,
+    [NotificationType.NOTIFICATION_REMOTE_FUNCTION_RESULT]: remoteFunctionResultParser,
     [NotificationType.NOTIFICATION_CHECKPOINT]: Checkpoint.decode
 } as const;
 
@@ -191,7 +191,7 @@ export namespace Message {
         }
     }
 
-    export function invoke(func: string, args: WasmValue<Type>[]): Request<RemoteFunctionResult> {
+    export function invoke(func: string, args: WasmValue<Type>[]): Request<WasmValue<Type> | Exception> {
         function fidx(map: SourceMap.Mapping, func: string): number {
             const index: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
             if (index === undefined) {

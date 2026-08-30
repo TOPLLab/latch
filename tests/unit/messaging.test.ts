@@ -3,7 +3,7 @@ import {MessageQueue} from '../../src/messaging/MessageQueue';
 import {Message} from '../../src/messaging/Message';
 import {WASM} from '../../src/sourcemap/Wasm';
 import {SourceMap} from '../../src/sourcemap/SourceMap';
-import {RemoteFunctionCall} from '../../src/protocol/vendor/debug';
+import {RemoteFunctionCall, RemoteFunctionResult} from "../../src/protocol/vendor/debug";
 
 const alphanumerical = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.split('');
 
@@ -27,7 +27,22 @@ test('[Message.invoke] : encode 64-bit integer arguments without precision loss'
     ]);
 });
 
-test('[MessageQueue] : test EOM detection', t => {
+test("[Message.invoke] : decodes an i64 reply to the legacy value contract", t => {
+    const request = Message.invoke("unused", []);
+    const result = request.parser(RemoteFunctionResult.encode({
+        success: true,
+        results: [{i64Bits: 0n, index: 0}],
+        error: Buffer.alloc(0)
+    }).finish());
+
+    t.false("text" in result);
+    if ("text" in result) return;
+    t.is(result.type, WASM.Integer.i64);
+    t.is((result.value as WASM.WasmInt).toBigInt(), 0n);
+    t.false("success" in result);
+});
+
+test("[MessageQueue] : test EOM detection", t => {
     const fuzzer = fuzzy(alphanumerical);
     const newline = new MessageQueue('\n');
     newline.push(fuzzer(9));
