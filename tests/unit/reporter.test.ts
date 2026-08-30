@@ -99,7 +99,7 @@ test('ArchiveWriter preserves archive fields', t => {
         suite.add(sc);
 
         const writer = new ArchiveWriter(1234);
-        writer.write(42.4, [suite]);
+        writer.write(42.4, [suite], [{name: 'warduino', architecture: 'emulator', version: '0.8.0', suites: 1}]);
 
         const archived = JSON.parse(readFileSync(writer.archive, 'utf8'));
         t.is(archived['duration (ms)'], 42);
@@ -107,6 +107,7 @@ test('ArchiveWriter preserves archive fields', t => {
         t.is(archived['passed scenarios'], 1);
         t.is(archived['skipped scenarios'], 0);
         t.is(archived['failed scenarios'], 0);
+        t.deepEqual(archived.testbeds, [{name: 'warduino', architecture: 'emulator', version: '0.8.0', suites: 1}]);
     } finally {
         if (previous === undefined) {
             delete process.env.TESTFILE;

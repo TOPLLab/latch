@@ -1,11 +1,12 @@
 import React from 'react';
 import {Instance, render} from 'ink';
-import {ArchiveWriter} from '../ArchiveWriter';
+import {ArchivedTestbed, ArchiveWriter} from '../ArchiveWriter';
 import {Reporter, SuiteRun} from '../Reporter';
 import {ReporterState} from '../ReporterState';
 import {ScenarioResult, StepOutcome, SuiteResult} from '../Results';
 import {Verbosity} from '../index';
 import {App} from './App';
+import {Meta} from '../../testbeds/Testbed';
 
 export class InkReporter implements Reporter {
     private readonly state = new ReporterState();
@@ -80,9 +81,9 @@ export class InkReporter implements Reporter {
         this.rerender();
     }
 
-    finish(durationMs: number) {
+    async finish(durationMs: number) {
         this.state.finish(durationMs);
-        this.archiveWriter.write(durationMs, this.state.suites());
+        this.archiveWriter.write(durationMs, this.state.suites(), await this.archiveMetadata());
         this.rerender();
     }
 
@@ -111,6 +112,40 @@ export class InkReporter implements Reporter {
             metadata: Array.from(this.testbedMetadata.values()),
             metadataRevision: this.metadataRevision
         });
+    }
+
+    private async archiveMetadata(): Promise<ArchivedTestbed[]> {
+        const metadata = await Promise.all(Array.from(this.testbedMetadata.values()).map(async entry => {
+            try {
+                const parsed = JSON.parse(await entry) as Record<string, unknown>;
+                const name = parsed[Meta.Name];
+                const architecture = parsed[Meta.Architecture];
+                const version = parsed[Meta.Version];
+
+                return typeof name === 'string' && typeof architecture === 'string' && typeof version === 'string'
+                    ? {name, architecture, version}
+                    : undefined;
+            } catch {
+                return undefined;
+            }
+        }));
+
+        const testbeds = new Map<string, ArchivedTestbed>();
+        for (const metadataEntry of metadata) {
+            if (metadataEntry === undefined) {
+                continue;
+            }
+
+            const key = JSON.stringify(metadataEntry);
+            const testbed = testbeds.get(key);
+            if (testbed !== undefined) {
+                testbed.suites++;
+            } else {
+                testbeds.set(key, {...metadataEntry, suites: 1});
+            }
+        }
+
+        return Array.from(testbeds.values());
     }
 
     private async flushInk(): Promise<void> {

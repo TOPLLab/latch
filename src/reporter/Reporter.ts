@@ -33,7 +33,7 @@ export interface Reporter {
 
     metadata?(runId: string, metadata: Promise<string>): void;
 
-    finish(durationMs: number): void;
+    finish(durationMs: number): void | Promise<void>;
 
     close(): Promise<void>;
 

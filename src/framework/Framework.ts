@@ -81,7 +81,7 @@ export class Framework {
             await this.shutdown(suites);
         } finally {
             const t1 = performance.now();
-            this.reporter.finish(t1 - t0);
+            await this.reporter.finish(t1 - t0);
             await this.reporter.close();
         }
     }
@@ -107,7 +107,7 @@ export class Framework {
             return success;
         } finally {
             const t1 = performance.now();
-            this.reporter.finish(t1 - t0);
+            await this.reporter.finish(t1 - t0);
             await this.reporter.close();
         }
     }
@@ -156,7 +156,7 @@ export class Framework {
             }))
         } finally {
             const t1 = performance.now();
-            this.reporter.finish(t1 - t0);
+            await this.reporter.finish(t1 - t0);
             await this.reporter.close();
         }
     }
