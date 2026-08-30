@@ -32,7 +32,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist out tsconfig.build.tsbuildinfo",
-    "build": "npm run protocol:generate && tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.build.json",
     "build:tests": "tsc --outDir out --project tsconfig.tests.json",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src/**/* --config .eslint.config.mjs",
