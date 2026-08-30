@@ -137,7 +137,7 @@ export class Framework {
 
                     try {
                         const first: TestScenario = order[i][0];
-                        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+                        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: unknown) => result.error(errorMessage(e))));
                         this.reportMetadata(runId, testee);
 
                         for (let j = i; j < order.length; j += suite.testees.length) {
@@ -189,7 +189,7 @@ export class Framework {
 
         try {
             const first: TestScenario = order[0];
-            await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+            await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: unknown) => result.error(errorMessage(e))));
             this.reportMetadata(runId, testee);
             await this.runSuite(result, testee, order, runId);
         } catch (e) {
@@ -225,4 +225,8 @@ export class Framework {
 
         return Framework.implementation;
     }
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-this-alias */
 import {ChildProcess, exec, spawn} from 'child_process';
 import {ReadlineParser, SerialPort, SerialPortOpenOptions} from 'serialport';
 import {Readable} from 'stream';
@@ -136,6 +137,13 @@ export class EmulatorUploader extends Uploader {
 
             if (isReadable(process.stdout)) {
                 let error: string = '';
+                process.stderr?.on('data', (data: Buffer) => {
+                    error = data.toString().trim() || error;
+                    listener?.(data);
+                });
+                process.once('error', (err: Error) => {
+                    error = err.message;
+                });
 
                 const reader = new ReadlineParser();
                 process.stdout.pipe(reader);
@@ -168,7 +176,7 @@ export class EmulatorUploader extends Uploader {
 
                 reader.on('close', () => {
                     that.emit(UploaderEvents.failed);
-                    reject(`Could not connect. Error:  ${error}`);
+                    reject(new Error('Could not connect. Error: ' + (error || 'WARDuino exited before opening port ' + that.port)));
                 });
             } else {
                 that.emit(UploaderEvents.failed);
