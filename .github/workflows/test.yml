@@ -42,29 +42,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Build WARDuino CLI
+        uses: ./.github/actions/build-warduino
         with:
-          submodules: recursive
-
-      - name: Get WDCLI commit ID
-        working-directory: tests/artifacts/warduino
-        run: echo "WDCLI_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
-
-      - name: Cache WARDuino CLI
-        uses: actions/cache@v4
-        id: cache-warduino
-        with:
-          key: ${{ runner.os }}-warduino-${{ env.WDCLI_VERSION }}
-          path: tests/artifacts/warduino
-          restore-keys: |
-            ${{ runner.os }}-warduino-
-
-      - name: Build WARDuino CLI  # Build latest version
-        if: steps.cache-warduino.outputs.cache-hit == false
-        working-directory: tests/artifacts/warduino
-        run: |
-          mkdir build; cd build
-          cmake .. -D BUILD_EMULATOR=ON
-          cmake --build .
+          version: 0.8.1
 
       - name: Upload built tools
         uses: actions/upload-artifact@v4
