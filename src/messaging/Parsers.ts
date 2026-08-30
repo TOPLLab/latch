@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {WASM} from '../sourcemap/Wasm';
 import {Ack, Exception} from './Message';
 import {Breakpoint} from '../debug/Breakpoint';

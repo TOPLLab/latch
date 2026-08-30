@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {setTimeout} from 'timers/promises';
 import {Testee} from '../Testee';
 import {TestbedEvents} from '../../testbeds/Testbed';

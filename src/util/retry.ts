@@ -1,16 +1,12 @@
 export function retry<T>(promise: () => Promise<T>, retries: number): Promise<T> {
-    return new Promise<T>(async function (resolve, reject) {
-        let attempt: number = 0;
-        let trying: boolean = true;
-        while (trying) {
-            trying = false;
+    return (async () => {
+        for (let attempt = 0; attempt < retries; attempt++) {
             try {
-                const result: T = await promise();
-                resolve(result);
+                return await promise();
             } catch {
-                trying = ++attempt < retries;
+                // retry
             }
         }
-        reject(new Error(`exhausted number of retries (${retries})`));
-    });
+        throw new Error("exhausted number of retries (" + retries + ")");
+    })();
 }

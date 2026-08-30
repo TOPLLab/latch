@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {Action} from './Actions';
 import {Request} from '../../messaging/Message'
 import {Target} from '../Testee';

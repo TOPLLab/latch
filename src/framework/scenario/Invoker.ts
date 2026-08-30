@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {Expectation, Expected, Instruction, Kind, Step} from './Step';
 import {WASM} from '../../sourcemap/Wasm';
 import {Message} from '../../messaging/Message';

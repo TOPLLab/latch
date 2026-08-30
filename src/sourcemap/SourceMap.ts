@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 export namespace SourceMap {
 
     export interface Location {
@@ -45,7 +46,7 @@ export namespace SourceMap {
         }
     }
 
-// TODO rework to map address to lines (instead of the other way around)
+    // TODO rework to map address to lines (instead of the other way around)
 
     export interface SourceLine {
         line: number;
