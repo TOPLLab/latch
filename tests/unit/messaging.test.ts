@@ -3,6 +3,7 @@ import {MessageQueue} from '../../src/messaging/MessageQueue';
 import {Message} from '../../src/messaging/Message';
 import {WASM} from '../../src/sourcemap/Wasm';
 import {SourceMap} from '../../src/sourcemap/SourceMap';
+import {RemoteFunctionCall} from '../../src/protocol/vendor/debug';
 
 const alphanumerical = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.split('');
 
@@ -18,7 +19,12 @@ test('[Message.invoke] : encode 64-bit integer arguments without precision loss'
         WASM.i64(-1n)
     ]);
 
-    t.is(request.payload!(mapping), '008080808080808080807f7f');
+    const payload = RemoteFunctionCall.decode(request.payload!(mapping));
+    t.is(payload.functionIndex, 0);
+    t.deepEqual(payload.arguments.map(({i64Bits, index}) => ({i64Bits, index})), [
+        {i64Bits: 0x8000000000000000n, index: 0},
+        {i64Bits: 0xffffffffffffffffn, index: 1}
+    ]);
 });
 
 test('[MessageQueue] : test EOM detection', t => {
@@ -94,3 +100,20 @@ const fuzzy = (characters: string[]): (n: number) => string => {
         return result;
     };
 }
+import {Command, ContinueFor} from "../../src/protocol/vendor/debug";
+import {DebugFrameDecoder, encodeFrame} from "../../src/protocol/frame";
+
+test("[debug protocol] encodes WARDuino CONTINUE_FOR fixture", t => {
+    const payload = ContinueFor.encode({count: 5}).finish();
+    const frame = encodeFrame({type: Command.COMMAND_CONTINUE_FOR, payload});
+    t.deepEqual(frame, Buffer.from([0x16, 0x02, 0x08, 0x05]));
+});
+
+test("[debug protocol] decodes fragmented WARDuino frames", t => {
+    const decoder = new DebugFrameDecoder();
+    t.deepEqual(decoder.push(Buffer.from([0x16, 0x02])), []);
+    t.deepEqual(decoder.push(Buffer.from([0x08, 0x05])), [{
+        type: Command.COMMAND_CONTINUE_FOR,
+        payload: Buffer.from([0x08, 0x05])
+    }]);
+});

@@ -1,6 +1,6 @@
 import test from 'ava';
 import {invokeParser, signed} from "../../src/messaging/Parsers";
-import {Exception, Expected, Kind, Step, WARDuino, WASM} from "../../src";
+import {Exception, Expected, Kind, Message, Step, WASM} from "../../src";
 import {Verifier} from "../../src/framework/Verifier";
 import Type = WASM.Type;
 import WasmInt = WASM.WasmInt;
@@ -117,7 +117,7 @@ test('[verifier] : numeric mismatch is reported as failure, not missing field', 
         title: 'CHECK: numeric mismatch',
         instruction: {
             kind: Kind.Request,
-            value: {type: WARDuino.Interrupt.invoke, payload: () => '', parser: invokeParser}
+            value: Message.invoke('unused', [])
         },
         expected: [{'value': {kind: 'primitive', value: -8.881785255792436e-16} as Expected<number>}]
     };

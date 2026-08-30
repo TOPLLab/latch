@@ -1,17 +1,31 @@
 import {WARDuino} from '../debug/WARDuino';
-import {ackParser, breakpointParser, invokeParser, stateParser} from './Parsers';
 import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
-import {write} from 'ieee754';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {readFileSync} from 'fs';
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
-import {encodeSLEB128, encodeULEB128} from '@thi.ng/leb128';
-import Interrupt = WARDuino.Interrupt;
-import State = WARDuino.State;
-import Value = WASM.Value;
+import WasmValue = WASM.Value;
 import Type = WASM.Type;
+import {
+    Breakpoint as ProtocolBreakpoint,
+    CallbackMapping,
+    Checkpoint,
+    Command,
+    Event as ProtocolEvent,
+    EventsQueue,
+    FunctionMessage,
+    HitBreakpoint,
+    Inspect as ProtocolInspect,
+    Locals,
+    ModuleUpdate,
+    NotificationType,
+    OperationResult,
+    RemoteFunctionCall,
+    RemoteFunctionResult,
+    Snapshot,
+    Value as ProtocolValue
+} from '../protocol/vendor/debug';
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -20,11 +34,39 @@ export interface Ack {
 
 export type Exception = Ack;
 
+const emptyNotification = (payload: Uint8Array): void => {
+    if (payload.length !== 0) throw Error('Expected an empty notification payload.');
+};
+
+export const notificationParsers = {
+    [NotificationType.NOTIFICATION_CONTINUED]: emptyNotification,
+    [NotificationType.NOTIFICATION_HALTED]: emptyNotification,
+    [NotificationType.NOTIFICATION_PAUSED]: emptyNotification,
+    [NotificationType.NOTIFICATION_STEPPED]: emptyNotification,
+    [NotificationType.NOTIFICATION_HIT_BREAKPOINT]: HitBreakpoint.decode,
+    [NotificationType.NOTIFICATION_NEW_EVENT]: emptyNotification,
+    [NotificationType.NOTIFICATION_FUNCTION_DUMP]: FunctionMessage.decode,
+    [NotificationType.NOTIFICATION_LOCALS_DUMP]: Locals.decode,
+    [NotificationType.NOTIFICATION_SNAPSHOT]: Snapshot.decode,
+    [NotificationType.NOTIFICATION_EVENTS_DUMP]: EventsQueue.decode,
+    [NotificationType.NOTIFICATION_CALLBACKS_DUMP]: CallbackMapping.decode,
+    [NotificationType.NOTIFICATION_CHANGE_AFFECTED]: emptyNotification,
+    [NotificationType.NOTIFICATION_MALFORMED]: emptyNotification,
+    [NotificationType.NOTIFICATION_UNKNOWN_COMMAND]: emptyNotification,
+    [NotificationType.NOTIFICATION_OPERATION_RESULT]: OperationResult.decode,
+    [NotificationType.NOTIFICATION_REMOTE_FUNCTION_RESULT]: RemoteFunctionResult.decode,
+    [NotificationType.NOTIFICATION_CHECKPOINT]: Checkpoint.decode
+} as const;
+
+export type Notification = keyof typeof notificationParsers;
+export type NotificationResult<N extends Notification> = ReturnType<(typeof notificationParsers)[N]>;
+
 // A request represents a debug message and its parser
 export interface Request<R> {
-    type: Interrupt,            // type of the debug message (pause, run, step, ...)
-    payload?: (map: SourceMap.Mapping) => string,             // optional payload of the debug message
-    parser: (input: string) => R  // the parser for the response to the debug message
+    type: Command,
+    notification: NotificationType,
+    payload?: (map: SourceMap.Mapping) => Uint8Array,
+    parser: (payload: Uint8Array) => R
 }
 
 /* eslint-disable @typescript-eslint/no-namespace */
@@ -32,198 +74,189 @@ export namespace Message {
     import Inspect = WARDuino.Inspect;
     import Float = WASM.Float;
     import isFloat = WASM.isFloat;
-    export const run: Request<Ack> = {
-        type: Interrupt.run,
-        parser: (line: string) => {
-            return ackParser(line, 'GO');
-        }
+
+    export const run: Request<void> = {
+        type: Command.COMMAND_RUN,
+        notification: NotificationType.NOTIFICATION_CONTINUED,
+        parser: notificationParsers[NotificationType.NOTIFICATION_CONTINUED]
     };
 
-    export const halt: Request<Ack> = {
-        type: Interrupt.halt,
-        parser: (line: string) => {
-            return ackParser(line, 'STOP');
-        }
+    export const halt: Request<void> = {
+        type: Command.COMMAND_HALT,
+        notification: NotificationType.NOTIFICATION_HALTED,
+        parser: notificationParsers[NotificationType.NOTIFICATION_HALTED]
     };
 
-    export const pause: Request<Ack> = {
-        type: Interrupt.pause,
-        parser: (line: string) => {
-            return ackParser(line, 'PAUSE');
-        }
+    export const pause: Request<void> = {
+        type: Command.COMMAND_PAUSE,
+        notification: NotificationType.NOTIFICATION_PAUSED,
+        parser: notificationParsers[NotificationType.NOTIFICATION_PAUSED]
     };
 
-    export const step: Request<Ack> = {
-        type: Interrupt.step,
-        parser: (line: string) => {
-            return ackParser(line, 'STEP');
-        }
+    export const step: Request<void> = {
+        type: Command.COMMAND_STEP,
+        notification: NotificationType.NOTIFICATION_STEPPED,
+        parser: notificationParsers[NotificationType.NOTIFICATION_STEPPED]
     };
 
-    export const stepOver: Request<Ack> = {
-        type: Interrupt.stepOver,
-        parser: (line: string): Ack => {
-            try {
-                return ackParser(line, 'STEP');
-            } catch (_err) {
-                return ackParser(line, 'AT ');
-            }
-        }
+    export const stepOver: Request<void> = {
+        type: Command.COMMAND_STEP_OVER,
+        notification: NotificationType.NOTIFICATION_STEPPED,
+        parser: notificationParsers[NotificationType.NOTIFICATION_STEPPED]
     };
 
-    export function addBreakpoint(payload: Breakpoint): Request<Breakpoint> {
+    export function addBreakpoint(payload: Breakpoint): Request<OperationResult> {
         return {
-            type: Interrupt.addBreakpoint,
-            payload: () => payload.toString(),
-            parser: breakpointParser
+            type: Command.COMMAND_ADD_BREAKPOINT,
+            notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+            payload: () => ProtocolBreakpoint.encode({
+                location: {moduleIndex: 0, programCounter: payload.id}
+            }).finish(),
+            parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
         };
     }
 
-    export function removeBreakpoint(payload: Breakpoint): Request<Breakpoint> {
+    export function removeBreakpoint(payload: Breakpoint): Request<OperationResult> {
         return {
-            type: Interrupt.removeBreakpoint,
-            payload: () => payload.toString(),
-            parser: breakpointParser
+            type: Command.COMMAND_REMOVE_BREAKPOINT,
+            notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+            payload: () => ProtocolBreakpoint.encode({
+                location: {moduleIndex: 0, programCounter: payload.id}
+            }).finish(),
+            parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
         };
     }
 
-    export function inspect(fields: Inspect[]): Request<State> {
+    export function inspect(fields: Inspect[]): Request<Snapshot> {
         return {
-            type: Interrupt.inspect,
-            payload: () => fields.length.toString(16).padStart(4, '0') + fields.join('')
-            ,
-            parser: stateParser
+            type: Command.COMMAND_INSPECT,
+            notification: NotificationType.NOTIFICATION_SNAPSHOT,
+            payload: () => ProtocolInspect.encode({
+                state: Buffer.from(fields.map(field => Number.parseInt(field, 16)))
+            }).finish(),
+            parser: notificationParsers[NotificationType.NOTIFICATION_SNAPSHOT]
         }
     }
 
-    export const dump: Request<State> = {
-        type: Interrupt.dump,
-        parser: stateParser
+    export const dump: Request<FunctionMessage> = {
+        type: Command.COMMAND_DUMP,
+        notification: NotificationType.NOTIFICATION_FUNCTION_DUMP,
+        parser: notificationParsers[NotificationType.NOTIFICATION_FUNCTION_DUMP]
     };
 
-    export const dumpLocals: Request<State> = {
-        type: Interrupt.dumpLocals,
-        parser: stateParser
+    export const dumpLocals: Request<Locals> = {
+        type: Command.COMMAND_DUMP_LOCALS,
+        notification: NotificationType.NOTIFICATION_LOCALS_DUMP,
+        parser: notificationParsers[NotificationType.NOTIFICATION_LOCALS_DUMP]
     };
 
-    export const dumpAll: Request<State> = {
-        type: Interrupt.dumpAll,
-        parser: stateParser
+    export const reset: Request<OperationResult> = {
+        type: Command.COMMAND_RESET,
+        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
     };
 
-    export const reset: Request<Ack> = {
-        type: Interrupt.reset,
-        parser: (line: string) => {
-            return ackParser(line, 'RESET');
-        }
-    };
-
-    export const updateFunction: Request<Ack> = {
-        type: Interrupt.updateFunction,
-        parser: (line: string) => {
-            return ackParser(line, 'CHANGE function');
-        }
+    export const updateFunction: Request<OperationResult> = {
+        type: Command.COMMAND_UPDATE_FUNCTION,
+        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
     }
 
-    export const updateLocal: Request<Ack> = {
-        type: Interrupt.updateLocal,
-        parser: (line: string) => {
-            return ackParser(line, 'CHANGE local');
-        }
+    export const updateLocal: Request<OperationResult> = {
+        type: Command.COMMAND_UPDATE_LOCAL,
+        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
     }
 
-    export async function uploadFile(program: string): Promise<Request<Ack>> {
+    export async function uploadFile(program: string): Promise<Request<OperationResult>> {
         const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program);
         return updateModule(compiled.file);
     }
 
-    export function updateModule(wasm: string): Request<Ack> {
-        function payload(binary: Buffer): string {
-            const w = new Uint8Array(binary);
-            const sizeHex = Buffer.from(encodeULEB128(w.length)).toString('hex');
-            const sizeBuffer = Buffer.allocUnsafe(4);
-            sizeBuffer.writeUint32BE(w.length);
-            const wasmHex = Buffer.from(w).toString('hex');
-            return sizeHex + wasmHex;
-        }
-
+    export function updateModule(wasm: string): Request<OperationResult> {
         return {
-            type: Interrupt.updateModule,
-            payload: () => payload(readFileSync(wasm)),
-            parser: (line: string) => {
-                return ackParser(line, 'CHANGE Module');
-            }
+            type: Command.COMMAND_UPDATE_MODULE,
+            notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+            payload: () => ModuleUpdate.encode({wasm: readFileSync(wasm)}).finish(),
+            parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
         }
     }
 
-    export function pushEvent(topic: string, payload: string): Request<Ack> {
+    export function pushEvent(topic: string, payload: string): Request<void> {
         return {
-            type: Interrupt.pushEvent,
-            payload: () => `{topic: '${topic}', payload: '${payload}'}`,
-            parser: (line: string) => {
-                return ackParser(line, 'Interrupt: 73');
-            }
+            type: Command.COMMAND_PUSH_EVENT,
+            notification: NotificationType.NOTIFICATION_NEW_EVENT,
+            payload: () => ProtocolEvent.encode({topic, payload: Buffer.from(payload)}).finish(),
+            parser: notificationParsers[NotificationType.NOTIFICATION_NEW_EVENT]
         }
     }
 
-    export function invoke(func: string, args: Value<Type>[]): Request<WASM.Value<Type> | Exception> {
+    export function invoke(func: string, args: WasmValue<Type>[]): Request<RemoteFunctionResult> {
         function fidx(map: SourceMap.Mapping, func: string): number {
-            const fidx: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
-            if (fidx === undefined) {
+            const index: number | void = map.functions.find((closure: SourceMap.Closure) => closure.name === func)?.index;
+            if (index === undefined) {
                 throw Error(`Sourcemap: index of ${func} not found.`);
             }
-            return fidx!;
+            return index;
         }
 
-        function convert(args: Value<Type>[]) {
-            let payload: string = '';
-            args.forEach((arg: Value<Type>) => {
-                if (isFloat(arg.type)) {
-                    const buff = Buffer.alloc(arg.type === Float.f32 ? 4 : 8);
-                    write(buff, Number(arg.value), 0, true, arg.type === Float.f32 ? 23 : 52, buff.length);  // todo fix precision loss
-                    payload += buff.toString('hex');
-                } else if (arg.type === WASM.Integer.i32 || arg.type === WASM.Integer.i64) {
-                    payload += Buffer.from(encodeSLEB128((arg.value as WASM.WasmInt).toBigInt())).toString('hex');
-                } else if (arg.type === WASM.Integer.u32 || arg.type === WASM.Integer.u64) {
-                    payload += Buffer.from(encodeULEB128((arg.value as WASM.WasmInt).toBigInt())).toString('hex');
-                } else {
-                    throw Error(`Cannot invoke a function with a ${arg.type} argument.`);
+        function convert(arg: WasmValue<Type>, index: number): ProtocolValue {
+            if (arg.type === WASM.Integer.i32 || arg.type === WASM.Integer.u32) {
+                return {i32Bits: Number(BigInt.asUintN(32, (arg.value as WASM.WasmInt).toBigInt())), index};
+            }
+            if (arg.type === WASM.Integer.i64 || arg.type === WASM.Integer.u64) {
+                return {i64Bits: BigInt.asUintN(64, (arg.value as WASM.WasmInt).toBigInt()), index};
+            }
+            if (isFloat(arg.type)) {
+                const buffer = Buffer.allocUnsafe(arg.type === Float.f32 ? 4 : 8);
+                if (arg.type === Float.f32) {
+                    buffer.writeFloatLE(Number(arg.value));
+                    return {f32Bits: buffer.readUInt32LE(), index};
                 }
-            });
-            return payload;
+                buffer.writeDoubleLE(Number(arg.value));
+                return {f64Bits: buffer.readBigUInt64LE(), index};
+            }
+            throw Error(`Cannot invoke a function with a ${arg.type} argument.`);
         }
 
         return {
-            type: Interrupt.invoke,
-            payload: (map: SourceMap.Mapping) => `${Buffer.from(encodeULEB128(fidx(map, func))).toString('hex')}${convert(args)}`,
-            parser: invokeParser
+            type: Command.COMMAND_INVOKE,
+            notification: NotificationType.NOTIFICATION_REMOTE_FUNCTION_RESULT,
+            payload: (map: SourceMap.Mapping) => RemoteFunctionCall.encode({
+                functionIndex: fidx(map, func),
+                arguments: args.map(convert)
+            }).finish(),
+            parser: notificationParsers[NotificationType.NOTIFICATION_REMOTE_FUNCTION_RESULT]
         }
     }
 
-    export const snapshot: Request<State> = {
-        type: Interrupt.snapshot,
-        parser: stateParser
+    export const snapshot: Request<Snapshot> = {
+        type: Command.COMMAND_SNAPSHOT,
+        notification: NotificationType.NOTIFICATION_SNAPSHOT,
+        parser: notificationParsers[NotificationType.NOTIFICATION_SNAPSHOT]
     }
 
-    export const dumpAllEvents: Request<State> = {
-        type: Interrupt.dumpAllEvents,
-        parser: stateParser
+    export const dumpAllEvents: Request<EventsQueue> = {
+        type: Command.COMMAND_DUMP_EVENTS,
+        notification: NotificationType.NOTIFICATION_EVENTS_DUMP,
+        parser: notificationParsers[NotificationType.NOTIFICATION_EVENTS_DUMP]
     }
 
-    export const dumpEvents: Request<State> = {
-        type: Interrupt.dumpEvents,
-        parser: stateParser
+    export const dumpEvents: Request<EventsQueue> = {
+        type: Command.COMMAND_DUMP_EVENTS,
+        notification: NotificationType.NOTIFICATION_EVENTS_DUMP,
+        parser: notificationParsers[NotificationType.NOTIFICATION_EVENTS_DUMP]
     }
 
-    export const dumpCallbackmapping: Request<State> = {
-        type: Interrupt.dumpCallbackmapping,
-        parser: stateParser
+    export const dumpCallbackmapping: Request<CallbackMapping> = {
+        type: Command.COMMAND_DUMP_CALLBACKS,
+        notification: NotificationType.NOTIFICATION_CALLBACKS_DUMP,
+        parser: notificationParsers[NotificationType.NOTIFICATION_CALLBACKS_DUMP]
     }
 
-    export const proxifyRequest: Request<Ack> = {
-        type: Interrupt.proxify,
-        parser: (line: string) => {
-            return ackParser(line, 'PROXIED');
-        }
+    export const proxifyRequest: Request<OperationResult> = {
+        type: Command.COMMAND_PROXIFY,
+        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
     };
 }

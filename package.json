@@ -32,7 +32,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist out tsconfig.build.tsbuildinfo",
-    "build": "tsc --project tsconfig.build.json",
+    "build": "npm run protocol:generate && tsc --project tsconfig.build.json",
     "build:tests": "tsc --outDir out --project tsconfig.tests.json",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src/**/* --config .eslint.config.mjs",
@@ -40,6 +40,7 @@
     "test:prebuild": "npm run build && npm run build:tests",
     "test": "npm run test:all",
     "test:all": "npm run test:prebuild && npm run test:ava && npm run test:integration && npm run test:end-to-end",
+    "protocol:generate": "just protocol",
     "test:ava": "ava",
     "test:integration": "npx ts-node ./tests/integration/precision.ts",
     "test:end-to-end": "npx ts-node ./tests/end-to-end/end2end.test.ts",
@@ -76,6 +77,7 @@
     "ink-testing-library": "^2.1.0",
     "mqtt": "^5.15.1",
     "serialport": "^13.0.0",
+    "ts-proto": "^2.12.1",
     "typescript-eslint": "^8.60.1"
   },
   "ava": {

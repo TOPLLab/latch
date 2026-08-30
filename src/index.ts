@@ -16,5 +16,7 @@ export * from './testbeds/TestbedSpecification';
 export * from './debug/Breakpoint';
 export * from './reporter/index';
 export * from './debug/WARDuino';
+export * from './protocol/frame';
+export * as DebugProtocol from './protocol/vendor/debug';
 
 export const latch = Framework.getImplementation();
