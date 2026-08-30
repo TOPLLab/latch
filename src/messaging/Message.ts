@@ -12,7 +12,6 @@ import Interrupt = WARDuino.Interrupt;
 import State = WARDuino.State;
 import Value = WASM.Value;
 import Type = WASM.Type;
-import Special = WASM.Special;
 
 // An acknowledgement returned by the debugger
 export interface Ack {
@@ -28,6 +27,7 @@ export interface Request<R> {
     parser: (input: string) => R  // the parser for the response to the debug message
 }
 
+/* eslint-disable @typescript-eslint/no-namespace */
 export namespace Message {
     import Inspect = WARDuino.Inspect;
     import Float = WASM.Float;

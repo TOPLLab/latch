@@ -1,3 +1,4 @@
+/* eslint-disable no-async-promise-executor, @typescript-eslint/no-unused-vars */
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -178,10 +179,9 @@ export class AsScriptCompiler extends Compiler {
     }
 
     public async map(program: string): Promise<CompileOutput> {
-        const emitter = this;
-        return this.compile(program).then(async function (output: CompileOutput) {
+        return this.compile(program).then(async (output: CompileOutput) => {
             output.map = await new AsScriptMapper(program, path.dirname(output.file)).mapping();
-            emitter.emit(CompilationEvents.sourcemap);
+            this.emit(CompilationEvents.sourcemap);
             return Promise.resolve(output);
         });
     }

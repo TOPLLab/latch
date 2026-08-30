@@ -42,29 +42,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Build WARDuino CLI
+        uses: ./.github/actions/build-warduino
         with:
-          submodules: recursive
-
-      - name: Get WDCLI commit ID
-        working-directory: tests/artifacts/warduino
-        run: echo "WDCLI_VERSION=$(git rev-parse HEAD)" >> $GITHUB_ENV
-
-      - name: Cache WARDuino CLI
-        uses: actions/cache@v4
-        id: cache-warduino
-        with:
-          key: ${{ runner.os }}-warduino-${{ env.WDCLI_VERSION }}
-          path: tests/artifacts/warduino
-          restore-keys: |
-            ${{ runner.os }}-warduino-
-
-      - name: Build WARDuino CLI  # Build latest version
-        if: steps.cache-warduino.outputs.cache-hit == false
-        working-directory: tests/artifacts/warduino
-        run: |
-          mkdir build; cd build
-          cmake .. -D BUILD_EMULATOR=ON
-          cmake --build .
+          version: 0.8.1
 
       - name: Upload built tools
         uses: actions/upload-artifact@v4
@@ -111,8 +93,81 @@ jobs:
         env:
           WABT: ${{ github.workspace }}/.tools
 
-      - name: Run example tests
-        run: npm run test:example
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    needs: [build-wabt, build-wdcli]
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: npm i
+
+      - name: Prebuild files
+        run: npm run test:prebuild
+
+      - name: Download WAT tools
+        uses: actions/download-artifact@v4
+        with:
+          name: wabt-build-${{ github.run_id }}
+          path: .tools
+
+      - name: Download WARDuino CLI
+        uses: actions/download-artifact@v4
+        with:
+          name: warduino-build-${{ github.run_id }}
+          path: .warduino
+
+      - name: Configure test tools
+        run: |
+          chmod u+x "$GITHUB_WORKSPACE"/.tools/*
+          "$GITHUB_WORKSPACE"/.tools/wat2wasm --version
+          EMULATOR_PATH="$(find "$GITHUB_WORKSPACE"/.warduino -type f -name wdcli -print -quit)"
+          test -n "$EMULATOR_PATH"
+          chmod u+x "$EMULATOR_PATH"
+          echo "EMULATOR=$EMULATOR_PATH" >> "$GITHUB_ENV"
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          WABT: ${{ github.workspace }}/.tools
+
+  end-to-end:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    needs: [build-wabt, build-wdcli]
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: npm i
+
+      - name: Prebuild files
+        run: npm run test:prebuild
+
+      - name: Download WAT tools
+        uses: actions/download-artifact@v4
+        with:
+          name: wabt-build-${{ github.run_id }}
+          path: .tools
+
+      - name: Download WARDuino CLI
+        uses: actions/download-artifact@v4
+        with:
+          name: warduino-build-${{ github.run_id }}
+          path: .warduino
+
+      - name: Configure emulator
+        run: |
+          chmod u+x "$GITHUB_WORKSPACE"/.tools/*
+          "$GITHUB_WORKSPACE"/.tools/wasm-objdump --version
+          EMULATOR_PATH="$(find "$GITHUB_WORKSPACE"/.warduino -type f -name wdcli -print -quit)"
+          test -n "$EMULATOR_PATH"
+          chmod u+x "$EMULATOR_PATH"
+          echo "EMULATOR=$EMULATOR_PATH" >> "$GITHUB_ENV"
+
+      - name: Run end-to-end tests
+        run: npm run test:end-to-end
         env:
           WABT: ${{ github.workspace }}/.tools
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 export namespace WASM {
     export enum Float {
         f32 = 'f32',
@@ -108,8 +109,7 @@ export namespace WASM {
         }
     }
 
-    export interface Nothing extends Value<Special> {
-    }
+    export type Nothing = Value<Special>;
 
     export const nothing: Nothing = {
         type: Special.nothing, value: 0

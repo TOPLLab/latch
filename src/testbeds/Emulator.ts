@@ -4,7 +4,9 @@ import {ProxySpecification} from './TestbedSpecification';
 import * as net from 'node:net';
 import {Socket} from 'node:net';
 import {MessageQueue} from '../messaging/MessageQueue';
-import {TestbedEvents} from './Testbed';
+import {Meta, TestbedEvents} from './Testbed';
+import {EMULATOR} from "../util/env";
+import {execFileAsync} from "../util/util";
 
 export class Emulator extends Platform {
     readonly name: string = 'Emulator';
@@ -21,6 +23,21 @@ export class Emulator extends Platform {
     kill(): Promise<void> {
         this.connection.child?.kill();
         return super.kill();
+    }
+
+    async meta(): Promise<string> {
+        const {stdout} = await execFileAsync(EMULATOR, ['--version']);
+        const version = stdout.match(/\d+\.\d+\.\d+/)?.[0];
+
+        if (version === undefined) {
+            throw new Error(`Unable to determine WARDuino version from: ${stdout.trim()}`);
+        }
+
+        return JSON.stringify({
+            [Meta.Name]: 'warduino',
+            [Meta.Architecture]: 'emulator',
+            [Meta.Version]: version
+        });
     }
 }
 

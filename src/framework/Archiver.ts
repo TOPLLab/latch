@@ -1,23 +1,23 @@
 import {writeFileSync} from 'fs';
 
 export class Archiver {
-    private readonly information: any;
+    private readonly information: Record<string, unknown> = {};
     public readonly archive: string;
 
     constructor(file: string) {
-        this.information = new Map<string, string[]>();
         this.archive = file;
     }
 
-    public set(key: string, value: string | number) {
+    public set(key: string, value: unknown) {
         this.information[key] = value;
     }
 
     public extend(key: string, value: string | number) {
-        if (!Object.prototype.hasOwnProperty.call(this.information, key)) {
+        const values = this.information[key];
+        if (!Array.isArray(values)) {
             this.information[key] = [];
         }
-        this.information[key].push(value);
+        (this.information[key] as (string | number)[]).push(value);
     }
 
     public write() {

@@ -65,7 +65,9 @@ export class Framework {
         return this.scheduled;
     }
 
-    public async sequential(suites: Suite[]) {
+    public async sequential(suites: Suite[]): Promise<boolean> {
+        let success: boolean = true;
+
         this.scheduled = this.scheduled.concat(suites);
         this.reporter.start();
         const t0 = performance.now();
@@ -74,14 +76,17 @@ export class Framework {
             for (const suite of suites) {
                 for (const testee of suite.testees) {
                     const order: TestScenario[] = suite.scheduler.sequential(suite);
-                    await this.executeSuite(suite, testee, order, ++executionIndex);
+                    const result = await this.executeSuite(suite, testee, order, ++executionIndex);
+                    success = success && result.outcome === Outcome.succeeded;
                 }
             }
 
             await this.shutdown(suites);
+
+            return success;
         } finally {
             const t1 = performance.now();
-            this.reporter.finish(t1 - t0);
+            await this.reporter.finish(t1 - t0);
             await this.reporter.close();
         }
     }
@@ -107,7 +112,7 @@ export class Framework {
             return success;
         } finally {
             const t1 = performance.now();
-            this.reporter.finish(t1 - t0);
+            await this.reporter.finish(t1 - t0);
             await this.reporter.close();
         }
     }
@@ -137,7 +142,8 @@ export class Framework {
 
                     try {
                         const first: TestScenario = order[i][0];
-                        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+                        await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: unknown) => result.error(errorMessage(e))));
+                        this.reportMetadata(runId, testee);
 
                         for (let j = i; j < order.length; j += suite.testees.length) {
                             await this.runSuite(result, testee, order[j], runId);
@@ -155,7 +161,7 @@ export class Framework {
             }))
         } finally {
             const t1 = performance.now();
-            this.reporter.finish(t1 - t0);
+            await this.reporter.finish(t1 - t0);
             await this.reporter.close();
         }
     }
@@ -188,7 +194,8 @@ export class Framework {
 
         try {
             const first: TestScenario = order[0];
-            await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: Error) => result.error(e.message)));
+            await timeout<Object | void>('Initialize testbed', testee.connector.timeout, testee.initialize(first.program, first.args ?? []).catch((e: unknown) => result.error(errorMessage(e))));
+            this.reportMetadata(runId, testee);
             await this.runSuite(result, testee, order, runId);
         } catch (e) {
             result.error(e instanceof Error ? e.message : `${e}`);
@@ -209,6 +216,13 @@ export class Framework {
         return `${suite.title}:${testee.name}:${executionIndex}`;
     }
 
+    private reportMetadata(runId: string, testee: Testee): void {
+        const testbed = testee.bed();
+        if (testbed !== undefined) {
+            this.reporter.metadata?.(runId, testbed.meta());
+        }
+    }
+
     public static getImplementation() {
         if (!Framework.implementation) {
             Framework.implementation = new Framework();
@@ -216,4 +230,8 @@ export class Framework {
 
         return Framework.implementation;
     }
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }

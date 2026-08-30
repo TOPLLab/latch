@@ -10,7 +10,7 @@ import {Kind, Step} from '../../src/framework/scenario/Step';
 import {ArchiveWriter} from '../../src/reporter/ArchiveWriter';
 import {InkReporter} from '../../src/reporter/ink/InkReporter';
 import {App} from '../../src/reporter/ink/App';
-import {RunHeader} from '../../src/reporter/ink/RunHeader';
+import {Header} from '../../src/reporter/ink/Header';
 import {Reporter, SuiteRun} from '../../src/reporter/Reporter';
 import {ReporterState} from '../../src/reporter/ReporterState';
 import {ScenarioResult, StepOutcome, SuiteResult} from '../../src/reporter/Results';
@@ -99,7 +99,7 @@ test('ArchiveWriter preserves archive fields', t => {
         suite.add(sc);
 
         const writer = new ArchiveWriter(1234);
-        writer.write(42.4, [suite]);
+        writer.write(42.4, [suite], [{name: 'warduino', architecture: 'emulator', version: '0.8.0', suites: 1}]);
 
         const archived = JSON.parse(readFileSync(writer.archive, 'utf8'));
         t.is(archived['duration (ms)'], 42);
@@ -107,6 +107,7 @@ test('ArchiveWriter preserves archive fields', t => {
         t.is(archived['passed scenarios'], 1);
         t.is(archived['skipped scenarios'], 0);
         t.is(archived['failed scenarios'], 0);
+        t.deepEqual(archived.testbeds, [{name: 'warduino', architecture: 'emulator', version: '0.8.0', suites: 1}]);
     } finally {
         if (previous === undefined) {
             delete process.env.TESTFILE;
@@ -147,10 +148,33 @@ test('InkReporter exposes verbosity-only reporter configuration', t => {
     t.true(new InkReporter(Verbosity.normal) instanceof InkReporter);
 });
 
-test('Run header keeps metadata next to the Latch title', t => {
-    const frame = plainFrame(render(React.createElement(RunHeader, {archive: 'suite.log'})).lastFrame() ?? '');
+test('Header replaces metadata placeholder when it resolves', async t => {
+    let resolveMetadata: (metadata: string) => void = () => undefined;
+    let resolveSecondMetadata: (metadata: string) => void = () => undefined;
+    let resolveHardwareMetadata: (metadata: string) => void = () => undefined;
+    const metadata = new Promise<string>(resolve => {
+        resolveMetadata = resolve;
+    });
+    const secondMetadata = new Promise<string>(resolve => {
+        resolveSecondMetadata = resolve;
+    });
+    const hardwareMetadata = new Promise<string>(resolve => {
+        resolveHardwareMetadata = resolve;
+    });
+    const view = render(React.createElement(Header, {archive: 'suite.log', metadata: [metadata, secondMetadata, hardwareMetadata], metadataRevision: 1}));
+    const placeholder = plainFrame(view.lastFrame() ?? '');
 
-    t.regex(frame, /^Latch v[\d.]+ · archive suite\.log(?:\n|$)/);
+    t.regex(placeholder, /^Latch {5}v[\d.]+ · archive suite\.log\nTestbeds  name \[architecture\] · vversion(?:\n|$)/);
+
+    resolveMetadata(JSON.stringify({name: 'warduino', architecture: 'emulator', version: '0.8.0'}));
+    resolveSecondMetadata(JSON.stringify({name: 'warduino', architecture: 'emulator', version: '0.8.0'}));
+    resolveHardwareMetadata(JSON.stringify({name: 'warduino', architecture: 'arduino', version: '0.8.0'}));
+    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
+
+    const updated = plainFrame(view.lastFrame() ?? '');
+    t.regex(updated, /warduino \[emulator\] · v0\.8\.0 · 2 suites/);
+    t.regex(updated, /\n          warduino \[arduino\] · v0\.8\.0 · 1 suite/);
 });
 
 test('InkReporter close resolves after unmounting', async t => {
@@ -207,6 +231,28 @@ test('Ink App applies running verbosity levels', t => {
 
     t.true(more.includes('active-step'));
     t.true(more.includes('Expected 1 got 2'));
+});
+
+test('Ink App separates completed suites from active suites', t => {
+    const completedSuite = suiteResult('completed-suite');
+    const completedScenario = new ScenarioResult(scenario('completed-scenario'));
+    completedScenario.add(new StepOutcome(step('completed-step')).update(Outcome.succeeded));
+    completedSuite.add(completedScenario);
+
+    const activeSuite = suiteResult('active-suite');
+    const state = new ReporterState();
+    state.start();
+    state.suiteStarted(run('completed', completedSuite));
+    state.suiteFinished('completed', completedSuite);
+    state.suiteStarted(run('active', activeSuite, 2));
+
+    const frame = plainFrame(render(React.createElement(App, {
+        snapshot: state.snapshot(),
+        archive: 'suite.log',
+        verbosity: Verbosity.normal
+    })).lastFrame() ?? '');
+
+    t.regex(frame, /PASS completed-suite[\s\S]*\n\n[\s\S]*RUN active-suite/);
 });
 
 test('Ink App shows compact active failures before progress at normal verbosity', t => {
@@ -328,13 +374,16 @@ test('Ink App renders compact final summary at the bottom', t => {
     }));
 
     const frame = plainFrame(app.lastFrame() ?? '');
+    t.true(frame.includes('Latch     v'));
     t.true(frame.includes('PASS 1 suites passed · 1 scenarios · 10 actions · 12ms'));
     t.true(frame.includes('PASS completed-suite'));
     t.regex(frame, /PASS completed-suite\s+1\/1\s+testee-2/);
     t.true(frame.includes('Suites'));
     t.true(frame.includes('Scenarios'));
     t.true(frame.includes('Actions'));
-    t.true(frame.includes('Archive  suite.log'));
+    t.true(frame.includes('name [architecture] · vversion'));
+    t.true(frame.includes('archive suite.log'));
+    t.false(frame.split('\n').some(line => line.trim().startsWith('Archive')));
     t.false(frame.includes('passed-step-0'));
 
     const overviewRows = frame.split('\n').filter((line) => line.includes('passed') && line.includes('failed'));

@@ -1,3 +1,4 @@
+/* eslint-disable no-async-promise-executor, @typescript-eslint/no-this-alias */
 import {Framework} from './Framework';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Message, Request} from '../messaging/Message';
@@ -200,6 +201,7 @@ export class Testee { // TODO unified with testbed interface
                     await timeout<object | void>(`uploading module`, testee.timeout, testee.bed()!.sendRequest(new SourceMap.Mapping(), Message.updateModule(compiled.file))).catch((e) => Promise.reject(e));
                     testee.current = description.program;
                 } catch {
+                    await testee.shutdown();
                     await testee.initialize(description.program, description.args ?? []).catch((o) => Promise.reject(o));
                 }
             }).catch((e: Error | string) => {
@@ -278,9 +280,10 @@ export class Testee { // TODO unified with testbed interface
                                     await testee.initialize(description.program, description.args ?? []).catch((o) => {
                                         return Promise.reject(o)
                                     });
-                                }), 1).catch((e: string) => {
+                                }), 1).catch((e: unknown) => {
                                 const result = new StepOutcome(step);
-                                testee.states.set(description.title, result.update((e.includes('timeout')) ? Outcome.timedout : Outcome.error, e));
+                                const error = e instanceof Error ? e.toString() : String(e);
+                                testee.states.set(description.title, result.update((error.includes('timeout')) ? Outcome.timedout : Outcome.error, error));
                                 recordStep(result);
                             });
                         }

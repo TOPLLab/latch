@@ -31,7 +31,9 @@ export interface Reporter {
 
     debug(text: string): void;
 
-    finish(durationMs: number): void;
+    metadata?(runId: string, metadata: Promise<string>): void;
+
+    finish(durationMs: number): void | Promise<void>;
 
     close(): Promise<void>;
 

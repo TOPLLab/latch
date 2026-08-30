@@ -1,0 +1,62 @@
+name: Build WARDuino CLI
+description: Check out and build a WARDuino CLI version
+
+inputs:
+  version:
+    description: WARDuino version tag without the optional v prefix, latest, or dirty
+    required: false
+    default: latest
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve WARDuino version
+      id: version
+      shell: bash
+      env:
+        WARDUINO_VERSION: ${{ inputs.version }}
+      run: |
+        if [ "$WARDUINO_VERSION" = "latest" ]; then
+          VERSION=$(git ls-remote --refs --tags https://github.com/TOPLLab/WARDuino.git 'v*' \
+            | sed 's#.*refs/tags/##' \
+            | sort --version-sort \
+            | tail --lines=1)
+          test -n "$VERSION"
+        elif [ "$WARDUINO_VERSION" = "dirty" ]; then
+          VERSION=main
+        else
+          VERSION="${WARDUINO_VERSION#v}"
+          VERSION="v$VERSION"
+        fi
+        echo "ref=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Check out WARDuino
+      uses: actions/checkout@v4
+      with:
+        repository: TOPLLab/WARDuino
+        ref: ${{ steps.version.outputs.ref }}
+        path: tests/artifacts/warduino
+        submodules: recursive
+
+    - name: Get WARDuino commit ID
+      id: commit
+      shell: bash
+      working-directory: tests/artifacts/warduino
+      run: echo "value=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache WARDuino CLI
+      uses: actions/cache@v4
+      id: cache-warduino
+      with:
+        key: ${{ runner.os }}-warduino-${{ steps.commit.outputs.value }}
+        path: tests/artifacts/warduino/build
+        restore-keys: |
+          ${{ runner.os }}-warduino-
+
+    - name: Build WARDuino CLI
+      if: steps.cache-warduino.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: tests/artifacts/warduino
+      run: |
+        cmake -S . -B build -D BUILD_EMULATOR=ON
+        cmake --build build

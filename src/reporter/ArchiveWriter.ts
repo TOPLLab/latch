@@ -3,6 +3,13 @@ import {SuiteResult} from './Results';
 import {summarize} from './Summary';
 import {Outcome} from './Outcome';
 
+export interface ArchivedTestbed {
+    name: string;
+    architecture: string;
+    version: string;
+    suites: number;
+}
+
 export class ArchiveWriter {
     private readonly archiver: Archiver;
 
@@ -15,7 +22,7 @@ export class ArchiveWriter {
         return this.archiver.archive;
     }
 
-    write(durationMs: number, suites: SuiteResult[]) {
+    write(durationMs: number, suites: SuiteResult[], testbeds: ArchivedTestbed[] = []) {
         const summary = summarize(suites);
         const scenarios = suites.flatMap((suite) => suite.outcomes());
 
@@ -32,6 +39,7 @@ export class ArchiveWriter {
         this.archiver.set('passed scenarios', summary.scenarios.passing);
         this.archiver.set('skipped scenarios', summary.scenarios.skipped);
         this.archiver.set('failed scenarios', summary.scenarios.failing);
+        this.archiver.set('testbeds', testbeds);
 
         this.archiver.write();
     }

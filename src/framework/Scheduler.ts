@@ -92,7 +92,7 @@ function trees(input: TestScenario[]): TestScenario[][][] {
     const seen = new Set<TestScenario>();
 
     // loop over all scenario of the input
-    let pointer = 0;
+    let pointer: number;
     for (const test of input) {
         if (seen.has(test)) {
             // test already in forest, nothing to do
@@ -176,7 +176,7 @@ function comparator(a: TestScenario, b: TestScenario): number {
 }
 
 // aggregate dependence forest into levels
-function levels(input: TestScenario[]): TestScenario[][] {
+function _levels(input: TestScenario[]): TestScenario[][] {
     // input
     input.sort((a: TestScenario, b: TestScenario) => (a.dependencies ?? []).length - (b.dependencies ?? []).length);
     // output
