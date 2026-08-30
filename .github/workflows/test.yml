@@ -135,7 +135,7 @@ jobs:
   end-to-end:
     name: End-to-end tests
     runs-on: ubuntu-latest
-    needs: build-wdcli
+    needs: [build-wabt, build-wdcli]
     if: github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@v4
@@ -145,6 +145,12 @@ jobs:
       - name: Prebuild files
         run: npm run test:prebuild
 
+      - name: Download WAT tools
+        uses: actions/download-artifact@v4
+        with:
+          name: wabt-build-${{ github.run_id }}
+          path: .tools
+
       - name: Download WARDuino CLI
         uses: actions/download-artifact@v4
         with:
@@ -153,6 +159,8 @@ jobs:
 
       - name: Configure emulator
         run: |
+          chmod u+x "$GITHUB_WORKSPACE"/.tools/*
+          "$GITHUB_WORKSPACE"/.tools/wasm-objdump --version
           EMULATOR_PATH="$(find "$GITHUB_WORKSPACE"/.warduino -type f -name wdcli -print -quit)"
           test -n "$EMULATOR_PATH"
           chmod u+x "$EMULATOR_PATH"
@@ -160,6 +168,8 @@ jobs:
 
       - name: Run end-to-end tests
         run: npm run test:end-to-end
+        env:
+          WABT: ${{ github.workspace }}/.tools
 
   coverage:
     name: Code coverage
