@@ -6,6 +6,7 @@ import {Socket} from 'node:net';
 import {Meta, TestbedEvents} from './Testbed';
 import {EMULATOR} from "../util/env";
 import {execFileAsync} from "../util/util";
+import {DebugFrameDecoder} from "../protocol/frame";
 
 export class Emulator extends Platform {
     readonly name: string = 'Emulator';
@@ -49,6 +50,8 @@ export class DummyProxy extends Emulator {
     dummy: net.Server;
 
     private supervisor?: Socket;
+
+    private readonly forwarding = new DebugFrameDecoder();
 
     constructor(connection: SubProcess, specification: ProxySpecification) {
         super(connection);

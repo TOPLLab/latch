@@ -58,11 +58,19 @@ export abstract class Platform extends EventEmitter implements Testbed {
         this.connection.channel.removeAllListeners('data');
     }
 
-    protected process(frame: DebugFrame): void {
-        const index = this.requests.findIndex(([request]) => this.matches(request, frame));
+    protected process(frame: DebugFrame): boolean {
+        const operation =
+            frame.type === NotificationType.NOTIFICATION_OPERATION_RESULT
+                ? OperationResult.decode(frame.payload)
+                : undefined;
+
+        const index = this.requests.findIndex(([request]) =>
+            this.matches(request, frame, operation)
+        );
+
         this.emit(TestbedEvents.OnMessage, frame);
 
-        if (index === -1) return;
+        if (index === -1) return false;
 
         const [request, resolve, reject] = this.requests.splice(index, 1)[0];
         try {
@@ -70,12 +78,17 @@ export abstract class Platform extends EventEmitter implements Testbed {
         } catch (error) {
             reject(error);
         }
+        return true;
     }
 
-    private matches(request: Request<unknown>, frame: DebugFrame): boolean {
+    private matches(
+        request: Request<unknown>,
+        frame: DebugFrame,
+        operation?: OperationResult,
+    ): boolean {
         if (request.notification !== frame.type) return false;
-        if (frame.type !== NotificationType.NOTIFICATION_OPERATION_RESULT) return true;
-        return OperationResult.decode(frame.payload).command === request.type;
+        return frame.type !== NotificationType.NOTIFICATION_OPERATION_RESULT
+            || operation?.command === request.type;
     }
 
     protected failPending(error: unknown): void {

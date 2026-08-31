@@ -184,3 +184,15 @@ test('[dummy] log file create', t => {
 test('[dummy] log file correct', t => {
     t.pass();
 });
+
+
+test("[platform] rejects only a failed matching operation", async t => {
+    const channel = new TestChannel();
+    const platform = new TestPlatform(channel);
+    const request = platform.sendRequest(new SourceMap.Mapping(), Message.reset);
+    channel.receive(encodeFrame({
+        type: NotificationType.NOTIFICATION_OPERATION_RESULT,
+        payload: OperationResult.encode({command: Command.COMMAND_RESET, success: false}).finish()
+    }));
+    await t.throwsAsync(request, {message: /COMMAND_RESET failed/});
+});

@@ -3,7 +3,7 @@ import {MessageQueue} from '../../src/messaging/MessageQueue';
 import {Message} from '../../src/messaging/Message';
 import {WASM} from '../../src/sourcemap/Wasm';
 import {SourceMap} from '../../src/sourcemap/SourceMap';
-import {RemoteFunctionCall, RemoteFunctionResult} from "../../src/protocol/vendor/debug";
+import {Command, FunctionMessage, Range, RemoteFunctionCall, RemoteFunctionResult, ValueUpdate} from "../../src/protocol/vendor/debug";
 
 const alphanumerical = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.split('');
 
@@ -115,7 +115,7 @@ const fuzzy = (characters: string[]): (n: number) => string => {
         return result;
     };
 }
-import {Command, ContinueFor} from "../../src/protocol/vendor/debug";
+import {ContinueFor} from "../../src/protocol/vendor/debug";
 import {DebugFrameDecoder, encodeFrame} from "../../src/protocol/frame";
 
 test("[debug protocol] encodes WARDuino CONTINUE_FOR fixture", t => {
@@ -131,4 +131,26 @@ test("[debug protocol] decodes fragmented WARDuino frames", t => {
         type: Command.COMMAND_CONTINUE_FOR,
         payload: Buffer.from([0x08, 0x05])
     }]);
+});
+
+
+test("[Message updates] encode function and local payloads", t => {
+    const mapping = new SourceMap.Mapping();
+    const functionRequest = Message.updateFunction({functionIndex: 3, instructions: Buffer.from([0xaa, 0xbb])});
+    const localRequest = Message.updateLocal(2, {i32Bits: 5, index: 0});
+
+    t.is(functionRequest.type, Command.COMMAND_UPDATE_FUNCTION);
+    t.deepEqual(functionRequest.payload!(mapping), new Uint8Array([0x08, 0x03, 0x22, 0x02, 0xaa, 0xbb]));
+    t.deepEqual(FunctionMessage.decode(functionRequest.payload!(mapping)), {functionIndex: 3, instructions: Buffer.from([0xaa, 0xbb]), range: undefined, locals: undefined});
+    t.is(localRequest.type, Command.COMMAND_UPDATE_LOCAL);
+    t.deepEqual(localRequest.payload!(mapping), new Uint8Array([0x08, 0x02, 0x12, 0x05, 0x0d, 0x05, 0x00, 0x00, 0x00]));
+    t.deepEqual(ValueUpdate.decode(localRequest.payload!(mapping)), {index: 2, value: {i32Bits: 5, index: 0, i64Bits: undefined, f32Bits: undefined, f64Bits: undefined, raw: undefined}});
+    t.throws(() => Message.updateLocal(-1, {i32Bits: 1, index: 0}), {message: /non-negative integer/});
+});
+
+test("[Message events] distinguish a range from the all-events default", t => {
+    const mapping = new SourceMap.Mapping();
+    t.deepEqual(Message.dumpEvents({start: 2, end: 9}).payload!(mapping), new Uint8Array([0x08, 0x02, 0x10, 0x09]));
+    t.deepEqual(Range.decode(Message.dumpEvents({start: 2, end: 9}).payload!(mapping)), {start: 2, end: 9});
+    t.deepEqual(Message.dumpAllEvents.payload!(mapping), new Uint8Array());
 });

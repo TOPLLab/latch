@@ -1,33 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {WASM} from '../sourcemap/Wasm';
-import {Ack, Exception} from './Message';
-import {Breakpoint} from '../debug/Breakpoint';
-import {WARDuino} from '../debug/WARDuino';
-import {JSONParse} from 'json-with-bigint';
-import State = WARDuino.State;
+import type {Exception} from './Message';
 import nothing = WASM.nothing;
 import Type = WASM.Type;
 import WasmInt = WASM.WasmInt;
-import ieee754 from "ieee754";
-import {RemoteFunctionResult, Value as ProtocolValue} from "../protocol/vendor/debug";
+import {Command, OperationResult, RemoteFunctionResult, Value as ProtocolValue} from "../protocol/vendor/debug";
 
-export function identityParser(text: string) {
-    return stripEnd(text);
-}
-
-export function stateParser(text: string): State {
-    return JSONParse(text);
-}
-
-export function invokeParser(text: string): WASM.Value<Type> | Exception {
-    if (exception(text)) {
-        return {text: text};
+/** Decode and validate an operation response for one command. */
+export function operationResultParser(expected: Command, payload: Uint8Array, decoded?: OperationResult): OperationResult {
+    const result = decoded ?? OperationResult.decode(payload);
+    if (result.command !== expected) {
+        throw Error("Operation result was for command " + result.command + ", expected " + expected + ".");
     }
-    const stack: { value: any, type: any }[] = stateParser(text).stack!;
-    if (stack.length == 0) {
-        return nothing;
+    if (!result.success) {
+        throw Error("Operation " + (Command[expected] ?? expected) + " failed.");
     }
-    return stacking(stack)[stack.length - 1];
+    return result;
 }
 
 /** Convert a protobuf remote-function response into the Latch WASM value contract. */
@@ -81,39 +68,6 @@ function floatFromBits(bits: number | bigint, bytes: 4 | 8): number {
     return buffer.readDoubleLE();
 }
 
-function exception(text: string): boolean {
-    return text.length > 1 && text.toLowerCase().includes('exception') && text.trim()[0] !== '{';
-}
-
-export function ackParser(text: string, ack: string): Ack {
-    if (text.toLowerCase().includes(ack.toLowerCase())) {
-        return {'text': identityParser(text)};
-    }
-    throw Error(`No ack for ${ack}.`);
-}
-
-export function breakpointParser(text: string): Breakpoint {
-    const ack: Ack = ackParser(text, 'BP');
-
-    const breakpointInfo = ack.text.match(/BP (0x.*)!/);
-    if (breakpointInfo!.length > 1) {
-        return new Breakpoint(parseInt(breakpointInfo![1]), 0); // TODO address to line mapping
-    }
-
-    throw new Error('Could not messaging BREAKPOINT address in ack.');
-}
-
-export function breakpointHitParser(text: string): Breakpoint {
-    const ack: Ack = ackParser(text, 'AT ');
-
-    const breakpointInfo = ack.text.match(/AT (0x.*)!/);
-    if (breakpointInfo!.length > 1) {
-        return new Breakpoint(parseInt(breakpointInfo![1]), 0); // TODO address to line mapping
-    }
-
-    throw new Error('Could not messaging BREAKPOINT address in ack.');
-}
-
 export function signed(value: bigint, bits = 32) {
     const x = value;
     const sign = 1n << BigInt(bits - 1);
@@ -122,61 +76,3 @@ export function signed(value: bigint, bits = 32) {
 
 }
 
-function extractType(object: { value: string, type: any }): Type {
-    return WASM.typing.get(object.type.toLowerCase()) ?? WASM.Special.unknown;
-}
-
-function stacking(objects: { value: string, type: any }[]): WASM.Value<Type>[] {
-    const stacked: WASM.Value<Type>[] = [];
-    for (const object of objects) {
-        const type: WASM.Type = extractType(object);
-        let buff: Buffer;
-        switch (type) {
-            case WASM.Integer.u32:
-            case WASM.Integer.u64:
-                stacked.push({
-                    value: isNaN(Number(object.value)) ? WasmInt.nan()
-                        : object.value === 'inf' ? WasmInt.infinity()
-                            : object.value === '-inf' ? WasmInt.infinity(false)
-                                : WasmInt.finite(BigInt(object.value)),
-                    type: type
-                });
-                break;
-            case WASM.Integer.i32:
-                stacked.push({value: WasmInt.finite(signed(BigInt(object.value), 32)), type: type});
-                break;
-            case WASM.Integer.i64:
-                stacked.push({value: WasmInt.finite(signed(BigInt(object.value), 64)), type: type});
-                break;
-            case WASM.Float.f32:
-                buff = floatBitsBuffer(object.value, 4);
-                stacked.push({value: ieee754.read(buff, 0, false, 23, buff.length), type: type});
-                break;
-            case WASM.Float.f64:
-                buff = floatBitsBuffer(object.value, 8);
-                stacked.push({value: ieee754.read(buff, 0, false, 52, buff.length), type: type});
-                break;
-            case WASM.Special.unknown:
-                break;
-        }
-    }
-    return stacked;
-}
-
-function floatBitsBuffer(value: string | number | bigint, bytes: number): Buffer {
-    const raw = value.toString().trim();
-    const hex = /^[0-9]+$/.test(raw)
-        ? BigInt(raw).toString(16)
-        : raw.replace(/^0x/i, '');
-    const length = bytes * 2;
-    if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length > length) {
-        throw Error(`Invalid ${bytes * 8}-bit float bit pattern: ${value}`);
-    }
-    return Buffer.from(hex.padStart(length, '0'), 'hex');
-}
-
-
-// Strips all trailing newlines
-function stripEnd(text: string): string {
-    return text.replace(/\s+$/g, '');
-}

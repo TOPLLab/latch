@@ -3,7 +3,7 @@ import {Breakpoint} from '../debug/Breakpoint';
 import {WASM} from '../sourcemap/Wasm';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {readFileSync} from "fs";
-import {remoteFunctionResultParser} from "./Parsers";
+import {operationResultParser, remoteFunctionResultParser} from "./Parsers";
 import {CompileOutput, CompilerFactory} from '../manage/Compiler';
 import {WABT} from '../util/env';
 import WasmValue = WASM.Value;
@@ -22,7 +22,9 @@ import {
     ModuleUpdate,
     NotificationType,
     OperationResult,
+    Range,
     RemoteFunctionCall,
+    ValueUpdate,
     Snapshot,
     Value as ProtocolValue
 } from '../protocol/vendor/debug';
@@ -75,6 +77,14 @@ export namespace Message {
     import Float = WASM.Float;
     import isFloat = WASM.isFloat;
 
+    function operation(command: Command): Request<OperationResult> {
+        return {
+            type: command,
+            notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+            parser: payload => operationResultParser(command, payload),
+        };
+    }
+
     export const run: Request<void> = {
         type: Command.COMMAND_RUN,
         notification: NotificationType.NOTIFICATION_CONTINUED,
@@ -104,29 +114,23 @@ export namespace Message {
         notification: NotificationType.NOTIFICATION_STEPPED,
         parser: notificationParsers[NotificationType.NOTIFICATION_STEPPED]
     };
-
     export function addBreakpoint(payload: Breakpoint): Request<OperationResult> {
         return {
-            type: Command.COMMAND_ADD_BREAKPOINT,
-            notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+            ...operation(Command.COMMAND_ADD_BREAKPOINT),
             payload: () => ProtocolBreakpoint.encode({
                 location: {moduleIndex: 0, programCounter: payload.id}
-            }).finish(),
-            parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
+            }).finish()
         };
     }
 
     export function removeBreakpoint(payload: Breakpoint): Request<OperationResult> {
         return {
-            type: Command.COMMAND_REMOVE_BREAKPOINT,
-            notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
+            ...operation(Command.COMMAND_REMOVE_BREAKPOINT),
             payload: () => ProtocolBreakpoint.encode({
                 location: {moduleIndex: 0, programCounter: payload.id}
-            }).finish(),
-            parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
+            }).finish()
         };
     }
-
     export function inspect(fields: Inspect[]): Request<Snapshot> {
         return {
             type: Command.COMMAND_INSPECT,
@@ -135,7 +139,7 @@ export namespace Message {
                 state: Buffer.from(fields.map(field => Number.parseInt(field, 16)))
             }).finish(),
             parser: notificationParsers[NotificationType.NOTIFICATION_SNAPSHOT]
-        }
+        };
     }
 
     export const dump: Request<FunctionMessage> = {
@@ -150,22 +154,22 @@ export namespace Message {
         parser: notificationParsers[NotificationType.NOTIFICATION_LOCALS_DUMP]
     };
 
-    export const reset: Request<OperationResult> = {
-        type: Command.COMMAND_RESET,
-        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
-        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
-    };
-
-    export const updateFunction: Request<OperationResult> = {
-        type: Command.COMMAND_UPDATE_FUNCTION,
-        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
-        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
+    export const reset: Request<OperationResult> = operation(Command.COMMAND_RESET);
+    export function updateFunction(functionMessage: FunctionMessage): Request<OperationResult> {
+        return {
+            ...operation(Command.COMMAND_UPDATE_FUNCTION),
+            payload: () => FunctionMessage.encode(functionMessage).finish()
+        };
     }
 
-    export const updateLocal: Request<OperationResult> = {
-        type: Command.COMMAND_UPDATE_LOCAL,
-        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
-        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
+    export function updateLocal(index: number, value: ProtocolValue): Request<OperationResult> {
+        if (!Number.isInteger(index) || index < 0 || value === undefined) {
+            throw Error("A local update requires a non-negative integer index and a value.");
+        }
+        return {
+            ...operation(Command.COMMAND_UPDATE_LOCAL),
+            payload: () => ValueUpdate.encode({index, value}).finish()
+        };
     }
 
     export async function uploadFile(program: string): Promise<Request<OperationResult>> {
@@ -175,11 +179,9 @@ export namespace Message {
 
     export function updateModule(wasm: string): Request<OperationResult> {
         return {
-            type: Command.COMMAND_UPDATE_MODULE,
-            notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
-            payload: () => ModuleUpdate.encode({wasm: readFileSync(wasm)}).finish(),
-            parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
-        }
+            ...operation(Command.COMMAND_UPDATE_MODULE),
+            payload: () => ModuleUpdate.encode({wasm: readFileSync(wasm)}).finish()
+        };
     }
 
     export function pushEvent(topic: string, payload: string): Request<void> {
@@ -236,16 +238,24 @@ export namespace Message {
         parser: notificationParsers[NotificationType.NOTIFICATION_SNAPSHOT]
     }
 
+    /** The protocol default range (0, 0) requests the complete event queue. */
     export const dumpAllEvents: Request<EventsQueue> = {
         type: Command.COMMAND_DUMP_EVENTS,
         notification: NotificationType.NOTIFICATION_EVENTS_DUMP,
+        payload: () => Range.encode({start: 0, end: 0}).finish(),
         parser: notificationParsers[NotificationType.NOTIFICATION_EVENTS_DUMP]
     }
 
-    export const dumpEvents: Request<EventsQueue> = {
-        type: Command.COMMAND_DUMP_EVENTS,
-        notification: NotificationType.NOTIFICATION_EVENTS_DUMP,
-        parser: notificationParsers[NotificationType.NOTIFICATION_EVENTS_DUMP]
+    export function dumpEvents(range: Range): Request<EventsQueue> {
+        if (!Number.isInteger(range.start) || range.start < 0 || !Number.isInteger(range.end) || range.end < 0) {
+            throw Error("An event range requires non-negative integer start and end positions.");
+        }
+        return {
+            type: Command.COMMAND_DUMP_EVENTS,
+            notification: NotificationType.NOTIFICATION_EVENTS_DUMP,
+            payload: () => Range.encode(range).finish(),
+            parser: notificationParsers[NotificationType.NOTIFICATION_EVENTS_DUMP]
+        };
     }
 
     export const dumpCallbackmapping: Request<CallbackMapping> = {
@@ -254,9 +264,5 @@ export namespace Message {
         parser: notificationParsers[NotificationType.NOTIFICATION_CALLBACKS_DUMP]
     }
 
-    export const proxifyRequest: Request<OperationResult> = {
-        type: Command.COMMAND_PROXIFY,
-        notification: NotificationType.NOTIFICATION_OPERATION_RESULT,
-        parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
-    };
+    export const proxifyRequest: Request<OperationResult> = operation(Command.COMMAND_PROXIFY);
 }
