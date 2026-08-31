@@ -1,7 +1,7 @@
 {
   "name": "latch",
   "description": "A testing framework for constrained environments",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/TOPLLab/latch.git"
