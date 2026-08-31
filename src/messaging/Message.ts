@@ -13,8 +13,10 @@ import {
     CallbackMapping,
     Checkpoint,
     Command,
+    ContinueFor,
     Event as ProtocolEvent,
     EventsQueue,
+    FunctionRef,
     FunctionMessage,
     HitBreakpoint,
     Inspect as ProtocolInspect,
@@ -26,6 +28,8 @@ import {
     RemoteFunctionCall,
     ValueUpdate,
     Snapshot,
+    SnapshotPolicyConfig,
+    Override,
     Value as ProtocolValue
 } from '../protocol/vendor/debug';
 
@@ -172,6 +176,20 @@ export namespace Message {
         };
     }
 
+    export function updateGlobal(index: number, value: ProtocolValue): Request<OperationResult> {
+        if (!Number.isInteger(index) || index < 0 || value === undefined) throw Error("A global update requires a non-negative integer index and a value.");
+        return {...operation(Command.COMMAND_UPDATE_GLOBAL), payload: () => ValueUpdate.encode({index, value}).finish()};
+    }
+
+    export function updateStack(index: number, value: ProtocolValue): Request<OperationResult> {
+        if (!Number.isInteger(index) || index < 0 || value === undefined) throw Error("A stack update requires a non-negative integer index and a value.");
+        return {...operation(Command.COMMAND_UPDATE_STACK), payload: () => ValueUpdate.encode({index, value}).finish()};
+    }
+
+    export function updateCallbacks(callbacks: CallbackMapping): Request<OperationResult> {
+        return {...operation(Command.COMMAND_UPDATE_CALLBACKS), payload: () => CallbackMapping.encode(callbacks).finish()};
+    }
+
     export async function uploadFile(program: string): Promise<Request<OperationResult>> {
         const compiled: CompileOutput = await new CompilerFactory(WABT).pickCompiler(program).compile(program);
         return updateModule(compiled.file);
@@ -236,6 +254,43 @@ export namespace Message {
         type: Command.COMMAND_SNAPSHOT,
         notification: NotificationType.NOTIFICATION_SNAPSHOT,
         parser: notificationParsers[NotificationType.NOTIFICATION_SNAPSHOT]
+    }
+
+    export function loadSnapshot(snapshot: Snapshot): Request<OperationResult> {
+        return {...operation(Command.COMMAND_LOAD_SNAPSHOT), payload: () => Snapshot.encode(snapshot).finish()};
+    }
+
+    export function addProxy(functionRef: FunctionRef): Request<OperationResult> {
+        return {...operation(Command.COMMAND_ADD_PROXY), payload: () => FunctionRef.encode(functionRef).finish()};
+    }
+
+    export function removeProxy(functionRef: FunctionRef): Request<OperationResult> {
+        return {...operation(Command.COMMAND_REMOVE_PROXY), payload: () => FunctionRef.encode(functionRef).finish()};
+    }
+
+    export function proxyCall(call: RemoteFunctionCall): Request<WasmValue<Type> | Exception> {
+        return {type: Command.COMMAND_PROXY_CALL, notification: NotificationType.NOTIFICATION_REMOTE_FUNCTION_RESULT, payload: () => RemoteFunctionCall.encode(call).finish(), parser: notificationParsers[NotificationType.NOTIFICATION_REMOTE_FUNCTION_RESULT]};
+    }
+
+    export function continueFor(continuation: ContinueFor): Request<Checkpoint> {
+        return {type: Command.COMMAND_CONTINUE_FOR, notification: NotificationType.NOTIFICATION_CHECKPOINT, payload: () => ContinueFor.encode(continuation).finish(), parser: notificationParsers[NotificationType.NOTIFICATION_CHECKPOINT]};
+    }
+
+    export const popEvent: Request<OperationResult> = operation(Command.COMMAND_POP_EVENT);
+
+    export function setOverride(override: Override): Request<OperationResult> {
+        return {...operation(Command.COMMAND_SET_OVERRIDE), payload: () => Override.encode(override).finish()};
+    }
+
+    export function removeOverride(override: Override): Request<OperationResult> {
+        return {...operation(Command.COMMAND_REMOVE_OVERRIDE), payload: () => Override.encode(override).finish()};
+    }
+
+    export function setSnapshotPolicy(config: SnapshotPolicyConfig): Request<OperationResult> {
+        return {
+            ...operation(Command.COMMAND_SET_SNAPSHOT_POLICY),
+            payload: () => SnapshotPolicyConfig.encode(config).finish()
+        };
     }
 
     /** The protocol default range (0, 0) requests the complete event queue. */
