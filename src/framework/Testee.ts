@@ -319,15 +319,19 @@ export class Testee { // TODO unified with testbed interface
         recover: (t: Testee) => Promise<any>,
         retries: number = 0): Promise<object | void> {
         let result: object | void = undefined;
-        let error;
-        while (0 <= retries && result === undefined) {
-            result = await attempt(testee, step, map).catch(async (err) => {
+        let error: unknown;
+        let succeeded = false;
+        while (0 <= retries && !succeeded) {
+            try {
+                result = await attempt(testee, step, map);
+                succeeded = true;
+            } catch (err) {
                 error = err;
                 await recover(testee);
-            });
-            retries--;
+                retries--;
+            }
         }
-        return (result === undefined) ? Promise.reject(error) : result;
+        return succeeded ? result! : Promise.reject(error);
     }
 
     public skipall(): Testee {

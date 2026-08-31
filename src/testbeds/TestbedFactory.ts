@@ -42,7 +42,7 @@ export class TestbedFactory {
             default:
                 return Promise.reject('Platform not implemented.');
         }
-        testbed.on(TestbedEvents.Send, (message: string) => this.listener?.(Buffer.from(message)));
+        testbed.on(TestbedEvents.Send, (message: Buffer) => this.listener?.(message));
         return testbed;
     }
 }

@@ -3,6 +3,7 @@ import {EventEmitter} from 'events';
 import {Connection} from '../bridge/Connection';
 import {SourceMap} from '../sourcemap/SourceMap';
 import {Breakpoint} from '../debug/Breakpoint';
+import {DebugFrame} from '../protocol/frame';
 
 export enum TestbedEvents {
     OnMessage = 'message',
@@ -27,7 +28,7 @@ export declare interface Testbed extends EventEmitter {
 
     kill(): Promise<void>;
 
-    on(event: TestbedEvents.OnMessage, listener: (message: string) => void): this;
+    on(event: TestbedEvents.OnMessage, listener: (message: DebugFrame) => void): this;
 
     on(event: TestbedEvents.OnBreakpointHit, listener: (message: Breakpoint) => void): this;
 
@@ -35,7 +36,7 @@ export declare interface Testbed extends EventEmitter {
 
     on(event: TestbedEvents.Ready, listener: (data: string) => void): this;
 
-    on(event: TestbedEvents.Send, listener: (data: string) => void): this;
+    on(event: TestbedEvents.Send, listener: (data: Buffer) => void): this;
 
     meta(): Promise<string>;
 }

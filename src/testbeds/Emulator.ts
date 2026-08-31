@@ -3,7 +3,6 @@ import {SubProcess} from '../bridge/SubProcess';
 import {ProxySpecification} from './TestbedSpecification';
 import * as net from 'node:net';
 import {Socket} from 'node:net';
-import {MessageQueue} from '../messaging/MessageQueue';
 import {Meta, TestbedEvents} from './Testbed';
 import {EMULATOR} from "../util/env";
 import {execFileAsync} from "../util/util";
@@ -49,23 +48,17 @@ export class Emulator extends Platform {
 export class DummyProxy extends Emulator {
     dummy: net.Server;
 
-    protected forwarding: MessageQueue;
-
     private supervisor?: Socket;
 
     constructor(connection: SubProcess, specification: ProxySpecification) {
         super(connection);
-
-        this.forwarding = new MessageQueue('\n');
 
         this.dummy = new net.Server();
 
         this.dummy.on('connection', (connection) => {
             this.supervisor = connection;
             connection.on('error', (error: Error) => this.failPending(error));
-            connection.on('data', (data) => {
-                this.connection.channel.write(data.toString());
-            });
+            connection.on('data', (data) => this.connection.channel.write(data));
             this.emit(TestbedEvents.Ready);
         });
         this.dummy.on('error', (error: Error) => this.failPending(error));
@@ -76,17 +69,9 @@ export class DummyProxy extends Emulator {
         this.listenForErrors();
         this.connection.channel.on('data', (data: Buffer) => {
             if (this.waitingForMessages()) {
-                this.messages.push(data.toString());
-                this.process();
+                this.receive(data);
             } else {
-                this.forwarding.push(data.toString());
-                while (this.forwarding.hasCompleteMessage()) {
-                    const message = this.forwarding.pop()
-                    if (!message?.includes('Interrupt')) {
-                        this.supervisor!.write(message!.toString());
-                    }
-                }
-
+                this.supervisor?.write(data);
             }
         });
     }

@@ -3,7 +3,8 @@ import {setTimeout} from 'timers/promises';
 import {Testee} from '../Testee';
 import {TestbedEvents} from '../../testbeds/Testbed';
 import {Breakpoint} from '../../debug/Breakpoint';
-import {breakpointHitParser} from '../../messaging/Parsers';
+import {DebugFrame} from '../../protocol/frame';
+import {HitBreakpoint, NotificationType} from '../../protocol/vendor/debug';
 
 export interface Dictionary {
     [index: string]: any;
@@ -32,16 +33,12 @@ export function awaitBreakpoint(): Action<Breakpoint> {
     return {
         act: (testee: Testee) => {
             return new Promise<Assertable<Breakpoint>>((resolve) => {
-                function breakpointListener(message: string) {
-                    // check breakpoint hit message
-                    try {
-                        const breakpoint = breakpointHitParser(message);
-                        // on success: remove listener + resolve
-                        testee.bed()?.removeListener(TestbedEvents.OnMessage, breakpointListener);
-                        resolve(assertable(breakpoint));
-                    } catch {
-                        // breakpoint not hit yet
-                    }
+                function breakpointListener(frame: DebugFrame) {
+                    if (frame.type !== NotificationType.NOTIFICATION_HIT_BREAKPOINT) return;
+                    const location = HitBreakpoint.decode(frame.payload).location;
+                    if (location === undefined) return;
+                    testee.bed()?.removeListener(TestbedEvents.OnMessage, breakpointListener);
+                    resolve(assertable(new Breakpoint(location.programCounter, 0)));
                 }
 
                 // await breakpoint hit

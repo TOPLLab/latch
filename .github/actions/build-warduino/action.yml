@@ -3,7 +3,7 @@ description: Check out and build a WARDuino CLI version
 
 inputs:
   version:
-    description: WARDuino version tag without the optional v prefix, latest, or dirty
+    description: WARDuino version tag (with or without the v prefix), branch, or latest
     required: false
     default: latest
 
@@ -22,8 +22,8 @@ runs:
             | sort --version-sort \
             | tail --lines=1)
           test -n "$VERSION"
-        elif [ "$WARDUINO_VERSION" = "dirty" ]; then
-          VERSION=main
+        elif git ls-remote --exit-code --heads https://github.com/TOPLLab/WARDuino.git "$WARDUINO_VERSION" > /dev/null; then
+          VERSION="$WARDUINO_VERSION"
         else
           VERSION="${WARDUINO_VERSION#v}"
           VERSION="v$VERSION"

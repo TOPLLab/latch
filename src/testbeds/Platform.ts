@@ -1,19 +1,21 @@
 import {Testbed, TestbedEvents} from './Testbed';
 import {EventEmitter} from 'events';
 import {Request} from '../messaging/Message';
-import {MessageQueue} from '../messaging/MessageQueue';
 import {Connection} from '../bridge/Connection';
 import {SourceMap} from '../sourcemap/SourceMap';
+import {DebugFrame, DebugFrameDecoder, encodeFrame} from '../protocol/frame';
+import {NotificationType, OperationResult} from '../protocol/vendor/debug';
 
 type PromiseResolver<R> = (value: R | PromiseLike<R>) => void;
 type PromiseRejector = (reason?: unknown) => void;
+type PendingRequest = [Request<unknown>, PromiseResolver<unknown>, PromiseRejector];
 
 export abstract class Platform extends EventEmitter implements Testbed {
     abstract connection: Connection;
 
-    protected requests: [Request<unknown>, PromiseResolver<unknown>, PromiseRejector][];
+    protected requests: PendingRequest[];
 
-    protected messages: MessageQueue;
+    private readonly decoder: DebugFrameDecoder;
 
     // Name of platform
     public abstract readonly name: string;
@@ -24,7 +26,7 @@ export abstract class Platform extends EventEmitter implements Testbed {
     protected constructor() {
         super();
         this.requests = [];
-        this.messages = new MessageQueue('\n');
+        this.decoder = new DebugFrameDecoder();
     }
 
     meta(): Promise<string> {
@@ -33,11 +35,18 @@ export abstract class Platform extends EventEmitter implements Testbed {
 
     // listen on duplex channel
     protected listen(): void {
-        this.connection.channel.on('data', (data: Buffer) => {
-            this.messages.push(data.toString());
-            this.process();
-        });
+        this.connection.channel.on('data', (data: Buffer) => this.receive(data));
         this.listenForErrors();
+    }
+
+    protected receive(data: Uint8Array): void {
+        try {
+            for (const frame of this.decoder.push(data)) {
+                this.process(frame);
+            }
+        } catch (error) {
+            this.failPending(error);
+        }
     }
 
     protected listenForErrors(): void {
@@ -49,45 +58,31 @@ export abstract class Platform extends EventEmitter implements Testbed {
         this.connection.channel.removeAllListeners('data');
     }
 
-    // process messages in queue
-    protected process(): void {
-        // until no complete messages are left
-        for (const message of this.messages) {
-            const index: number = this.search(message);  // search request
+    protected process(frame: DebugFrame): void {
+        const index = this.requests.findIndex(([request]) => this.matches(request, frame));
+        this.emit(TestbedEvents.OnMessage, frame);
 
-            if (0 <= index && index < this.requests.length) {
-                // messaging and resolve
-                const [candidate, resolver] = this.requests[index];
-                resolver(candidate.parser(message));
-                this.emit(TestbedEvents.OnMessage, message);
+        if (index === -1) return;
 
-                this.requests.splice(index, 1);  // delete resolved request
-            }
-        }
-    }
-
-    protected failPending(error: Error): void {
-        const pending = this.requests.splice(0);
-        for (const [, , reject] of pending) {
+        const [request, resolve, reject] = this.requests.splice(index, 1)[0];
+        try {
+            resolve(request.parser(frame.payload));
+        } catch (error) {
             reject(error);
         }
     }
 
-    // search for oldest request matching message
-    private search(message: string): number {
-        let index: number = 0;
-        while (index < this.requests.length) {
-            const [candidate] = this.requests[index];
-            try {
-                // try candidate parser
-                candidate.parser(message);
-                return index;
-            } catch {
-                // failure: try next request
-                index++;
-            }
+    private matches(request: Request<unknown>, frame: DebugFrame): boolean {
+        if (request.notification !== frame.type) return false;
+        if (frame.type !== NotificationType.NOTIFICATION_OPERATION_RESULT) return true;
+        return OperationResult.decode(frame.payload).command === request.type;
+    }
+
+    protected failPending(error: unknown): void {
+        const pending = this.requests.splice(0);
+        for (const [, , reject] of pending) {
+            reject(error);
         }
-        return -1;
     }
 
     // kill connection
@@ -98,18 +93,21 @@ export abstract class Platform extends EventEmitter implements Testbed {
 
     // send request over duplex channel
     public sendRequest<R>(map: SourceMap.Mapping, request: Request<R>): Promise<R> {
-        const message = `${request.type}${request.payload?.(map) ?? ''}\n`;
-        this.emit(TestbedEvents.Send, message);
+        const frame = encodeFrame({
+            type: request.type,
+            payload: request.payload?.(map) ?? new Uint8Array()
+        });
+        this.emit(TestbedEvents.Send, frame);
         return new Promise((resolve, reject) => {
             const resolver: PromiseResolver<unknown> = value => resolve(value as R);
-            const pending: [Request<unknown>, PromiseResolver<unknown>, PromiseRejector] = [request as Request<unknown>, resolver, reject];
+            const pending: PendingRequest = [request as Request<unknown>, resolver, reject];
             this.requests.push(pending);
-            this.connection.channel.write(message, (err: Error | null | undefined) => {
-                if (err !== null && err !== undefined) {
+            this.connection.channel.write(frame, (error: Error | null | undefined) => {
+                if (error !== null && error !== undefined) {
                     const index = this.requests.indexOf(pending);
                     if (index !== -1) {
                         this.requests.splice(index, 1);
-                        reject(err);
+                        reject(error);
                     }
                 }
             });
