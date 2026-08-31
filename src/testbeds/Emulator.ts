@@ -20,9 +20,15 @@ export class Emulator extends Platform {
         this.listen();
     }
 
-    kill(): Promise<void> {
-        this.connection.child?.kill();
-        return super.kill();
+    async kill(): Promise<void> {
+        const child = this.connection.child;
+        const closed = child === undefined || child.exitCode !== null || child.signalCode !== null
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => child.once('close', resolve));
+
+        child?.kill();
+        await super.kill();
+        await closed;
     }
 
     async meta(): Promise<string> {

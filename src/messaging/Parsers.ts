@@ -29,7 +29,7 @@ export function remoteFunctionResult(result: RemoteFunctionResult): WASM.Value<T
     if (result.results.length === 0) {
         return nothing;
     }
-    return protocolValue(result.results[result.results.length - 1]);
+    return protocolValue(result.results[0]);
 }
 
 function protocolValue(value: ProtocolValue): WASM.Value<Type> {

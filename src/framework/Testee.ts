@@ -277,6 +277,7 @@ export class Testee { // TODO unified with testbed interface
                                 (testee, req, map) => timeout<object | void>(`sending instruction ${req.type}`, testee.timeout,
                                     testee.bed(step.target ?? Target.supervisor)!.sendRequest(map, req)),
                                 (testee) => testee.run(`Recover: re-initialize ${testee.testbed?.name}`, testee.connector.timeout, async function () {
+                                    await testee.shutdown();
                                     await testee.initialize(description.program, description.args ?? []).catch((o) => {
                                         return Promise.reject(o)
                                     });
