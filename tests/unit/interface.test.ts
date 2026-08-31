@@ -1,5 +1,6 @@
 import test from 'ava';
 import {Duplex} from 'node:stream';
+import {EventEmitter} from 'node:events';
 import {SubProcess} from '../../src/bridge/SubProcess';
 import {Message} from '../../src/messaging/Message';
 import {SourceMap} from '../../src/sourcemap/SourceMap';
@@ -12,6 +13,7 @@ import {
     OperationResult
 } from '../../src/protocol/vendor/debug';
 import {WARDuino} from "../../src/debug/WARDuino";
+import {Emulator} from "../../src/testbeds/Emulator";
 import {Testee} from "../../src/framework/Testee";
 import {EmulatorSpecification} from "../../src/testbeds/TestbedSpecification";
 
@@ -66,6 +68,23 @@ test("[testee] successful void requests are not retried", async t => {
 
 test('[warduino] start emulator', t => {
     t.pass();
+});
+
+test('[emulator] shutdown waits for the child process to close', async t => {
+    const child = Object.assign(new EventEmitter(), {
+        exitCode: null,
+        signalCode: null,
+        kill: () => true
+    });
+    const emulator = new Emulator(new SubProcess(new TestChannel(), child as any));
+    let complete = false;
+    const shutdown = emulator.kill().then(() => { complete = true; });
+
+    await tick();
+    t.false(complete);
+    child.emit('close', 0, null);
+    await shutdown;
+    t.true(complete);
 });
 
 test('[platform] rejects outstanding requests when the connection closes with an error', async t => {

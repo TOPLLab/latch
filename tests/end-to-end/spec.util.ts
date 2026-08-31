@@ -81,7 +81,7 @@ function consume(input: string, cursor: number, regex: RegExp = / /): number {
 }
 
 function shouldParseLine(input: string): boolean {
-    return input.includes('(assert_return') && !input.replace(/\s+/g, '').startsWith(';;');
+    return input.includes('(assert_return') && input.includes('(invoke') && !input.replace(/\s+/g, '').startsWith(';;');
 }
 
 export function parseAsserts(file: string): string[] {
@@ -140,8 +140,8 @@ function parseInteger(hex: string, type: WASM.Integer): WasmInt {
         const n: number = parseInt(hex);
         return typeof n !== 'bigint' && isNaN(n) ? WasmInt.nan() : typeof n !== 'bigint' && n === Infinity ? WasmInt.infinity() : WasmInt.finite(BigInt(hex));
     }
-    const mask = BigInt(parseInt('0x80' + '00'.repeat(bytes - 1), 16));
-    let integer = BigInt(parseInt(hex, 16));
+    const mask = BigInt('0x80' + '00'.repeat(bytes - 1));
+    let integer = BigInt(hex);
     if (integer >= mask) {
         integer = integer - mask * 2n;
     }

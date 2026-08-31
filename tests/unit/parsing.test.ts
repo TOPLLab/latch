@@ -55,6 +55,19 @@ test("[protobuf invoke result] : decodes IEEE-754 float bits", t => {
     t.deepEqual(f64, {type: WASM.Float.f64, value: 2.5});
 });
 
+test("[protobuf invoke result] : selects the first declared result", t => {
+    const result = remoteFunctionResultParser(RemoteFunctionResult.encode({
+        success: true,
+        results: [
+            {i32Bits: 77, index: 0},
+            {f64Bits: 0x401c000000000000n, index: 1}
+        ],
+        error: Buffer.alloc(0)
+    }).finish());
+
+    t.deepEqual(result, {type: WASM.Integer.i32, value: WasmInt.finite(77n)});
+});
+
 test("[protobuf invoke result] : maps void, malformed, and failed responses", t => {
     const voidResult = remoteFunctionResultParser(RemoteFunctionResult.encode({success: true, results: [], error: Buffer.alloc(0)}).finish());
     t.deepEqual(voidResult, WASM.nothing);
