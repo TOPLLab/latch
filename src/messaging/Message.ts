@@ -132,13 +132,14 @@ export namespace Message {
         };
     }
     export function inspect(fields: Inspect[]): Request<Snapshot> {
+        return {
             type: Command.COMMAND_INSPECT,
             notification: NotificationType.NOTIFICATION_SNAPSHOT,
             payload: () => ProtocolInspect.encode({
                 state: Buffer.from(fields.map(field => Number.parseInt(field, 16)))
             }).finish(),
             parser: notificationParsers[NotificationType.NOTIFICATION_SNAPSHOT]
-        }
+        };
     }
 
     export const dump: Request<FunctionMessage> = {
@@ -155,8 +156,11 @@ export namespace Message {
 
     export const reset: Request<OperationResult> = operation(Command.COMMAND_RESET);
     export function updateFunction(functionMessage: FunctionMessage): Request<OperationResult> {
+        return {
             ...operation(Command.COMMAND_UPDATE_FUNCTION),
             payload: () => FunctionMessage.encode(functionMessage).finish()
+        };
+    }
 
     export function updateLocal(index: number, value: ProtocolValue): Request<OperationResult> {
         if (!Number.isInteger(index) || index < 0 || value === undefined) {
@@ -176,9 +180,8 @@ export namespace Message {
     export function updateModule(wasm: string): Request<OperationResult> {
         return {
             ...operation(Command.COMMAND_UPDATE_MODULE),
-            payload: () => ModuleUpdate.encode({wasm: readFileSync(wasm)}).finish(),
-            parser: notificationParsers[NotificationType.NOTIFICATION_OPERATION_RESULT]
-        }
+            payload: () => ModuleUpdate.encode({wasm: readFileSync(wasm)}).finish()
+        };
     }
 
     export function pushEvent(topic: string, payload: string): Request<void> {

@@ -68,10 +68,6 @@ function floatFromBits(bits: number | bigint, bytes: 4 | 8): number {
     return buffer.readDoubleLE();
 }
 
-function exception(text: string): boolean {
-    return text.length > 1 && text.toLowerCase().includes('exception') && text.trim()[0] !== '{';
-}
-
 export function signed(value: bigint, bits = 32) {
     const x = value;
     const sign = 1n << BigInt(bits - 1);

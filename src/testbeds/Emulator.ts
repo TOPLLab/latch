@@ -6,7 +6,7 @@ import {Socket} from 'node:net';
 import {Meta, TestbedEvents} from './Testbed';
 import {EMULATOR} from "../util/env";
 import {execFileAsync} from "../util/util";
-import {DebugFrameDecoder, encodeFrame} from "../protocol/frame";
+import {DebugFrameDecoder} from "../protocol/frame";
 
 export class Emulator extends Platform {
     readonly name: string = 'Emulator';

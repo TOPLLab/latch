@@ -91,6 +91,13 @@ export abstract class Platform extends EventEmitter implements Testbed {
             || operation?.command === request.type;
     }
 
+    protected failPending(error: unknown): void {
+        const pending = this.requests.splice(0);
+        for (const [, , reject] of pending) {
+            reject(error);
+        }
+    }
+
     // kill connection
     public kill(): Promise<void> {
         this.connection.channel.destroy();
